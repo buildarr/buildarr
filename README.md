@@ -193,10 +193,10 @@ For more information on how to interfact with Buildarr, check the [usage documen
 
 Buildarr is still early in development, and even currently implemented features still require testing and fixing. There are so many possible configurations to cover that I simply cannot feasibly test every feature at this time.
 
-If you encounter an issue or error while using Buildarr, please do a Buildarr ad-hoc run with verbose log output by executing `buildarr run --log-level DEBUG` and making an issue on [our GitHub repository](https://github.com/buildarr/buildarr/issues/new) explaining the issue and attaching the output. (Please ensure that any API keys or other sensitive information are obfuscated before submitting.)
+If you encounter an issue or error while using Buildarr, please do a Buildarr ad-hoc run with verbose log output by executing `buildarr --log-level DEBUG run` and making an issue on [our GitHub repository](https://github.com/buildarr/buildarr/issues/new) explaining the issue and attaching the output. (Please ensure that any API keys or other sensitive information are obfuscated before submitting.)
 
 ```bash
-$ docker run -d --name buildarr -v $(pwd):/config -e PUID=$(id -u) -e PGID=$(id -g) callum027/buildarr:latest run --log-level DEBUG
+$ docker run -d --name buildarr -v $(pwd):/config -e PUID=$(id -u) -e PGID=$(id -g) callum027/buildarr:latest --log-level DEBUG run
 ```
 
 For developers looking to make a contribution to this project, thank you! Documentation of the internal APIs is still in the works, so for now, the best way to learn how Buildarr works is to clone the project and have a look at the comments and docstrings.
