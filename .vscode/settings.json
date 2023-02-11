@@ -1,0 +1,9 @@
+{
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportShadowedImports": "none"
+  },
+  "autoDocstring.docstringFormat": "google",
+  "autoDocstring.includeExtendedSummary": true,
+  "autoDocstring.startOnNewLine": true,
+  "autoDocstring.guessTypes": true
+}

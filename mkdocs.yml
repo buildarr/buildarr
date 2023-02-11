@@ -1,0 +1,51 @@
+site_name: Buildarr
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+
+markdown_extensions:
+  - toc:
+      permalink: "#"
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+nav:
+  - Home: "index.md"
+  - Installation: "installation.md"
+  - Configuration: "configuration.md"
+  - Plugins:
+    - Introduction: "plugins/index.md"
+    - buildarr-sonarr:
+      - Introduction: "plugins/sonarr/index.md"
+      - Configuration:
+        - Host Configuration: "plugins/sonarr/configuration/host.md"
+        - Media Management: "plugins/sonarr/configuration/media-management.md"
+        - Profiles:
+          - Quality Profiles: "plugins/sonarr/configuration/profiles/quality.md"
+          - Language Profiles: "plugins/sonarr/configuration/profiles/language.md"
+          - Delay Profiles: "plugins/sonarr/configuration/profiles/delay.md"
+          - Release Profiles: "plugins/sonarr/configuration/profiles/release.md"
+        - Quality: "plugins/sonarr/configuration/quality.md"
+        - Indexers: "plugins/sonarr/configuration/indexers.md"
+        - Download Clients: "plugins/sonarr/configuration/download-clients.md"
+        - Import Lists: "plugins/sonarr/configuration/import-lists.md"
+        - Connect: "plugins/sonarr/configuration/connect.md"
+        - Metadata: "plugins/sonarr/configuration/metadata.md"
+        - Tags: "plugins/sonarr/configuration/tags.md"
+        - General: "plugins/sonarr/configuration/general.md"
+        - UI: "plugins/sonarr/configuration/ui.md"
+  - Usage: "usage.md"
+  # TODO: Development documentation.
+  # - Development:
+  #   - Introduction: "development/index.md"
+  #   - Plugins: "development/plugins.md"
+
+watch:
+  - buildarr
