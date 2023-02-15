@@ -63,7 +63,7 @@ It contains not only the settings for Buildarr itself, but also the application 
 
 Any configuration on the remote instance not explicitly defined in the Buildarr configuration is not modified.
 
-For more information on how to configure Buildarr, please refer to the documentation.
+For more information on how Buildarr uses configuration and how to configure Buildarr itself, check the [configuration documentation](https://buildarr.github.io/configuration).
 
 Here is an example of a simple Buildarr configuration that changes some settings on a Sonarr instance:
 
