@@ -88,7 +88,7 @@ buildarr:
 sonarr:
   hostname: "localhost"
   port: 8989
-  use_ssl: false
+  protocol: "http"
   settings:
     # General settings (all options supported except for changing the API key)
     general:
