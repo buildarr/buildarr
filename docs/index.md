@@ -174,15 +174,15 @@ For more information on how to interfact with Buildarr, check the [usage documen
 * Unit tests and code coverage
 * Split Sonarr plugin to its own repository
 * Create plugins for the following applications:
-  * Sonarr V4
-  * Radarr
-  * Prowlarr
-  * Bazarr
-  * FlareSolverr
-  * Unmanic
-  * Tdarr (maybe)
-  * Unpackerr
-  * Lidarr
+    * Sonarr V4
+    * Radarr
+    * Prowlarr
+    * Bazarr
+    * FlareSolverr
+    * Unmanic
+    * Tdarr (maybe)
+    * Unpackerr
+    * Lidarr
 * Instance linking (e.g. Prowlarr-to-Sonarr/Radarr) and dependency resolution
 * Stable plugin API between major versions
 * Auto-generation of Docker Compose environment files reflecting the Buildarr configuration
