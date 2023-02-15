@@ -296,6 +296,26 @@ To use Vuze, set the `type` attribute in the download client to `vuze`.
       show_root_heading: false
       show_source: false
 
+## uTorrent
+
+##### ::: buildarr.plugins.sonarr.config.download_clients.download_clients.UtorrentDownloadClient
+    options:
+      members:
+        - type
+        - host
+        - port
+        - use_ssl
+        - url_base
+        - username
+        - password
+        - category
+        - postimport_category
+        - recent_priority
+        - older_priority
+        - initial_state
+      show_root_heading: false
+      show_source: false
+
 ## Configuring remote path mappings
 
 ##### ::: buildarr.plugins.sonarr.config.download_clients.remote_path_mappings.SonarrRemotePathMappingsSettingsConfig

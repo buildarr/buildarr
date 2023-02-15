@@ -533,11 +533,29 @@ class NzbgetDownloadClient(UsenetDownloadClient):
     recent_priority: NzbgetPriority = NzbgetPriority.normal
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `verylow`
+    * `low`
+    * `normal`
+    * `high`
+    * `veryhigh`
+    * `force`
     """
 
     older_priority: NzbgetPriority = NzbgetPriority.normal
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `verylow`
+    * `low`
+    * `normal`
+    * `high`
+    * `veryhigh`
+    * `force`
     """
 
     add_paused: bool = False
@@ -618,11 +636,23 @@ class NzbvortexDownloadClient(UsenetDownloadClient):
     recent_priority: NzbvortexPriority = NzbvortexPriority.normal
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `low`
+    * `normal`
+    * `high`
     """
 
     older_priority: NzbvortexPriority = NzbvortexPriority.normal
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `low`
+    * `normal`
+    * `high`
     """
 
     _implementation_name: str = "NZBVortex"
@@ -725,11 +755,29 @@ class SabnzbdDownloadClient(UsenetDownloadClient):
     recent_priority: SabnzbdPriority = SabnzbdPriority.default
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `default`
+    * `paused`
+    * `low`
+    * `normal`
+    * `high`
+    * `force`
     """
 
     older_priority: SabnzbdPriority = SabnzbdPriority.default
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `default`
+    * `paused`
+    * `low`
+    * `normal`
+    * `high`
+    * `force`
     """
 
     _implementation_name: str = "SABnzbd"
@@ -885,11 +933,21 @@ class DelugeDownloadClient(TorrentDownloadClient):
     recent_priority: DelugePriority = DelugePriority.last
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     older_priority: DelugePriority = DelugePriority.last
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     _implementation_name: str = "Deluge"
@@ -1221,11 +1279,21 @@ class QbittorrentDownloadClient(TorrentDownloadClient):
     recent_priority: QbittorrentPriority = QbittorrentPriority.last
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     older_priority: QbittorrentPriority = QbittorrentPriority.last
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     initial_state: QbittorrentState = QbittorrentState.start
@@ -1349,11 +1417,25 @@ class RtorrentDownloadClient(TorrentDownloadClient):
     recent_priority: RtorrentPriority = RtorrentPriority.normal
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `verylow`
+    * `low`
+    * `normal`
+    * `high`
     """
 
     older_priority: RtorrentPriority = RtorrentPriority.normal
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `verylow`
+    * `low`
+    * `normal`
+    * `high`
     """
 
     add_stopped: bool = False
@@ -1519,11 +1601,21 @@ class TransmissionDownloadClientBase(TorrentDownloadClient):
     recent_priority: TransmissionPriority = TransmissionPriority.last
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     older_priority: TransmissionPriority = TransmissionPriority.last
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     add_paused: bool = False
@@ -1646,11 +1738,21 @@ class UtorrentDownloadClient(TorrentDownloadClient):
     recent_priority: UtorrentPriority = UtorrentPriority.last
     """
     Priority to use when grabbing episodes that aired within the last 14 days.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     older_priority: UtorrentPriority = UtorrentPriority.last
     """
     Priority to use when grabbing episodes that aired over 14 days ago.
+
+    Values:
+
+    * `last`
+    * `first`
     """
 
     initial_state: UtorrentState = UtorrentState.start
