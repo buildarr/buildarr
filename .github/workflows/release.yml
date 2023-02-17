@@ -1,0 +1,23 @@
+name: release
+
+on:
+  workflow_run:
+    workflows:
+      - pre-commit
+    tags:
+      - "v*.*.*"
+    types:
+      - completed
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and publish to PyPI
+        uses: JRubics/poetry-publish@v1.16
+        with:
+          python_version: "3.11"
+          poetry_version: "==1.3.2"
+          ignore_dev_requirements: "yes"
+          pypi_token: ${{ secrets.PYPI_TOKEN }}
