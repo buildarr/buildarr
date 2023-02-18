@@ -18,6 +18,7 @@ markdown_extensions:
 
 nav:
   - Home: "index.md"
+  - Release Notes: "release-notes.md"
   - Installation: "installation.md"
   - Configuration: "configuration.md"
   - Plugins:

@@ -37,9 +37,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Mapping, cast
 
 from flask import Flask, Response, jsonify, request
+from importlib_metadata import version as package_version
 from werkzeug.exceptions import Unauthorized
-
-from buildarr import __version__ as buildarr_version
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Tuple
@@ -113,7 +112,7 @@ def get_initialize_js() -> Tuple[str, int]:
     res = f"window.Dummy = {{\n  apiRoot: {repr(app.config['API_ROOT'])}"
     if "API_KEY" in app.config and app.config["API_KEY"]:
         res += f",\n  apiKey: {repr(app.config['API_KEY'])}"
-    res += f",\n  version: {repr(buildarr_version)}\n}};"
+    res += f",\n  version: {repr(package_version('buildarr'))}\n}};"
 
     return (res, 200)
 
