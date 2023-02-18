@@ -17,6 +17,7 @@ packages = [{include = "buildarr"}]
 buildarr = "buildarr.cli.main:main"
 
 [tool.poetry.plugins."buildarr.plugins"]
+"dummy" = "buildarr.plugins.dummy.plugin:DummyPlugin"
 "sonarr" = "buildarr.plugins.sonarr.plugin:SonarrPlugin"
 
 [tool.poetry.dependencies]
@@ -41,6 +42,8 @@ types-pyyaml = "6.0.12.5"
 types-requests = "2.28.11.12"
 mkdocs = "1.4.2"
 mkdocstrings = {extras = ["python"], version = "0.20.0"}
+flask = "2.2.3"
+werkzeug = "2.2.3"
 
 [tool.black]
 line_length = 100

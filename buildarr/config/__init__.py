@@ -28,11 +28,11 @@ from datetime import time
 from enum import Enum, IntEnum
 from pathlib import Path, PurePosixPath
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
     Generator,
+    Generic,
     Iterable,
     List,
     Mapping,
@@ -63,12 +63,9 @@ from pydantic.validators import _VALIDATORS
 from typing_extensions import Annotated, Self
 
 from ..logging import logger, plugin_logger
+from ..plugins import Secrets
 from ..state import plugins
 from .util import merge_dicts
-
-if TYPE_CHECKING:
-    from ..secrets import SecretsPlugin
-
 
 Password = Annotated[SecretStr, Field(min_length=1)]
 """
@@ -91,10 +88,18 @@ It is a 3-tuple composed of the following elements:
    between local and remote attributes (for more details, check the handling function)
 
 ```python
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from buildarr.config import ConfigBase, RemoteMapEntry
 
-class ExampleConfig(ConfigBase):
+if TYPE_CHECKING:
+    from .secrets import ExampleSecrets
+    class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+        ...
+else:
+    class ExampleConfigBase(ConfigBase):
+        ...
+
+class ExampleConfig(ExampleConfigBase):
     local_attr_1: bool
     local_attr_2: Optional[str] = None
 
@@ -119,9 +124,18 @@ class RssUrl(AnyUrl):
     Constrained URL type for RSS URLs.
 
     ```python
+    from typing import TYPE_CHECKING
     from buildarr.config import ConfigBase, RssUrl
 
-    class ExampleConfig(ConfigBase):
+    if TYPE_CHECKING:
+        from .secrets import ExampleSecrets
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+            ...
+    else:
+        class ExampleConfigBase(ConfigBase):
+            ...
+
+    class ExampleConfig(ExampleConfigBase):
         rss_url: RssUrl
     ```
     """
@@ -136,9 +150,18 @@ class Port(ConstrainedInt):
     Valid ports range from 1 to 65535 (a 16-bit integer).
 
     ```python
+    from typing import TYPE_CHECKING
     from buildarr.config import ConfigBase, NonEmptyStr, Port
 
-    class ExampleConfig(ConfigBase):
+    if TYPE_CHECKING:
+        from .secrets import ExampleSecrets
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+            ...
+    else:
+        class ExampleConfigBase(ConfigBase):
+            ...
+
+    class ExampleConfig(ExampleConfigBase):
         host: NonEmptyStr
         port: Port
     ```
@@ -176,9 +199,18 @@ class TrashID(ConstrainedStr):
     converting to lower case internally.
 
     ```python
+    from typing import TYPE_CHECKING
     from buildarr.config import ConfigBase, TrashID
 
-    class ExampleConfig(ConfigBase):
+    if TYPE_CHECKING:
+        from .secrets import ExampleSecrets
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+            ...
+    else:
+        class ExampleConfigBase(ConfigBase):
+            ...
+
+    class ExampleConfig(ExampleConfigBase):
         trash_id: TrashID
     ```
     """
@@ -356,7 +388,7 @@ class UpdateDay(ConfigIntEnum):
     sunday = 6
 
 
-class ConfigBase(BaseModel):
+class ConfigBase(BaseModel, Generic[Secrets]):
     """
     Base class for Buildarr configuration sections.
 
@@ -365,7 +397,7 @@ class ConfigBase(BaseModel):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> Self:
+    def from_remote(cls, secrets: Secrets) -> Self:
         """
         Get the remote instance configuration for this section, and return the resulting object.
 
@@ -374,7 +406,7 @@ class ConfigBase(BaseModel):
         traversing the configuration tree to call child section functions.
 
         Args:
-            secrets (SecretsPlugin): Remote instance host and secrets information.
+            secrets (Secrets): Remote instance host and secrets information.
 
         Returns:
             Remote instance configuration object
@@ -405,12 +437,21 @@ class ConfigBase(BaseModel):
         to Buildarr configuration class constructors.
 
         ```python
-        from typing import Any, Dict, List, Optional
+        from __future__ import annotations
+
+        from typing import TYPE_CHECKING, Any, Dict, List, Optional
         from typing_extensions import Self
         from buildarr.config import ConfigBase, RemoteMapEntry
-        from buildarr.secrets import SecretsPlugin
 
-        class ExampleConfig(ConfigBase):
+        if TYPE_CHECKING:
+            from .secrets import ExampleSecrets
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+                ...
+        else:
+            class ExampleConfigBase(ConfigBase):
+                ...
+
+        class ExampleConfig(ExampleConfigBase):
             local_attr_1: bool
             local_attr_2: Optional[str] = None
 
@@ -428,11 +469,11 @@ class ConfigBase(BaseModel):
             ]
 
             @classmethod
-            def _api_get(cls, secrets: SecretsPlugin) -> Dict[str, Any]:
+            def _api_get(cls, secrets: ExampleSecrets) -> Dict[str, Any]:
                 ...
 
             @classmethod
-            def from_remote(cls, secrets: SecretsPlugin) -> Self:
+            def from_remote(cls, secrets: ExampleSecrets) -> Self:
                 return cls(
                     **cls.get_local_attrs(
                         remote_map=cls._remote_map,
@@ -538,7 +579,7 @@ class ConfigBase(BaseModel):
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
+        secrets: Secrets,
         remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
@@ -551,7 +592,7 @@ class ConfigBase(BaseModel):
 
         Args:
             tree (str): Configuration tree represented as a string. Mainly used in logging.
-            secrets (SecretsPlugin): Remote instance host and secrets information.
+            secrets (Secrets): Remote instance host and secrets information.
             remote (Self): Remote instance configuration for the current section.
             check_unmanaged (bool, optional): Set unmanaged fields to defaults (default `False`).
 
@@ -589,11 +630,19 @@ class ConfigBase(BaseModel):
         JSON objects to be sent in `POST` requests to the remote server.
 
         ```python
-        from typing import Any, List, Mapping, Optional
+        from typing import TYPE_CHECKING, Any, List, Mapping, Optional
         from buildarr.config import ConfigBase, RemoteMapEntry
-        from buildarr.secrets import SecretsPlugin
+        from buildarr.secrets import Secrets
 
-        class ExampleObj(ConfigBase):
+        if TYPE_CHECKING:
+            from .secrets import ExampleSecrets
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+                ...
+        else:
+            class ExampleConfigBase(ConfigBase):
+                ...
+
+        class ExampleObj(ExampleConfigBase):
             obj_attr1: int
             obj_attr2: Optional[str] = None
 
@@ -611,13 +660,13 @@ class ConfigBase(BaseModel):
             ]
 
             @classmethod
-            def _api_post(cls, secrets: SecretsPlugin, obj: Mapping[str, Any]) -> None:
+            def _api_post(cls, secrets: ExampleSecrets, obj: Mapping[str, Any]) -> None:
                 ...
 
-            def _exists_on_remote(self, secrets: SecretsPlugin) -> bool:
+            def _exists_on_remote(self, secrets: ExampleSecrets) -> bool:
                 ...
 
-            def _create_remote(self, secrets: SecretsPlugin) -> None:
+            def _create_remote(self, secrets: ExampleSecrets) -> None:
                 self._api_post(
                     secrets,
                     self.get_create_remote_attrs(  # <--- Used here
@@ -626,13 +675,13 @@ class ConfigBase(BaseModel):
                     ),
                 )
 
-        class ExampleConfig(ConfigBase):
+        class ExampleConfig(ExampleConfigBase):
             local_objs: Dict[str, ExampleObj]
 
             def update_remote(
                 self,
                 tree: str,
-                secrets: SecretsPlugin,
+                secrets: ExampleSecrets,
                 remote: Self,
                 check_unmanaged: bool = False,
             ) -> bool:
@@ -745,11 +794,21 @@ class ConfigBase(BaseModel):
         * The updated remote instance attributes as a `dict`
 
         ```python
-        from typing import Any, List, Mapping, Optional
-        from buildarr.config import ConfigBase, RemoteMapEntry
-        from buildarr.secrets import SecretsPlugin
+        from __future__ import annotations
 
-        class ExampleConfig(ConfigBase):
+        from typing import TYPE_CHECKING, Any, List, Mapping, Optional
+        from buildarr.config import ConfigBase, RemoteMapEntry
+        from buildarr.secrets import Secrets
+
+        if TYPE_CHECKING:
+            from .secrets import ExampleSecrets
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+                ...
+        else:
+            class ExampleConfigBase(ConfigBase):
+                ...
+
+        class ExampleConfig(ExampleConfigBase):
             local_attr_1: bool
             local_attr_2: Optional[str] = None
 
@@ -767,13 +826,13 @@ class ConfigBase(BaseModel):
             ]
 
             @classmethod
-            def _api_put(cls, secrets: SecretsPlugin, obj: Mapping[str, Any]) -> None:
+            def _api_put(cls, secrets: Secrets, obj: Mapping[str, Any]) -> None:
                 ...
 
             def update_remote(
                 self,
                 tree: str,
-                secrets: SecretsPlugin,
+                secrets: Secrets,
                 remote: Self,
                 check_unmanaged: bool = False,
             ) -> bool:
@@ -1003,7 +1062,7 @@ class ConfigBase(BaseModel):
         smart_union = True
 
 
-class ConfigPlugin(ConfigBase):
+class ConfigPlugin(ConfigBase[Secrets]):
     """
     Buildarr plugin configuration object base class.
 
@@ -1015,10 +1074,20 @@ class ConfigPlugin(ConfigBase):
     but it MUST be defined on the implementing class.
 
     ```python
-    from typing import Literal
+    from __future__ import annotations
+
+    from typing import TYPE_CHECKING, Literal
     from buildarr.config import ConfigPlugin, NonEmptyStr, Port
 
-    class ExampleConfig(ConfigPlugin):
+    if TYPE_CHECKING:
+        from .secrets import ExampleSecrets
+        class _ExampleInstanceConfig(ConfigPlugin[ExampleSecrets]):
+            ...
+    else:
+        class _ExampleInstanceConfig(ConfigPlugin):
+            ...
+
+    class ExampleInstanceConfig(_ExampleInstanceConfig):
         # Required configuration overrides from `ConfigPlugin`
         hostname: NonEmptyStr = "example"
         port: Port = 1234
@@ -1028,8 +1097,12 @@ class ConfigPlugin(ConfigBase):
         local_value_1: bool = False
         local_value_2: str = "local"
 
+    class ExampleConfig(ExampleInstanceConfig):
+        # Inherit all configuration attributes from the instance-specific config.
+        # This is the class to specify in the plugin's `Plugin` interface definition.
+
         # Required `instances` definition
-        instances: Dict[str, ExampleConfig] = {}
+        instances: Dict[str, ExampleInstanceConfig] = {}
     ```
 
     The resulting configuration is defined in `buildarr.yml` like so:

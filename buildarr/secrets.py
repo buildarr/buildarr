@@ -22,17 +22,18 @@ Buildarr secrets file handling interface.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Type
+from typing import TYPE_CHECKING, Dict, Generic, Type
 
 from pydantic import BaseModel, ConstrainedStr, SecretStr, create_model
 
 from .logging import logger
+from .plugins import Config
 from .state import plugins
 
 if TYPE_CHECKING:
     from typing import Set
 
-    from .config import ConfigPlugin
+    from typing_extensions import Self
 
 
 class NonEmptyStr(ConstrainedStr):
@@ -57,7 +58,7 @@ class SecretsBase(BaseModel):
     pass
 
 
-class SecretsPlugin(SecretsBase):
+class SecretsPlugin(SecretsBase, Generic[Config]):
     """
     Buildarr plugin secrets metadata object base class.
 
@@ -86,7 +87,7 @@ class SecretsPlugin(SecretsBase):
     """
 
     @classmethod
-    def get(cls, config: ConfigPlugin) -> SecretsPlugin:
+    def get(cls, config: Config) -> Self:
         """
         Generate the secrets metadata for the given instance-specific configuration.
 

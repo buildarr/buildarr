@@ -22,13 +22,9 @@ Buildarr manager interface functions.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Generic, TypeVar
+from typing import Generic
 
-from ..config import ConfigPlugin
-from ..secrets import SecretsPlugin
-
-Config = TypeVar("Config", bound=ConfigPlugin)
-Secrets = TypeVar("Secrets", bound=SecretsPlugin)
+from ..plugins import Config, Secrets
 
 
 class ManagerPlugin(Generic[Config, Secrets]):
@@ -49,8 +45,8 @@ class ManagerPlugin(Generic[Config, Secrets]):
 
     ```python
     from buildarr.manager import ManagerPlugin
-    from buildarr_example.config import ExampleConfig
-    from buildarr_example.secrets import ExampleSecrets
+    from .config import ExampleConfig
+    from .secrets import ExampleSecrets
 
     class ExampleManager(ManagerPlugin[ExampleConfig, ExampleSecrets]):
         pass

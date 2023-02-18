@@ -21,7 +21,7 @@ Buildarr plugin specification.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
     from typing import Type
@@ -93,3 +93,18 @@ class Plugin:
     config: Type[ConfigPlugin]
     manager: Type[ManagerPlugin]
     secrets: Type[SecretsPlugin]
+
+
+Config = TypeVar("Config", bound="ConfigPlugin")
+"""
+Type hint for a configuration module of a plugin.
+
+When creating plugins, substitute `Config` for the implementing config plugin type.
+"""
+
+Secrets = TypeVar("Secrets", bound="SecretsPlugin")
+"""
+Type hint for a secrets module of a plugin.
+
+When creating plugins, substitute `Secrets` for the implementing secrets plugin type.
+"""
