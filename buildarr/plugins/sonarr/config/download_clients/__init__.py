@@ -21,16 +21,16 @@ Sonarr plugin download client settings.
 
 from __future__ import annotations
 
-from typing import Dict, List, Union, cast
+from typing import Dict, List, Union
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ...api import api_get, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_get, api_put
+from ..types import SonarrConfigBase
 from .download_clients import (
     DOWNLOADCLIENT_TYPE_MAP,
     Aria2DownloadClient,
@@ -78,7 +78,7 @@ DownloadClientDefinitions = Dict[
 ]
 
 
-class SonarrDownloadClientsSettingsConfig(ConfigBase):
+class SonarrDownloadClientsSettingsConfig(SonarrConfigBase):
     """
     Download clients retrieve media files being tracked by Sonarr,
     and store them in a location Sonarr can access to manage the
@@ -145,12 +145,11 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
     ]
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> Self:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        downloadclient_config = api_get(sonarr_secrets, "/api/v3/config/downloadclient")
-        downloadclients = api_get(sonarr_secrets, "/api/v3/downloadclient")
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        downloadclient_config = api_get(secrets, "/api/v3/config/downloadclient")
+        downloadclients = api_get(secrets, "/api/v3/downloadclient")
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(downloadclient["tags"] for downloadclient in downloadclients)
             else {}
         )
@@ -158,25 +157,23 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
             **cls.get_local_attrs(cls._remote_map, downloadclient_config),
             definitions={
                 dc["name"]: DOWNLOADCLIENT_TYPE_MAP[dc["implementation"]]._from_remote(
-                    sonarr_secrets,
-                    tag_ids,
-                    dc,
+                    tag_ids=tag_ids,
+                    remote_attrs=dc,
                 )
                 for dc in downloadclients
             },
-            remote_path_mappings=(
-                SonarrRemotePathMappingsSettingsConfig._from_remote(sonarr_secrets)
+            remote_path_mappings=SonarrRemotePathMappingsSettingsConfig._from_remote(
+                secrets=secrets,
             ),
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
+        secrets: SonarrSecrets,
         remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         # Update download client-related configuration options.
         config_updated, config_remote_attrs = self.get_update_remote_attrs(
             tree,
@@ -185,9 +182,9 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
             check_unmanaged=check_unmanaged,
         )
         if config_updated:
-            remote_config = api_get(sonarr_secrets, "/api/v3/config/downloadclient")
+            remote_config = api_get(secrets, "/api/v3/config/downloadclient")
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/config/downloadclient/{remote_config['id']}",
                 {
                     "id": remote_config["id"],
@@ -197,17 +194,17 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
             )
         # Update download clients.
         definitions_updated = self._update_remote_definitions(
-            f"{tree}.definitions",
-            sonarr_secrets,
-            self.definitions,
-            remote.definitions,
+            tree=f"{tree}.definitions",
+            secrets=secrets,
+            local=self.definitions,
+            remote=remote.definitions,
             check_unmanaged=check_unmanaged,
         )
         # Update remote path mappings.
         rpms_updated = self.remote_path_mappings._update_remote(
-            f"{tree}.remote_path_mappings",
-            sonarr_secrets,
-            remote.remote_path_mappings,
+            tree=f"{tree}.remote_path_mappings",
+            secrets=secrets,
+            remote=remote.remote_path_mappings,
         )
         #
         return any([config_updated, definitions_updated, rpms_updated])
@@ -215,7 +212,7 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
     def _update_remote_definitions(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         local: DownloadClientDefinitions,
         remote: DownloadClientDefinitions,
         check_unmanaged: bool,
@@ -223,10 +220,10 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
         changed = False
         downloadclient_ids: Dict[str, int] = {
             downloadclient_json["name"]: downloadclient_json["id"]
-            for downloadclient_json in api_get(sonarr_secrets, "/api/v3/downloadclient")
+            for downloadclient_json in api_get(secrets, "/api/v3/downloadclient")
         }
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(downloadclient.tags for downloadclient in local.values())
             or any(downloadclient.tags for downloadclient in remote.values())
             else {}
@@ -237,20 +234,20 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
             downloadclient_tree = f"{tree}[{repr(downloadclient_name)}]"
             if downloadclient_name not in remote:
                 downloadclient._create_remote(
-                    downloadclient_tree,
-                    sonarr_secrets,
-                    tag_ids,
-                    downloadclient_name,
+                    tree=downloadclient_tree,
+                    secrets=secrets,
+                    tag_ids=tag_ids,
+                    downloadclient_name=downloadclient_name,
                 )
                 changed = True
             else:
                 if downloadclient._update_remote(
-                    downloadclient_tree,
-                    sonarr_secrets,
-                    remote[downloadclient_name],  # type: ignore[arg-type]
-                    tag_ids,
-                    downloadclient_ids[downloadclient_name],
-                    downloadclient_name,
+                    tree=downloadclient_tree,
+                    secrets=secrets,
+                    remote=remote[downloadclient_name],  # type: ignore[arg-type]
+                    tag_ids=tag_ids,
+                    downloadclient_id=downloadclient_ids[downloadclient_name],
+                    downloadclient_name=downloadclient_name,
                 ):
                     changed = True
         # If `delete_unmanaged` is `True`, remove any download clients on the remote
@@ -261,9 +258,9 @@ class SonarrDownloadClientsSettingsConfig(ConfigBase):
                 downloadclient_tree = f"{tree}[{repr(downloadclient_name)}]"
                 if self.delete_unmanaged:
                     downloadclient._delete_remote(
-                        downloadclient_tree,
-                        sonarr_secrets,
-                        downloadclient_ids[downloadclient_name],
+                        tree=downloadclient_tree,
+                        secrets=secrets,
+                        downloadclient_id=downloadclient_ids[downloadclient_name],
                     )
                     changed = True
                 else:

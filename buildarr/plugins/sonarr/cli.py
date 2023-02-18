@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2023 Callum Dickinson
@@ -63,7 +62,6 @@ def dump_config(url: str, api_key: str) -> int:
     The configuration is dumped to standard output in Buildarr-compatible YAML format.
     """
 
-    #
     url_obj = urlparse(url)
     protocol = url_obj.scheme
     hostname_port = url_obj.netloc.split(":", 1)
@@ -72,7 +70,6 @@ def dump_config(url: str, api_key: str) -> int:
         int(hostname_port[1]) if len(hostname_port) == 2 else (443 if protocol == "https" else 80)
     )
 
-    #
     click.echo(
         SonarrManager()
         .from_remote(

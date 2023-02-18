@@ -21,23 +21,37 @@ Sonarr plugin secrets file model.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from buildarr.config import ConfigPlugin, NonEmptyStr, Port
+from buildarr.config import NonEmptyStr, Port
 from buildarr.secrets import SecretsPlugin
 
-from .util import SonarrApiKey, get_initialize_js
+from .api import get_initialize_js
+from .util import SonarrApiKey, SonarrProtocol
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
+
+    from .config import SonarrConfig
+
+    class _SonarrSecrets(SecretsPlugin[SonarrConfig]):
+        ...
+
+else:
+
+    class _SonarrSecrets(SecretsPlugin):
+        ...
 
 
-class SonarrSecrets(SecretsPlugin):
+class SonarrSecrets(_SonarrSecrets):
     """
     Sonarr API secrets.
     """
 
     hostname: NonEmptyStr
     port: Port
-    protocol: NonEmptyStr
-
+    protocol: SonarrProtocol
     api_key: SonarrApiKey
 
     @property
@@ -45,7 +59,7 @@ class SonarrSecrets(SecretsPlugin):
         return f"{self.protocol}://{self.hostname}:{self.port}"
 
     @classmethod
-    def from_url(cls, base_url: str, api_key: str) -> SonarrSecrets:
+    def from_url(cls, base_url: str, api_key: str) -> Self:
         url_obj = urlparse(base_url)
         hostname_port = url_obj.netloc.rsplit(":", 1)
         hostname = hostname_port[0]
@@ -58,14 +72,12 @@ class SonarrSecrets(SecretsPlugin):
         return cls(hostname=hostname, port=port, protocol=protocol, api_key=api_key)
 
     @classmethod
-    def get(cls, config: ConfigPlugin) -> SonarrSecrets:
+    def get(cls, config: SonarrConfig) -> Self:
         return cls(
             hostname=config.hostname,
             port=config.port,
             protocol=config.protocol,
             api_key=(
-                config.api_key  # type: ignore[attr-defined]
-                if config.api_key  # type: ignore[attr-defined]
-                else get_initialize_js(config.host_url)["apiKey"]
+                config.api_key if config.api_key else get_initialize_js(config.host_url)["apiKey"]
             ),
         )

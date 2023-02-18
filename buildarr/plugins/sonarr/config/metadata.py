@@ -21,18 +21,18 @@ Sonarr plugin metadata settings configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Type, cast
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Type
 
 from typing_extensions import Self
 
 from buildarr.config import ConfigBase, RemoteMapEntry
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_get, api_put
+from .types import SonarrConfigBase
 
 
-class Metadata(ConfigBase):
+class Metadata(SonarrConfigBase):
     """
     Metadata definition base class.
     """
@@ -49,13 +49,13 @@ class Metadata(ConfigBase):
     _remote_map: List[RemoteMapEntry]
 
     @classmethod
-    def _from_remote(cls, sonarr_secrets: SonarrSecrets, metadata: Dict[str, Any]) -> Metadata:
+    def _from_remote(cls, metadata: Dict[str, Any]) -> Self:
         return cls(**cls.get_local_attrs(cls._base_remote_map + cls._remote_map, metadata))
 
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         metadata: Mapping[str, Any],
         check_unmanaged: bool = False,
@@ -69,7 +69,7 @@ class Metadata(ConfigBase):
         )
         if updated:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/metadata/{metadata['id']}",
                 {
                     "id": metadata["id"],
@@ -261,12 +261,11 @@ class SonarrMetadataSettingsConfig(ConfigBase):
     wdtv = WdtvMetadata()
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrMetadataSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
         kodi_emby_metadata: Optional[Dict[str, Any]] = None
         roksbox_metadata: Optional[Dict[str, Any]] = None
         wdtv_metadata: Optional[Dict[str, Any]] = None
-        for metadata in api_get(sonarr_secrets, "/api/v3/metadata"):
+        for metadata in api_get(secrets, "/api/v3/metadata"):
             if metadata["implementation"] == KodiEmbyMetadata._implementation:
                 kodi_emby_metadata = metadata
             elif metadata["implementation"] == RoksboxMetadata._implementation:
@@ -286,23 +285,22 @@ class SonarrMetadataSettingsConfig(ConfigBase):
                 "Unable to find WDTV metadata on Sonarr, database might be corrupt",
             )
         return cls(
-            kodi_emby=KodiEmbyMetadata._from_remote(sonarr_secrets, kodi_emby_metadata),
-            roksbox=RoksboxMetadata._from_remote(sonarr_secrets, roksbox_metadata),
-            wdtv=WdtvMetadata._from_remote(sonarr_secrets, wdtv_metadata),
+            kodi_emby=KodiEmbyMetadata._from_remote(kodi_emby_metadata),
+            roksbox=RoksboxMetadata._from_remote(roksbox_metadata),
+            wdtv=WdtvMetadata._from_remote(wdtv_metadata),
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrMetadataSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         kodi_emby_metadata: Optional[Dict[str, Any]] = None
         roksbox_metadata: Optional[Dict[str, Any]] = None
         wdtv_metadata: Optional[Dict[str, Any]] = None
-        for metadata in api_get(sonarr_secrets, "/api/v3/metadata"):
+        for metadata in api_get(secrets, "/api/v3/metadata"):
             if metadata["implementation"] == KodiEmbyMetadata._implementation:
                 kodi_emby_metadata = metadata
             elif metadata["implementation"] == RoksboxMetadata._implementation:
@@ -324,24 +322,24 @@ class SonarrMetadataSettingsConfig(ConfigBase):
         return any(
             [
                 self.kodi_emby._update_remote(
-                    tree,
-                    sonarr_secrets,
-                    remote.kodi_emby,
-                    kodi_emby_metadata,
+                    tree=tree,
+                    secrets=secrets,
+                    remote=remote.kodi_emby,
+                    metadata=kodi_emby_metadata,
                     check_unmanaged=check_unmanaged,
                 ),
                 self.roksbox._update_remote(
-                    tree,
-                    sonarr_secrets,
-                    remote.roksbox,
-                    roksbox_metadata,
+                    tree=tree,
+                    secrets=secrets,
+                    remote=remote.roksbox,
+                    metadata=roksbox_metadata,
                     check_unmanaged=check_unmanaged,
                 ),
                 self.wdtv._update_remote(
-                    tree,
-                    sonarr_secrets,
-                    remote.wdtv,
-                    wdtv_metadata,
+                    tree=tree,
+                    secrets=secrets,
+                    remote=remote.wdtv,
+                    metadata=wdtv_metadata,
                     check_unmanaged=check_unmanaged,
                 ),
             ]

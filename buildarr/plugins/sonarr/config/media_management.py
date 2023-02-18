@@ -21,16 +21,17 @@ Sonarr plugin media management settings configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 from pydantic import Field
+from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, RemoteMapEntry
+from buildarr.config import ConfigEnum, NonEmptyStr, RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_delete, api_get, api_post, api_put
+from .types import SonarrConfigBase
 
 
 class MultiEpisodeStyle(ConfigEnum):
@@ -111,7 +112,7 @@ class ChmodFolder(ConfigEnum):
                 raise ValueError(f"Invalid {cls.__name__} name or value: {v}")
 
 
-class SonarrMediaManagementSettingsConfig(ConfigBase):
+class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
     """
     Naming, file management and root folder configuration.
 
@@ -481,52 +482,50 @@ class SonarrMediaManagementSettingsConfig(ConfigBase):
     ]
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrMediaManagementSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
         return cls(
             # Episode Naming
             **cls.get_local_attrs(
                 cls._naming_remote_map,
-                api_get(sonarr_secrets, "/api/v3/config/naming"),
+                api_get(secrets, "/api/v3/config/naming"),
             ),
             # All other sections except Root Folders
             **cls.get_local_attrs(
                 cls._mediamanagement_remote_map,
-                api_get(sonarr_secrets, "/api/v3/config/mediamanagement"),
+                api_get(secrets, "/api/v3/config/mediamanagement"),
             ),
             # Root Folders
-            root_folders=[rf["path"] for rf in api_get(sonarr_secrets, "/api/v3/rootfolder")],
+            root_folders=[rf["path"] for rf in api_get(secrets, "/api/v3/rootfolder")],
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrMediaManagementSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         return any(
             [
                 # Episode Naming
                 self._update_remote_naming(
-                    tree,
-                    sonarr_secrets,
-                    remote,
+                    tree=tree,
+                    secrets=secrets,
+                    remote=remote,
                     check_unmanaged=check_unmanaged,
                 ),
                 # All other sections except Root Folders
                 self._update_remote_mediamanagement(
-                    tree,
-                    sonarr_secrets,
-                    remote,
+                    tree=tree,
+                    secrets=secrets,
+                    remote=remote,
                     check_unmanaged=check_unmanaged,
                 ),
                 # Root Folders
                 self._update_remote_rootfolder(
                     tree,
-                    sonarr_secrets,
-                    remote,
+                    secrets=secrets,
+                    remote=remote,
                     check_unmanaged=check_unmanaged,
                 ),
             ],
@@ -535,20 +534,20 @@ class SonarrMediaManagementSettingsConfig(ConfigBase):
     def _update_remote_naming(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
-        remote: SonarrMediaManagementSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         updated, remote_attrs = self.get_update_remote_attrs(
-            tree,
-            remote,
-            self._naming_remote_map,
+            tree=tree,
+            remote=remote,
+            remote_map=self._naming_remote_map,
             check_unmanaged=check_unmanaged,
         )
         if updated:
             api_put(
-                sonarr_secrets,
-                f"/api/v3/config/naming/{api_get(sonarr_secrets, '/api/v3/config/naming')['id']}",
+                secrets,
+                f"/api/v3/config/naming/{api_get(secrets, '/api/v3/config/naming')['id']}",
                 remote_attrs,
             )
             return True
@@ -557,8 +556,8 @@ class SonarrMediaManagementSettingsConfig(ConfigBase):
     def _update_remote_mediamanagement(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
-        remote: SonarrMediaManagementSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         updated, remote_attrs = self.get_update_remote_attrs(
@@ -569,10 +568,10 @@ class SonarrMediaManagementSettingsConfig(ConfigBase):
         )
         if updated:
             api_put(
-                sonarr_secrets,
+                secrets,
                 (
                     "/api/v3/config/mediamanagement/"
-                    f"{api_get(sonarr_secrets, '/api/v3/config/mediamanagement')['id']}"
+                    f"{api_get(secrets, '/api/v3/config/mediamanagement')['id']}"
                 ),
                 remote_attrs,
             )
@@ -582,13 +581,13 @@ class SonarrMediaManagementSettingsConfig(ConfigBase):
     def _update_remote_rootfolder(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
-        remote: SonarrMediaManagementSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         changed = False
         current_root_folders: Dict[str, int] = {
-            rf["path"]: rf["id"] for rf in api_get(sonarr_secrets, "/api/v3/rootfolder")
+            rf["path"]: rf["id"] for rf in api_get(secrets, "/api/v3/rootfolder")
         }
         expected_root_folders = set(self.root_folders)
         # TODO: change root_folders so that you can set check_unmanaged specifically for it
@@ -597,13 +596,13 @@ class SonarrMediaManagementSettingsConfig(ConfigBase):
             for root_folder, root_folder_id in current_root_folders.items():
                 if root_folder not in expected_root_folders:
                     plugin_logger.info("%s: %s -> (deleted)", tree, repr(str(root_folder)))
-                    api_delete(sonarr_secrets, f"/api/v3/rootfolder/{root_folder_id}")
+                    api_delete(secrets, f"/api/v3/rootfolder/{root_folder_id}")
                     changed = True
         for i, root_folder in enumerate(self.root_folders):
             if root_folder in current_root_folders:
                 plugin_logger.debug("%s[%i]: %s (exists)", tree, i, repr(str(root_folder)))
             else:
                 plugin_logger.info("%s[%i]: %s -> (created)", tree, i, repr(str(root_folder)))
-                api_post(sonarr_secrets, "/api/v3/rootfolder", {"path": str(root_folder)})
+                api_post(secrets, "/api/v3/rootfolder", {"path": str(root_folder)})
                 changed = True
         return changed

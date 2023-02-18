@@ -21,17 +21,17 @@ Sonarr plugin language profile configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, cast
+from typing import Any, Dict, List, Mapping, Optional
 
 from pydantic import Field, root_validator
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigBase, ConfigEnum, RemoteMapEntry
+from buildarr.config import ConfigEnum, RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_delete, api_get, api_post, api_put
+from ..types import SonarrConfigBase
 
 
 class Language(ConfigEnum):
@@ -103,7 +103,7 @@ class Language(ConfigEnum):
     vietnamese = "Vietnamese"
 
 
-class LanguageProfile(ConfigBase):
+class LanguageProfile(SonarrConfigBase):
     """
     A language profile is defined under the `language_profiles` block as shown below.
 
@@ -120,7 +120,7 @@ class LanguageProfile(ConfigBase):
     ```
     """
 
-    upgrades_allowed = False
+    upgrades_allowed: bool = False
     """
     Enable automatic upgrading if a version of a media file
     in a more preferred language becomes available.
@@ -224,12 +224,12 @@ class LanguageProfile(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         profile_name: str,
         language_ids: Mapping[Language, int],
     ) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/languageprofile",
             {
                 "name": profile_name,
@@ -240,7 +240,7 @@ class LanguageProfile(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: LanguageProfile,
         profile_id: int,
         profile_name: str,
@@ -255,19 +255,19 @@ class LanguageProfile(ConfigBase):
         )
         if changed:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/languageprofile/{profile_id}",
                 {"id": profile_id, "name": profile_name, **remote_attrs},
             )
             return True
         return False
 
-    def _delete_remote(self, tree: str, sonarr_secrets: SonarrSecrets, profile_id: int) -> None:
+    def _delete_remote(self, tree: str, secrets: SonarrSecrets, profile_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/languageprofile/{profile_id}")
+        api_delete(secrets, f"/api/v3/languageprofile/{profile_id}")
 
 
-class SonarrLanguageProfilesSettingsConfig(ConfigBase):
+class SonarrLanguageProfilesSettingsConfig(SonarrConfigBase):
     """
     Configuration parameters for controlling how Buildarr handles language profiles.
     """
@@ -287,43 +287,41 @@ class SonarrLanguageProfilesSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrLanguageProfilesSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
         language_ids = {
             Language(language["language"]["name"]): language["language"]["id"]
-            for language in api_get(sonarr_secrets, "/api/v3/languageprofile/schema")["languages"]
+            for language in api_get(secrets, "/api/v3/languageprofile/schema")["languages"]
         }
-        return SonarrLanguageProfilesSettingsConfig(
+        return cls(
             definitions={
                 profile["name"]: LanguageProfile._from_remote(language_ids, profile)
-                for profile in api_get(sonarr_secrets, "/api/v3/languageprofile")
+                for profile in api_get(secrets, "/api/v3/languageprofile")
             },
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrLanguageProfilesSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         profile_ids: Dict[str, int] = {
             profile_json["name"]: profile_json["id"]
-            for profile_json in api_get(sonarr_secrets, "/api/v3/languageprofile")
+            for profile_json in api_get(secrets, "/api/v3/languageprofile")
         }
         language_ids = {
             Language(language["language"]["name"]): language["language"]["id"]
-            for language in api_get(sonarr_secrets, "/api/v3/languageprofile/schema")["languages"]
+            for language in api_get(secrets, "/api/v3/languageprofile/schema")["languages"]
         }
         # # Only works on Sonarr V4
         # try:
         #     language_ids: Dict[Language, int] = {
         #         Language(language["name"]): language["id"]
-        #         for language in api_get(sonarr_secrets, "/api/v3/language")
+        #         for language in api_get(secrets, "/api/v3/language")
         #     }
         # # Compatible with Sonarr V3, deprecated on Sonarr V4
         # except SonarrAPIError as err:
@@ -336,17 +334,22 @@ class SonarrLanguageProfilesSettingsConfig(ConfigBase):
             profile_tree = f"{tree}.definitions[{repr(profile_name)}]"
             #
             if profile_name not in remote.definitions:
-                profile._create_remote(profile_tree, sonarr_secrets, profile_name, language_ids)
+                profile._create_remote(
+                    tree=profile_tree,
+                    secrets=secrets,
+                    profile_name=profile_name,
+                    language_ids=language_ids,
+                )
                 changed = True
             #
             else:
                 if profile._update_remote(
-                    profile_tree,
-                    sonarr_secrets,
-                    remote.definitions[profile_name],
-                    profile_ids[profile_name],
-                    profile_name,
-                    language_ids,
+                    tree=profile_tree,
+                    secrets=secrets,
+                    remote=remote.definitions[profile_name],
+                    profile_id=profile_ids[profile_name],
+                    profile_name=profile_name,
+                    language_ids=language_ids,
                 ):
                     changed = True
         #
@@ -355,9 +358,9 @@ class SonarrLanguageProfilesSettingsConfig(ConfigBase):
                 profile_tree = f"{tree}.definitions[{repr(profile_name)}]"
                 if self.delete_unmanaged:
                     profile._delete_remote(
-                        profile_tree,
-                        sonarr_secrets,
-                        profile_ids[profile_name],
+                        tree=profile_tree,
+                        secrets=secrets,
+                        profile_id=profile_ids[profile_name],
                     )
                     changed = True
                 else:

@@ -27,17 +27,17 @@ from pathlib import Path
 from typing import Dict, Optional, cast
 
 from pydantic import Field
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Self
 
 from buildarr.config import ConfigBase, NonEmptyStr, TrashID
 from buildarr.config.exceptions import ConfigTrashIDNotFoundError
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_get, api_put
+from .types import SonarrConfigBase
 
 
-class QualityDefinition(ConfigBase):
+class QualityDefinition(SonarrConfigBase):
     """
     Manually set quality definitions can have the following parameters.
     """
@@ -120,32 +120,51 @@ class SonarrQualitySettingsConfig(ConfigBase):
     and quality definitions not set within Buildarr are left unmodified.
     """
 
-    def render_trash_metadata(self, sonarr_metadata_dir: Path) -> SonarrQualitySettingsConfig:
+    @property
+    def uses_trash_metadata(self) -> bool:
+        """
+        A flag determining whether or not this configuration uses TRaSH-Guides metadata.
+
+        Returns:
+            `True` if TRaSH-Guides metadata is used, otherwise `False`
+        """
+        return bool(self.trash_id)
+
+    def _render_trash_metadata(self, trash_metadata_dir: Path) -> None:
+        """
+        Render configuration attributes obtained from TRaSH-Guides, in-place.
+
+        Args:
+            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
+        """
         if not self.trash_id:
-            return self
-        for quality_file in (sonarr_metadata_dir / "quality-size").iterdir():
+            return
+        for quality_file in (
+            trash_metadata_dir / "docs" / "json" / "sonarr" / "quality-size"
+        ).iterdir():
             with quality_file.open() as f:
                 quality_json = json.load(f)
                 if cast(str, quality_json["trash_id"]).lower() == self.trash_id:
-                    definitions: Dict[str, QualityDefinition] = {}
-                    #
                     for definition_json in quality_json["qualities"]:
-                        definitions[definition_json["quality"]] = QualityDefinition(
-                            title=None,
-                            min=definition_json["min"],
-                            max=None if definition_json["max"] >= 400 else definition_json["max"],
-                        )
-                    #
-                    for name, definition in self.definitions.items():
-                        definitions[name] = definition
-                    return SonarrQualitySettingsConfig(definitions=definitions)
+                        definition_name = definition_json["quality"]
+                        if definition_name not in self.definitions:
+                            self.definitions[definition_name] = QualityDefinition(
+                                title=None,
+                                min=definition_json["min"],
+                                max=(
+                                    None
+                                    if definition_json["max"] >= 400
+                                    else definition_json["max"]
+                                ),
+                            )
+                    return
         raise ConfigTrashIDNotFoundError(
             f"Unable to find Sonarr quality definition file with trash ID '{self.trash_id}'",
         )
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrQualitySettingsConfig:
-        return SonarrQualitySettingsConfig(
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        return cls(
             definitions={
                 definition["quality"]["name"]: QualityDefinition(
                     title=(
@@ -156,25 +175,21 @@ class SonarrQualitySettingsConfig(ConfigBase):
                     min=definition["minSize"],
                     max=definition.get("maxSize", None),
                 )
-                for definition in api_get(
-                    cast(SonarrSecrets, secrets),
-                    "/api/v3/qualitydefinition",
-                )
+                for definition in api_get(secrets, "/api/v3/qualitydefinition")
             }
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrQualitySettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         definition_ids: Dict[str, int] = {
             definition_json["quality"]["name"]: definition_json["id"]
-            for definition_json in api_get(sonarr_secrets, "/api/v3/qualitydefinition")
+            for definition_json in api_get(secrets, "/api/v3/qualitydefinition")
         }
         for definition_name, local_definition in self.definitions.items():
             updated, remote_attrs = local_definition.get_update_remote_attrs(
@@ -188,7 +203,7 @@ class SonarrQualitySettingsConfig(ConfigBase):
             )
             if updated:
                 api_put(
-                    sonarr_secrets,
+                    secrets,
                     f"/api/v3/qualitydefinition/{definition_ids[definition_name]}",
                     remote_attrs,
                 )

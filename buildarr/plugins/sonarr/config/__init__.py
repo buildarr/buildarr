@@ -22,15 +22,14 @@ Sonarr plugin configuration.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Literal, Optional, cast
+from typing import TYPE_CHECKING, Dict, Optional
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigPlugin, NonEmptyStr, Port
-from buildarr.secrets import SecretsPlugin
+from buildarr.config import ConfigPlugin, NonEmptyStr, Port
 
-from ..secrets import SonarrSecrets
-from ..util import SonarrApiKey, get_initialize_js
+from ..api import get_initialize_js
+from ..util import SonarrApiKey, SonarrProtocol
 from .connect import SonarrConnectSettingsConfig
 from .download_clients import SonarrDownloadClientsSettingsConfig
 from .general import SonarrGeneralSettingsConfig
@@ -41,10 +40,22 @@ from .metadata import SonarrMetadataSettingsConfig
 from .profiles import SonarrProfilesSettingsConfig
 from .quality import SonarrQualitySettingsConfig
 from .tags import SonarrTagsSettingsConfig
+from .types import SonarrConfigBase
 from .ui import SonarrUISettingsConfig
 
+if TYPE_CHECKING:
+    from ..secrets import SonarrSecrets
 
-class SonarrSettingsConfig(ConfigBase):
+    class _SonarrInstanceConfig(ConfigPlugin[SonarrSecrets]):
+        ...
+
+else:
+
+    class _SonarrInstanceConfig(ConfigPlugin):
+        ...
+
+
+class SonarrSettingsConfig(SonarrConfigBase):
     """
     Sonarr settings, used to configure a remote Sonarr instance.
     """
@@ -85,7 +96,7 @@ class SonarrSettingsConfig(ConfigBase):
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
+        secrets: SonarrSecrets,
         remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
@@ -169,7 +180,7 @@ class SonarrSettingsConfig(ConfigBase):
         )
 
 
-class SonarrConfig(ConfigPlugin):
+class SonarrInstanceConfig(_SonarrInstanceConfig):
     """
     By default, Buildarr will look for a single instance at `http://sonarr:8989`.
     Most configurations are different, and to accommodate those, you can configure
@@ -232,7 +243,7 @@ class SonarrConfig(ConfigPlugin):
     Port number of the Sonarr instance to connect to.
     """
 
-    protocol: Literal["http", "https"] = "http"  # type: ignore[assignment]
+    protocol: SonarrProtocol = "http"  # type: ignore[assignment]
     """
     Communication protocol to use to connect to Sonarr.
     """
@@ -259,7 +270,78 @@ class SonarrConfig(ConfigPlugin):
     Configuration options for Sonarr itself are set within this structure.
     """
 
-    instances: Dict[str, SonarrConfig] = {}
+    @property
+    def uses_trash_metadata(self) -> bool:
+        """
+        A flag determining whether or not this configuration uses TRaSH-Guides metadata.
+
+        Returns:
+            `True` if TRaSH-Guides metadata is used, otherwise `False`
+        """
+        if self.settings.quality.uses_trash_metadata:
+            return True
+        for release_profile in self.settings.profiles.release_profiles.definitions.values():
+            if release_profile.uses_trash_metadata:
+                return True
+        return False
+
+    def render_trash_metadata(self, trash_metadata_dir: Path) -> Self:
+        """
+        Read TRaSH-Guides metadata, and return a configuration object with all templates rendered.
+
+        Args:
+            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
+
+        Returns:
+            Rendered configuration object
+        """
+        copy = self.copy(deep=True)
+        copy._render_trash_metadata(trash_metadata_dir)
+        return copy
+
+    def _render_trash_metadata(self, trash_metadata_dir: Path) -> None:
+        """
+        Render configuration attributes obtained from TRaSH-Guides, in-place.
+
+        Args:
+            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
+        """
+        for rp in self.settings.profiles.release_profiles.definitions.values():
+            if rp.uses_trash_metadata:
+                rp._render_trash_metadata(trash_metadata_dir)
+        if self.settings.quality.uses_trash_metadata:
+            self.settings.quality._render_trash_metadata(trash_metadata_dir)
+
+    @classmethod
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        """
+        Read configuration from a remote instance and return it as a configuration object.
+
+        Args:
+            secrets (SonarrSecrets): Instance host and secrets information
+
+        Returns:
+            Configuration object for remote instance
+        """
+        return cls(
+            hostname=secrets.hostname,
+            port=secrets.port,
+            protocol=secrets.protocol,
+            api_key=secrets.api_key,
+            version=get_initialize_js(
+                host_url=secrets.host_url,
+                api_key=secrets.api_key.get_secret_value(),
+            )["version"],
+            settings=SonarrSettingsConfig.from_remote(secrets),
+        )
+
+
+class SonarrConfig(SonarrInstanceConfig):
+    """
+    Sonarr plugin global configuration class.
+    """
+
+    instances: Dict[str, SonarrInstanceConfig] = {}
     """
     Instance-specific Sonarr configuration.
 
@@ -277,19 +359,10 @@ class SonarrConfig(ConfigPlugin):
         Returns:
             `True` if TRaSH-Guides metadata is used, otherwise `False`
         """
-        return self._uses_trash_metadata(nested=False)
-
-    def _uses_trash_metadata(self, nested: bool = False) -> bool:
-        if not nested:
-            for instance in self.instances.values():
-                if instance._uses_trash_metadata(nested=True):
-                    return True
-        if self.settings.quality.trash_id:
-            return True
-        for release_profile in self.settings.profiles.release_profiles.definitions.values():
-            if release_profile.trash_id:
+        for instance in self.instances.values():
+            if instance.uses_trash_metadata:
                 return True
-        return False
+        return super().uses_trash_metadata
 
     def render_trash_metadata(self, trash_metadata_dir: Path) -> Self:
         """
@@ -302,36 +375,9 @@ class SonarrConfig(ConfigPlugin):
             Rendered configuration object
         """
         copy = self.copy(deep=True)
-        copy._render_trash_metadata(trash_metadata_dir / "docs" / "json" / "sonarr")
+        for instance in copy.instances.values():
+            if instance.uses_trash_metadata:
+                instance._render_trash_metadata(trash_metadata_dir)
+        if self.uses_trash_metadata:
+            copy._render_trash_metadata(trash_metadata_dir)
         return copy
-
-    def _render_trash_metadata(self, sonarr_metadata_dir: Path, nested: bool = False) -> None:
-        if not nested:
-            for instance in self.instances.values():
-                instance._render_trash_metadata(sonarr_metadata_dir, nested=True)
-        self.settings.profiles.release_profiles.definitions = {
-            rp_name: rp.render_trash_metadata(sonarr_metadata_dir)
-            for rp_name, rp in self.settings.profiles.release_profiles.definitions.items()
-        }
-        self.settings.quality = self.settings.quality.render_trash_metadata(sonarr_metadata_dir)
-
-    @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> Self:
-        """
-        Read configuration from a remote instance and return it as a configuration object.
-
-        Args:
-            secrets (SecretsPlugin): Instance host and secrets information
-
-        Returns:
-            Configuration object for remote instance
-        """
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        return cls(
-            hostname=sonarr_secrets.hostname,
-            port=sonarr_secrets.port,
-            protocol=sonarr_secrets.protocol,
-            api_key=sonarr_secrets.api_key,
-            version=get_initialize_js(sonarr_secrets)["version"],
-            settings=SonarrSettingsConfig.from_remote(secrets),
-        )

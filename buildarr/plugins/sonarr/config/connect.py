@@ -22,17 +22,17 @@ Sonarr plugin connect settings configuration.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Type, Union
 
 from pydantic import ConstrainedInt, Field, HttpUrl, NameEmail, SecretStr
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
+from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_delete, api_get, api_post, api_put
+from .types import SonarrConfigBase
 from .util import TraktAuthUser, trakt_expires_encoder
 
 
@@ -137,7 +137,7 @@ class WebhookMethod(ConfigEnum):
     PUT = 2
 
 
-class NotificationTriggers(ConfigBase):
+class NotificationTriggers(SonarrConfigBase):
     """
     Connections are configured using the following syntax.
 
@@ -257,7 +257,7 @@ class NotificationTriggers(ConfigBase):
     ]
 
 
-class Connection(ConfigBase):
+class Connection(SonarrConfigBase):
     """
     Base class for a Sonarr connection.
     """
@@ -296,12 +296,7 @@ class Connection(ConfigBase):
         ]
 
     @classmethod
-    def _from_remote(
-        cls,
-        sonarr_secrets: SonarrSecrets,
-        tag_ids: Mapping[str, int],
-        remote_attrs: Mapping[str, Any],
-    ) -> Connection:
+    def _from_remote(cls, tag_ids: Mapping[str, int], remote_attrs: Mapping[str, Any]) -> Self:
         return cls(
             notification_triggers=NotificationTriggers(
                 **NotificationTriggers.get_local_attrs(
@@ -318,14 +313,14 @@ class Connection(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         tag_ids: Mapping[str, int],
         connection_name: str,
     ) -> None:
         api_post(
-            sonarr_secrets=sonarr_secrets,
-            api_url="/api/v3/notification",
-            req={
+            secrets,
+            "/api/v3/notification",
+            {
                 "name": connection_name,
                 "implementation": self._implementation,
                 "implementationName": self._implementation_name,
@@ -344,7 +339,7 @@ class Connection(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         tag_ids: Mapping[str, int],
         connection_id: int,
@@ -367,9 +362,9 @@ class Connection(ConfigBase):
         )
         if triggers_updated or base_updated:
             api_put(
-                sonarr_secrets=sonarr_secrets,
-                api_url=f"/api/v3/notification/{connection_id}",
-                req={
+                secrets,
+                f"/api/v3/notification/{connection_id}",
+                {
                     "id": connection_id,
                     "name": connection_name,
                     "implementation": self._implementation,
@@ -382,9 +377,9 @@ class Connection(ConfigBase):
             return True
         return False
 
-    def _delete_remote(self, tree: str, sonarr_secrets: SonarrSecrets, connection_id: int) -> None:
+    def _delete_remote(self, tree: str, secrets: SonarrSecrets, connection_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets=sonarr_secrets, api_url=f"/api/v3/notification/{connection_id}")
+        api_delete(secrets, f"/api/v3/notification/{connection_id}")
 
 
 class BoxcarConnection(Connection):
@@ -1676,7 +1671,7 @@ CONNECTION_TYPE_MAP: Dict[str, Type[Connection]] = {
 }
 
 
-class SonarrConnectSettingsConfig(ConfigBase):
+class SonarrConnectSettingsConfig(SonarrConfigBase):
     """
     Manage notification connections in Sonarr.
     """
@@ -1722,18 +1717,16 @@ class SonarrConnectSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrConnectSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        connections = api_get(sonarr_secrets, "/api/v3/notification")
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        connections = api_get(secrets, "/api/v3/notification")
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(connection["tags"] for connection in connections)
             else {}
         )
         return cls(
             definitions={
                 connection["name"]: CONNECTION_TYPE_MAP[connection["implementation"]]._from_remote(
-                    sonarr_secrets=sonarr_secrets,
                     tag_ids=tag_ids,
                     remote_attrs=connection,
                 )
@@ -1744,20 +1737,19 @@ class SonarrConnectSettingsConfig(ConfigBase):
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrConnectSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         connection_ids: Dict[str, int] = {
             connection_json["name"]: connection_json["id"]
-            for connection_json in api_get(sonarr_secrets, "/api/v3/notification")
+            for connection_json in api_get(secrets, "/api/v3/notification")
         }
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(connection.tags for connection in self.definitions.values())
             or any(connection.tags for connection in remote.definitions.values())
             else {}
@@ -1769,7 +1761,7 @@ class SonarrConnectSettingsConfig(ConfigBase):
             if connection_name not in remote.definitions:
                 connection._create_remote(
                     tree=connection_tree,
-                    sonarr_secrets=sonarr_secrets,
+                    secrets=secrets,
                     tag_ids=tag_ids,
                     connection_name=connection_name,
                 )
@@ -1778,7 +1770,7 @@ class SonarrConnectSettingsConfig(ConfigBase):
             else:
                 if connection._update_remote(
                     tree=connection_tree,
-                    sonarr_secrets=sonarr_secrets,
+                    secrets=secrets,
                     remote=remote.definitions[connection_name],  # type: ignore[arg-type]
                     tag_ids=tag_ids,
                     connection_id=connection_ids[connection_name],
@@ -1792,7 +1784,7 @@ class SonarrConnectSettingsConfig(ConfigBase):
                 if self.delete_unmanaged:
                     connection._delete_remote(
                         tree=connection_tree,
-                        sonarr_secrets=sonarr_secrets,
+                        secrets=secrets,
                         connection_id=connection_ids[connection_name],
                     )
                     changed = True

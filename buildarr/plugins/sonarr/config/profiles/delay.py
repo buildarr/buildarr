@@ -21,17 +21,17 @@ Sonarr plugin delay profile configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Set, cast
+from typing import Any, Dict, List, Mapping, Set
 
 from pydantic import Field
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, RemoteMapEntry
+from buildarr.config import ConfigEnum, NonEmptyStr, RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_delete, api_get, api_post, api_put
+from ..types import SonarrConfigBase
 
 
 class PreferredProtocol(ConfigEnum):
@@ -86,7 +86,7 @@ class PreferredProtocol(ConfigEnum):
         )
 
 
-class DelayProfile(ConfigBase):
+class DelayProfile(SonarrConfigBase):
     """
     Delay profiles are defined as an ordered list of objects.
 
@@ -212,11 +212,7 @@ class DelayProfile(ConfigBase):
         ]
 
     @classmethod
-    def _from_remote(
-        cls,
-        tag_ids: Mapping[str, int],
-        remote_attrs: Mapping[str, Any],
-    ) -> Self:
+    def _from_remote(cls, tag_ids: Mapping[str, int], remote_attrs: Mapping[str, Any]) -> Self:
         return cls(
             **cls.get_local_attrs(cls._get_remote_map(tag_ids), remote_attrs),
         )
@@ -224,12 +220,12 @@ class DelayProfile(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         tag_ids: Mapping[str, int],
         order: int,
     ) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/delayprofile",
             {
                 "order": order,
@@ -240,7 +236,7 @@ class DelayProfile(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: DelayProfile,
         tag_ids: Mapping[str, int],
         profile_id: int,
@@ -255,7 +251,7 @@ class DelayProfile(ConfigBase):
         )
         if changed:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/delayprofile/{profile_id}",
                 {"id": profile_id, "order": order, **remote_attrs},
             )
@@ -265,14 +261,14 @@ class DelayProfile(ConfigBase):
     def _delete_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         profile_id: int,
     ) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/delayprofile/{profile_id}")
+        api_delete(secrets, f"/api/v3/delayprofile/{profile_id}")
 
 
-class SonarrDelayProfilesSettingsConfig(ConfigBase):
+class SonarrDelayProfilesSettingsConfig(SonarrConfigBase):
     """
     Configuration parameters for controlling how Buildarr handles delay profiles.
     """
@@ -306,27 +302,26 @@ class SonarrDelayProfilesSettingsConfig(ConfigBase):
     #       and the last one has no tags.
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrDelayProfilesSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
         profiles: List[Dict[str, Any]] = sorted(
-            api_get(sonarr_secrets, "/api/v3/delayprofile"),
+            api_get(secrets, "/api/v3/delayprofile"),
             key=lambda p: p["order"],
             reverse=True,
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(profile["tags"] for profile in profiles)
             else {}
         )
-        return SonarrDelayProfilesSettingsConfig(
+        return cls(
             definitions=[DelayProfile._from_remote(tag_ids, profile) for profile in profiles],
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrDelayProfilesSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         if not self.delete_unmanaged and "definitions" not in self.__fields_set__:
@@ -338,14 +333,12 @@ class SonarrDelayProfilesSettingsConfig(ConfigBase):
             return False
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         profile_ids: Dict[int, int] = {
-            profile["order"]: profile["id"]
-            for profile in api_get(sonarr_secrets, "/api/v3/delayprofile")
+            profile["order"]: profile["id"] for profile in api_get(secrets, "/api/v3/delayprofile")
         }
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(profile.tags for profile in self.definitions)
             or any(profile.tags for profile in remote.definitions)
             else {}
@@ -360,16 +353,16 @@ class SonarrDelayProfilesSettingsConfig(ConfigBase):
             # Delete those extra delay profiles from the remote.
             if local_index < 0:
                 remote.definitions[remote_index]._delete_remote(
-                    f"{tree}.definitions[{local_index}]",
-                    sonarr_secrets,
+                    tree=f"{tree}.definitions[{local_index}]",
+                    secrets=secrets,
                     profile_id=profile_ids[order],
                 )
                 changed = True
             # If the current index (order) is one that does not exist on the remote, create it.
             elif remote_index < 0:
                 self.definitions[local_index]._create_remote(
-                    f"{tree}.definitions[{local_index}]",
-                    sonarr_secrets,
+                    tree=f"{tree}.definitions[{local_index}]",
+                    secrets=secrets,
                     tag_ids=tag_ids,
                     order=order,
                 )
@@ -379,9 +372,9 @@ class SonarrDelayProfilesSettingsConfig(ConfigBase):
             # Check and update those delay profiles.
             else:
                 if self.definitions[local_index]._update_remote(
-                    f"{tree}.definitions[{local_index}]",
-                    sonarr_secrets,
-                    remote.definitions[remote_index],
+                    tree=f"{tree}.definitions[{local_index}]",
+                    secrets=secrets,
+                    remote=remote.definitions[remote_index],
                     tag_ids=tag_ids,
                     profile_id=profile_ids[order],
                     order=order,

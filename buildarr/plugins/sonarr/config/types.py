@@ -15,16 +15,23 @@
 
 
 """
-Sonarr plugin utility classes and functions.
+Sonarr plugin configuration utility classes and functions.
 """
 
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING
 
-from pydantic import Field, SecretStr
-from typing_extensions import Annotated
+from buildarr.config import ConfigBase
 
-SonarrApiKey = Annotated[SecretStr, Field(min_length=32, max_length=32)]
-SonarrProtocol = Literal["http", "https"]
+if TYPE_CHECKING:
+    from ..secrets import SonarrSecrets
+
+    class SonarrConfigBase(ConfigBase[SonarrSecrets]):
+        ...
+
+else:
+
+    class SonarrConfigBase(ConfigBase):
+        ...

@@ -24,17 +24,17 @@ from __future__ import annotations
 import re
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 from pydantic import ConstrainedStr, HttpUrl, PositiveInt
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, Password, RemoteMapEntry
+from buildarr.config import ConfigEnum, NonEmptyStr, Password, RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_delete, api_get, api_post, api_put
+from .types import SonarrConfigBase
 from .util import TraktAuthUser, trakt_expires_encoder
 
 
@@ -101,7 +101,7 @@ class TraktUserListType(ConfigEnum):
     user_collection_list = 2
 
 
-class ImportList(ConfigBase):
+class ImportList(SonarrConfigBase):
     """
     For more information on how an import list should be setup,
     refer to this guide on [WikiArr](https://wiki.servarr.com/en/sonarr/settings#import-lists).
@@ -230,12 +230,11 @@ class ImportList(ConfigBase):
     @classmethod
     def _from_remote(
         cls,
-        sonarr_secrets: SonarrSecrets,
         quality_profile_ids: Mapping[str, int],
         language_profile_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
         remote_attrs: Mapping[str, Any],
-    ) -> ImportList:
+    ) -> Self:
         return cls(
             **cls.get_local_attrs(
                 (
@@ -249,14 +248,14 @@ class ImportList(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         quality_profile_ids: Mapping[str, int],
         language_profile_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
         importlist_name: str,
     ) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/importlist",
             {
                 "name": importlist_name,
@@ -280,7 +279,7 @@ class ImportList(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         quality_profile_ids: Mapping[str, int],
         language_profile_ids: Mapping[str, int],
@@ -297,7 +296,7 @@ class ImportList(ConfigBase):
         )
         if updated:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/importlist/{importlist_id}",
                 {
                     "id": importlist_id,
@@ -311,9 +310,9 @@ class ImportList(ConfigBase):
             return True
         return False
 
-    def _delete_remote(self, tree: str, sonarr_secrets: SonarrSecrets, importlist_id: int) -> None:
+    def _delete_remote(self, tree: str, secrets: SonarrSecrets, importlist_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/importlist/{importlist_id}")
+        api_delete(secrets, f"/api/v3/importlist/{importlist_id}")
 
 
 class ProgramImportList(ImportList):
@@ -626,7 +625,7 @@ IMPORTLIST_TYPE_MAP: Dict[str, Type[ImportList]] = {
 }
 
 
-class SonarrImportListsSettingsConfig(ConfigBase):
+class SonarrImportListsSettingsConfig(SonarrConfigBase):
     """
     Using import lists, Sonarr can monitor and import episodes from external sources.
 
@@ -694,32 +693,30 @@ class SonarrImportListsSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrImportListsSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        importlists = api_get(sonarr_secrets, "/api/v3/importlist")
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        importlists = api_get(secrets, "/api/v3/importlist")
         quality_profile_ids: Dict[str, int] = (
-            {pro["name"]: pro["id"] for pro in api_get(sonarr_secrets, "/api/v3/qualityprofile")}
+            {pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/qualityprofile")}
             if any(importlist["qualityProfileId"] for importlist in importlists)
             else {}
         )
         language_profile_ids: Dict[str, int] = (
-            {pro["name"]: pro["id"] for pro in api_get(sonarr_secrets, "/api/v3/languageprofile")}
+            {pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/languageprofile")}
             if any(importlist["languageProfileId"] for importlist in importlists)
             else {}
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(importlist["tags"] for importlist in importlists)
             else {}
         )
         return cls(
             definitions={
                 importlist["name"]: IMPORTLIST_TYPE_MAP[importlist["implementation"]]._from_remote(
-                    sonarr_secrets,
-                    quality_profile_ids,
-                    language_profile_ids,
-                    tag_ids,
-                    importlist,
+                    quality_profile_ids=quality_profile_ids,
+                    language_profile_ids=language_profile_ids,
+                    tag_ids=tag_ids,
+                    remote_attrs=importlist,
                 )
                 for importlist in importlists
             },
@@ -728,32 +725,31 @@ class SonarrImportListsSettingsConfig(ConfigBase):
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrImportListsSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         importlist_ids: Dict[str, int] = {
             importlist_json["name"]: importlist_json["id"]
-            for importlist_json in api_get(sonarr_secrets, "/api/v3/importlist")
+            for importlist_json in api_get(secrets, "/api/v3/importlist")
         }
         quality_profile_ids: Dict[str, int] = (
-            {pro["name"]: pro["id"] for pro in api_get(sonarr_secrets, "/api/v3/qualityprofile")}
+            {pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/qualityprofile")}
             if any(importlist.quality_profile for importlist in self.definitions.values())
             or any(importlist.quality_profile for importlist in remote.definitions.values())
             else {}
         )
         language_profile_ids: Dict[str, int] = (
-            {pro["name"]: pro["id"] for pro in api_get(sonarr_secrets, "/api/v3/languageprofile")}
+            {pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/languageprofile")}
             if any(importlist.language_profile for importlist in self.definitions.values())
             or any(importlist.language_profile for importlist in remote.definitions.values())
             else {}
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(importlist.tags for importlist in self.definitions.values())
             or any(importlist.tags for importlist in remote.definitions.values())
             else {}
@@ -764,25 +760,25 @@ class SonarrImportListsSettingsConfig(ConfigBase):
             #
             if importlist_name not in remote.definitions:
                 importlist._create_remote(
-                    importlist_tree,
-                    sonarr_secrets,
-                    quality_profile_ids,
-                    language_profile_ids,
-                    tag_ids,
-                    importlist_name,
+                    tree=importlist_tree,
+                    secrets=secrets,
+                    quality_profile_ids=quality_profile_ids,
+                    language_profile_ids=language_profile_ids,
+                    tag_ids=tag_ids,
+                    importlist_name=importlist_name,
                 )
                 changed = True
             #
             else:
                 if importlist._update_remote(
-                    importlist_tree,
-                    sonarr_secrets,
-                    remote.definitions[importlist_name],  # type: ignore[arg-type]
-                    quality_profile_ids,
-                    language_profile_ids,
-                    tag_ids,
-                    importlist_ids[importlist_name],
-                    importlist_name,
+                    tree=importlist_tree,
+                    secrets=secrets,
+                    remote=remote.definitions[importlist_name],  # type: ignore[arg-type]
+                    quality_profile_ids=quality_profile_ids,
+                    language_profile_ids=language_profile_ids,
+                    tag_ids=tag_ids,
+                    importlist_id=importlist_ids[importlist_name],
+                    importlist_name=importlist_name,
                 ):
                     changed = True
         #
@@ -791,9 +787,9 @@ class SonarrImportListsSettingsConfig(ConfigBase):
                 importlist_tree = f"{tree}.definitions[{repr(importlist_name)}]"
                 if self.delete_unmanaged:
                     importlist._delete_remote(
-                        importlist_tree,
-                        sonarr_secrets,
-                        importlist_ids[importlist_name],
+                        tree=importlist_tree,
+                        secrets=secrets,
+                        importlist_id=importlist_ids[importlist_name],
                     )
                     changed = True
                 else:
