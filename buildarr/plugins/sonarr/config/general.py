@@ -456,15 +456,19 @@ class BackupGeneralSettings(GeneralSettings):
     Relative paths will be under Sonarr's AppData directory.
     """
 
-    interval: int = Field(7, ge=0)  # days
+    interval: int = Field(7, ge=1, le=7)  # days
     """
     Interval between automatic backups, in days.
+
+    Must be set somewhere between 1 and 7 days.
     """
 
-    retention: int = Field(28, ge=0)  # days
+    retention: int = Field(28, ge=1, le=90)  # days
     """
     Retention period for backups, in days.
     Backups older than the retention period will be cleaned up automatically.
+
+    Must be set somewhere between 1 and 90 days.
     """
 
     _remote_map: List[RemoteMapEntry] = [
