@@ -22,7 +22,7 @@ sonarr:
       updates:
         branch: "main"
         automatic: false
-        update_mechanism: "docker"
+        mechanism: "docker"
       backup:
         folder: "Backups"
         interval: 7
