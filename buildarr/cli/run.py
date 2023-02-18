@@ -25,7 +25,8 @@ from typing import Dict, List, Set, cast
 
 import click
 
-from .. import __version__ as buildarr_version
+from importlib_metadata import version as package_version
+
 from ..config import BuildarrConfig, ConfigBase, ConfigPlugin, load as load_config
 from ..logging import logger, plugin_logger
 from ..manager import ManagerPlugin
@@ -77,7 +78,11 @@ def run(config_path: Path, use_plugins: Set[str]) -> None:
         plugins (Set[str]): Plugins to load. If empty, load all plugins.
     """
 
-    logger.info("Buildarr version %s (log level: %s)", buildarr_version, logger.log_level)
+    logger.info(
+        "Buildarr version %s (log level: %s)",
+        package_version("buildarr"),
+        logger.log_level,
+    )
 
     # Load and validate the Buildarr configuration.
     files, config = load_config(use_plugins, config_path)

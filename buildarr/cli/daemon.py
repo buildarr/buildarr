@@ -31,11 +31,11 @@ from typing import TYPE_CHECKING, cast
 
 import click
 
+from importlib_metadata import version as package_version
 from schedule import Job as SchedulerJob, Scheduler  # type: ignore[import]
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
-from .. import __version__ as buildarr_version
 from ..config import BuildarrConfig, UpdateDay, load as load_config
 from ..logging import logger
 from . import cli
@@ -418,7 +418,11 @@ def daemon(
         update_times (Tuple[time, ...]): Override `update_times` setting
     """
 
-    logger.info("Buildarr version %s (log level: %s)", buildarr_version, logger.log_level)
+    logger.info(
+        "Buildarr version %s (log level: %s)",
+        package_version("buildarr"),
+        logger.log_level,
+    )
 
     Daemon(
         config_path=config_path,

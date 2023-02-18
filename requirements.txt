@@ -111,6 +111,9 @@ email-validator==1.3.1 ; python_full_version >= "3.8.1" and python_full_version 
 idna==3.4 ; python_full_version >= "3.8.1" and python_version < "4" \
     --hash=sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4 \
     --hash=sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2
+importlib-metadata==6.0.0 ; python_full_version >= "3.8.1" and python_full_version < "4.0.0" \
+    --hash=sha256:7efb448ec9a5e313a57655d35aa54cd3e01b7e1fbcf72dce1bf06119420f5bad \
+    --hash=sha256:e354bedeb60efa6affdcc8ae121b73544a7aa74156d047311948f6d711cd378d
 json5==0.9.11 ; python_full_version >= "3.8.1" and python_full_version < "4.0.0" \
     --hash=sha256:1aa54b80b5e507dfe31d12b7743a642e2ffa6f70bf73b8e3d7d1d5fba83d99bd \
     --hash=sha256:4f1e196acc55b83985a51318489f345963c7ba84aa37607e49073066c562e99b
@@ -245,3 +248,6 @@ watchdog==2.2.1 ; python_full_version >= "3.8.1" and python_full_version < "4.0.
     --hash=sha256:e038be858425c4f621900b8ff1a3a1330d9edcfeaa1c0468aeb7e330fb87693e \
     --hash=sha256:e618a4863726bc7a3c64f95c218437f3349fb9d909eb9ea3a1ed3b567417c661 \
     --hash=sha256:f8ac23ff2c2df4471a61af6490f847633024e5aa120567e08d07af5718c9d092
+zipp==3.13.0 ; python_full_version >= "3.8.1" and python_full_version < "4.0.0" \
+    --hash=sha256:23f70e964bc11a34cef175bc90ba2914e1e4545ea1e3e2f67c079671883f9cb6 \
+    --hash=sha256:e8b2a36ea17df80ffe9e2c4fda3f693c3dad6df1697d3cd3af232db680950b0b
