@@ -21,7 +21,10 @@ Buildarr runtime state.
 
 from __future__ import annotations
 
+import os
+
 from contextlib import contextmanager
+from distutils.util import strtobool
 from typing import TYPE_CHECKING
 
 from stevedore.extension import ExtensionManager  # type: ignore[import]
@@ -35,8 +38,9 @@ if TYPE_CHECKING:
     from .plugins import Plugin
 
 
-__all__ = ["plugins", "load_plugins", "plugin_context"]
+__all__ = ["testing", "plugins", "load_plugins", "plugin_context"]
 
+testing: bool = bool(strtobool(os.environ.get("BUILDARR_TESTING", "false")))
 
 plugins: Dict[str, Plugin] = {}
 
@@ -57,6 +61,10 @@ def load_plugins(namespace: str = "buildarr.plugins") -> None:
         invoke_on_load=True,
         on_load_failure_callback=_on_plugin_failure,
     ):
+        # Do not load the built-in `buildarr-dummy` plugin
+        # if Buildarr was not started in testing mode.
+        if not testing and plugin.name == "dummy":
+            continue
         if plugin.name not in plugins:
             plugins[plugin.name] = plugin.entry_point.load()
 
