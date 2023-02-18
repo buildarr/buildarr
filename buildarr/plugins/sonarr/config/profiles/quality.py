@@ -21,20 +21,20 @@ Sonarr plugin quality profile configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union
 
 from pydantic import Field, root_validator
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigBase, NonEmptyStr, RemoteMapEntry
+from buildarr.config import NonEmptyStr, RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_delete, api_get, api_post, api_put
+from ..types import SonarrConfigBase
 
 
-class QualityGroup(ConfigBase):
+class QualityGroup(SonarrConfigBase):
     """
     Quality group.
 
@@ -55,7 +55,7 @@ class QualityGroup(ConfigBase):
         }
 
 
-class QualityProfile(ConfigBase):
+class QualityProfile(SonarrConfigBase):
     """
     The main things to consider when creating a quality profile are
     what quality settings to enable, and how to prioritise each.
@@ -183,7 +183,7 @@ class QualityProfile(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         profile_name: str,
         quality_definitions: Mapping[str, Mapping[str, Any]],
     ) -> None:
@@ -195,7 +195,7 @@ class QualityProfile(ConfigBase):
             )
         }
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/qualityprofile",
             {
                 "name": profile_name,
@@ -209,8 +209,8 @@ class QualityProfile(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
-        remote: QualityProfile,
+        secrets: SonarrSecrets,
+        remote: Self,
         profile_id: int,
         profile_name: str,
         quality_definitions: Mapping[str, Mapping[str, Any]],
@@ -231,19 +231,19 @@ class QualityProfile(ConfigBase):
         )
         if changed:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/qualityprofile/{profile_id}",
                 {"id": profile_id, "name": profile_name, **remote_attrs},
             )
             return True
         return False
 
-    def _delete_remote(self, tree: str, sonarr_secrets: SonarrSecrets, profile_id: int) -> None:
+    def _delete_remote(self, tree: str, secrets: SonarrSecrets, profile_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/qualityprofile/{profile_id}")
+        api_delete(secrets, f"/api/v3/qualityprofile/{profile_id}")
 
 
-class SonarrQualityProfilesSettingsConfig(ConfigBase):
+class SonarrQualityProfilesSettingsConfig(SonarrConfigBase):
     """
     Configuration parameters for controlling how Buildarr handles quality profiles.
     """
@@ -266,33 +266,32 @@ class SonarrQualityProfilesSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrQualityProfilesSettingsConfig:
-        return SonarrQualityProfilesSettingsConfig(
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        return cls(
             definitions={
                 profile["name"]: QualityProfile._from_remote(profile)
-                for profile in api_get(cast(SonarrSecrets, secrets), "/api/v3/qualityprofile")
+                for profile in api_get(secrets, "/api/v3/qualityprofile")
             }
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrQualityProfilesSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         profile_ids: Dict[str, int] = {
             profile_json["name"]: profile_json["id"]
-            for profile_json in api_get(sonarr_secrets, "/api/v3/qualityprofile")
+            for profile_json in api_get(secrets, "/api/v3/qualityprofile")
         }
         quality_definitions: Dict[str, Dict[str, Any]] = {
             quality_json["title"]: quality_json["quality"]
             for quality_json in sorted(
-                api_get(sonarr_secrets, "/api/v3/qualitydefinition"),
+                api_get(secrets, "/api/v3/qualitydefinition"),
                 key=lambda q: q["weight"],
                 reverse=True,
             )
@@ -303,21 +302,21 @@ class SonarrQualityProfilesSettingsConfig(ConfigBase):
             #
             if profile_name not in remote.definitions:
                 profile._create_remote(
-                    profile_tree,
-                    sonarr_secrets,
-                    profile_name,
-                    quality_definitions,
+                    tree=profile_tree,
+                    secrets=secrets,
+                    profile_name=profile_name,
+                    quality_definitions=quality_definitions,
                 )
                 changed = True
             #
             else:
                 if profile._update_remote(
-                    profile_tree,
-                    sonarr_secrets,
-                    remote.definitions[profile_name],
-                    profile_ids[profile_name],
-                    profile_name,
-                    quality_definitions,
+                    tree=profile_tree,
+                    secrets=secrets,
+                    remote=remote.definitions[profile_name],
+                    profile_id=profile_ids[profile_name],
+                    profile_name=profile_name,
+                    quality_definitions=quality_definitions,
                 ):
                     changed = True
         #
@@ -326,9 +325,9 @@ class SonarrQualityProfilesSettingsConfig(ConfigBase):
                 profile_tree = f"{tree}.definitions[{repr(profile_name)}]"
                 if self.delete_unmanaged:
                     profile._delete_remote(
-                        profile_tree,
-                        sonarr_secrets,
-                        profile_ids[profile_name],
+                        tree=profile_tree,
+                        secrets=secrets,
+                        profile_id=profile_ids[profile_name],
                     )
                     changed = True
                 else:

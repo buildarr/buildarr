@@ -21,13 +21,15 @@ Sonarr plugin UI settings configuration object.
 
 from __future__ import annotations
 
-from typing import List, cast
+from typing import List
 
-from buildarr.config import ConfigBase, ConfigEnum, RemoteMapEntry
-from buildarr.secrets import SecretsPlugin
+from typing_extensions import Self
 
+from buildarr.config import ConfigEnum, RemoteMapEntry
+
+from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_get, api_put
+from .types import SonarrConfigBase
 
 
 class FirstDayOfWeek(ConfigEnum):
@@ -81,7 +83,7 @@ class TimeFormat(ConfigEnum):
     twentyfour_hour = "HH:mm"
 
 
-class SonarrUISettingsConfig(ConfigBase):
+class SonarrUISettingsConfig(SonarrConfigBase):
     """
     Sonarr user interface configuration can also be set directly from Buildarr.
 
@@ -181,32 +183,31 @@ class SonarrUISettingsConfig(ConfigBase):
     ]
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrUISettingsConfig:
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
         return cls(
             **cls.get_local_attrs(
-                cls._remote_map,
-                api_get(cast(SonarrSecrets, secrets), "/api/v3/config/ui"),
+                remote_map=cls._remote_map,
+                remote_attrs=api_get(secrets, "/api/v3/config/ui"),
             ),
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrUISettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         updated, remote_attrs = self.get_update_remote_attrs(
-            tree,
-            remote,
-            self._remote_map,
+            tree=tree,
+            remote=remote,
+            remote_map=self._remote_map,
             check_unmanaged=check_unmanaged,
         )
         if updated:
             api_put(
-                sonarr_secrets,
-                f"/api/v3/config/ui/{api_get(sonarr_secrets, '/api/v3/config/ui')['id']}",
+                secrets,
+                f"/api/v3/config/ui/{api_get(secrets, '/api/v3/config/ui')['id']}",
                 remote_attrs,
             )
             return True

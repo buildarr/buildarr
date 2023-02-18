@@ -25,11 +25,12 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
+from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
 from buildarr.logging import plugin_logger
 
+from ...api import api_delete, api_post, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_delete, api_post, api_put
+from ..types import SonarrConfigBase
 
 
 class NzbgetPriority(ConfigEnum):
@@ -226,7 +227,7 @@ class UtorrentState(ConfigEnum):
     stop = 3
 
 
-class DownloadClient(ConfigBase):
+class DownloadClient(SonarrConfigBase):
     """
     Download clients are defined using the following format.
     Here is an example of a Transmission download client being configured.
@@ -316,12 +317,7 @@ class DownloadClient(ConfigBase):
         ]
 
     @classmethod
-    def _from_remote(
-        cls,
-        sonarr_secrets: SonarrSecrets,
-        tag_ids: Mapping[str, int],
-        remote_attrs: Mapping[str, Any],
-    ) -> Self:
+    def _from_remote(cls, tag_ids: Mapping[str, int], remote_attrs: Mapping[str, Any]) -> Self:
         return cls(
             **cls.get_local_attrs(
                 cls._get_base_remote_map(tag_ids) + cls._remote_map,
@@ -332,12 +328,12 @@ class DownloadClient(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         tag_ids: Mapping[str, int],
         downloadclient_name: str,
     ) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/downloadclient",
             {
                 "name": downloadclient_name,
@@ -354,7 +350,7 @@ class DownloadClient(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         tag_ids: Mapping[str, int],
         downloadclient_id: int,
@@ -369,7 +365,7 @@ class DownloadClient(ConfigBase):
         )
         if updated:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/downloadclient/{downloadclient_id}",
                 {
                     "id": downloadclient_id,
@@ -386,11 +382,11 @@ class DownloadClient(ConfigBase):
     def _delete_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         downloadclient_id: int,
     ) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/downloadclient/{downloadclient_id}")
+        api_delete(secrets, f"/api/v3/downloadclient/{downloadclient_id}")
 
 
 class UsenetDownloadClient(DownloadClient):

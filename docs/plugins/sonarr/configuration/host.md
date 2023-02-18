@@ -1,6 +1,6 @@
 # Host Configuration
 
-##### ::: buildarr.plugins.sonarr.config.SonarrConfig
+##### ::: buildarr.plugins.sonarr.config.SonarrInstanceConfig
     options:
       members:
         - hostname
@@ -9,6 +9,5 @@
         - api_key
         - version
         - settings
-        - instances
       show_root_heading: false
       show_source: false

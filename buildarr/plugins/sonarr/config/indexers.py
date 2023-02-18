@@ -21,25 +21,17 @@ Sonarr plugin indexers settings configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 from pydantic import Field, HttpUrl, PositiveInt
 from typing_extensions import Self
 
-from buildarr.config import (
-    ConfigBase,
-    ConfigEnum,
-    ConfigIntEnum,
-    NonEmptyStr,
-    Password,
-    RemoteMapEntry,
-    RssUrl,
-)
+from buildarr.config import ConfigEnum, ConfigIntEnum, NonEmptyStr, Password, RemoteMapEntry, RssUrl
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_delete, api_get, api_post, api_put
+from .types import SonarrConfigBase
 
 
 class NabCategory(ConfigIntEnum):
@@ -82,7 +74,7 @@ class FilelistCategory(ConfigEnum):
     SPORT = "Sport"
 
 
-class Indexer(ConfigBase):
+class Indexer(SonarrConfigBase):
     """
     Here is an example of an indexer being configured in the `indexers` configuration
     block in Buildarr.
@@ -192,11 +184,10 @@ class Indexer(ConfigBase):
     @classmethod
     def _from_remote(
         cls,
-        sonarr_secrets: SonarrSecrets,
         download_client_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
         remote_attrs: Mapping[str, Any],
-    ) -> Indexer:
+    ) -> Self:
         return cls(
             **cls.get_local_attrs(
                 cls._get_base_remote_map(download_client_ids, tag_ids) + cls._remote_map,
@@ -207,13 +198,13 @@ class Indexer(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         download_client_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
         indexer_name: str,
     ) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/indexer",
             {
                 "name": indexer_name,
@@ -230,7 +221,7 @@ class Indexer(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         download_client_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
@@ -245,7 +236,7 @@ class Indexer(ConfigBase):
         )
         if updated:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/indexer/{indexer_id}",
                 {
                     "id": indexer_id,
@@ -259,9 +250,9 @@ class Indexer(ConfigBase):
             return True
         return False
 
-    def _delete_remote(self, tree: str, sonarr_secrets: SonarrSecrets, indexer_id: int) -> None:
+    def _delete_remote(self, tree: str, secrets: SonarrSecrets, indexer_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/indexer/{indexer_id}")
+        api_delete(secrets, f"/api/v3/indexer/{indexer_id}")
 
 
 class UsenetIndexer(Indexer):
@@ -896,7 +887,7 @@ INDEXER_TYPE_MAP: Dict[str, Type[Indexer]] = {
 }
 
 
-class SonarrIndexersSettingsConfig(ConfigBase):
+class SonarrIndexersSettingsConfig(SonarrConfigBase):
     """
     Indexers are used to monitor for new releases of media on external trackers.
     When a suitable release has been found, Sonarr registers it for download
@@ -1005,17 +996,16 @@ class SonarrIndexersSettingsConfig(ConfigBase):
     ]
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrIndexersSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        indexer_config = api_get(sonarr_secrets, "/api/v3/config/indexer")
-        indexers = api_get(sonarr_secrets, "/api/v3/indexer")
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        indexer_config = api_get(secrets, "/api/v3/config/indexer")
+        indexers = api_get(secrets, "/api/v3/indexer")
         download_client_ids: Dict[str, int] = (
-            {dc["name"]: dc["id"] for dc in api_get(sonarr_secrets, "/api/v3/downloadclient")}
+            {dc["name"]: dc["id"] for dc in api_get(secrets, "/api/v3/downloadclient")}
             if any(indexer_metadata["downloadClientId"] for indexer_metadata in indexers)
             else {}
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(indexer["tags"] for indexer in indexers)
             else {}
         )
@@ -1023,10 +1013,9 @@ class SonarrIndexersSettingsConfig(ConfigBase):
             **cls.get_local_attrs(cls._remote_map, indexer_config),
             definitions={
                 indexer["name"]: INDEXER_TYPE_MAP[indexer["implementationName"]]._from_remote(
-                    sonarr_secrets,
-                    download_client_ids,
-                    tag_ids,
-                    indexer,
+                    download_client_ids=download_client_ids,
+                    tag_ids=tag_ids,
+                    remote_attrs=indexer,
                 )
                 for indexer in indexers
             },
@@ -1035,25 +1024,24 @@ class SonarrIndexersSettingsConfig(ConfigBase):
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrIndexersSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         indexer_ids: Dict[str, int] = {
-            indexer["name"]: indexer["id"] for indexer in api_get(sonarr_secrets, "/api/v3/indexer")
+            indexer["name"]: indexer["id"] for indexer in api_get(secrets, "/api/v3/indexer")
         }
         download_client_ids: Dict[str, int] = (
-            {dc["name"]: dc["id"] for dc in api_get(sonarr_secrets, "/api/v3/downloadclient")}
+            {dc["name"]: dc["id"] for dc in api_get(secrets, "/api/v3/downloadclient")}
             if any(indexer.download_client for indexer in self.definitions.values())
             or any(indexer.download_client for indexer in remote.definitions.values())
             else {}
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(indexer.tags for indexer in self.definitions.values())
             or any(indexer.tags for indexer in remote.definitions.values())
             else {}
@@ -1067,8 +1055,8 @@ class SonarrIndexersSettingsConfig(ConfigBase):
         )
         if config_changed:
             api_put(
-                sonarr_secrets,
-                f"/api/v3/config/indexer/{api_get(sonarr_secrets, '/api/v3/config/indexer')['id']}",
+                secrets,
+                f"/api/v3/config/indexer/{api_get(secrets, '/api/v3/config/indexer')['id']}",
                 config_remote_attrs,
             )
             changed = True
@@ -1078,23 +1066,23 @@ class SonarrIndexersSettingsConfig(ConfigBase):
             #
             if indexer_name not in remote.definitions:
                 indexer._create_remote(
-                    indexer_tree,
-                    sonarr_secrets,
-                    download_client_ids,
-                    tag_ids,
-                    indexer_name,
+                    tree=indexer_tree,
+                    secrets=secrets,
+                    download_client_ids=download_client_ids,
+                    tag_ids=tag_ids,
+                    indexer_name=indexer_name,
                 )
                 changed = True
             #
             else:
                 if indexer._update_remote(
-                    indexer_tree,
-                    sonarr_secrets,
-                    remote.definitions[indexer_name],  # type: ignore[arg-type]
-                    download_client_ids,
-                    tag_ids,
-                    indexer_ids[indexer_name],
-                    indexer_name,
+                    tree=indexer_tree,
+                    secrets=secrets,
+                    remote=remote.definitions[indexer_name],  # type: ignore[arg-type]
+                    download_client_ids=download_client_ids,
+                    tag_ids=tag_ids,
+                    indexer_id=indexer_ids[indexer_name],
+                    indexer_name=indexer_name,
                 ):
                     changed = True
         #
@@ -1103,9 +1091,9 @@ class SonarrIndexersSettingsConfig(ConfigBase):
                 indexer_tree = f"{tree}.definitions[{repr(indexer_name)}]"
                 if self.delete_unmanaged:
                     indexer._delete_remote(
-                        indexer_tree,
-                        sonarr_secrets,
-                        indexer_ids[indexer_name],
+                        tree=indexer_tree,
+                        secrets=secrets,
+                        indexer_id=indexer_ids[indexer_name],
                     )
                     changed = True
                 else:

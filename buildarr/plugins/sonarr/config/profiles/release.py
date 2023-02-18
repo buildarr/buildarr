@@ -30,16 +30,16 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, cast
 from pydantic import validator
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, NonEmptyStr, RemoteMapEntry, TrashID
+from buildarr.config import NonEmptyStr, RemoteMapEntry, TrashID
 from buildarr.config.exceptions import ConfigTrashIDNotFoundError
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_delete, api_get, api_post, api_put
+from ..types import SonarrConfigBase
 
 
-class TrashFilter(ConfigBase):
+class TrashFilter(SonarrConfigBase):
     """
     Defines various ways that release profile terms from the guide are synchronised with Sonarr.
     These terms have individual trash IDs, and using this filter allows you to
@@ -82,7 +82,7 @@ class TrashFilter(ConfigBase):
     """
 
 
-class PreferredWord(ConfigBase):
+class PreferredWord(SonarrConfigBase):
     """
     Buildarr object representing a Preferred Word in a Release Profile.
     """
@@ -91,7 +91,7 @@ class PreferredWord(ConfigBase):
     score: int
 
 
-class ReleaseProfile(ConfigBase):
+class ReleaseProfile(SonarrConfigBase):
     # Release profile data structure.
     #
     # There are two types of release profile: the type where filters are manually defined,
@@ -259,16 +259,32 @@ class ReleaseProfile(ConfigBase):
     ) -> Self:
         return cls(**cls.get_local_attrs(cls._get_remote_map(indexer_ids, tag_ids), remote_attrs))
 
-    def render_trash_metadata(self, sonarr_metadata_dir: Path) -> ReleaseProfile:
+    @property
+    def uses_trash_metadata(self) -> bool:
+        """
+        A flag determining whether or not this configuration uses TRaSH-Guides metadata.
+
+        Returns:
+            `True` if TRaSH-Guides metadata is used, otherwise `False`
+        """
+        return bool(self.trash_id)
+
+    def _render_trash_metadata(self, trash_metadata_dir: Path) -> None:
+        """
+        Render configuration attributes obtained from TRaSH-Guides, in-place.
+
+        Args:
+            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
+        """
         if not self.trash_id:
-            return self
-        for profile_file in (sonarr_metadata_dir / "rp").iterdir():
+            return
+        for profile_file in (trash_metadata_dir / "docs" / "json" / "sonarr" / "rp").iterdir():
             with profile_file.open() as f:
                 profile: Dict[str, Any] = json.load(f)
                 if cast(str, profile["trash_id"]).lower() == self.trash_id:
                     #
-                    must_contain: List[str] = []
-                    must_not_contain: List[str] = []
+                    must_contain: Set[str] = set()
+                    must_not_contain: Set[str] = set()
                     preferred: List[PreferredWord] = []
                     #
                     for required in profile["required"]:
@@ -278,11 +294,11 @@ class ReleaseProfile(ConfigBase):
                                 "trash_id" in required
                                 and cast(str, required["trash_id"]).lower() in self.filter.exclude
                             ):
-                                must_not_contain.append(term)
+                                must_not_contain.add(term)
                             else:
-                                must_contain.append(term)
+                                must_contain.add(term)
                         else:
-                            must_contain.append(required)
+                            must_contain.add(required)
                     #
                     for ignored in profile["ignored"]:
                         if isinstance(ignored, dict):
@@ -291,11 +307,11 @@ class ReleaseProfile(ConfigBase):
                                 "trash_id" in ignored
                                 and cast(str, ignored["trash_id"]).lower() in self.filter.include
                             ):
-                                must_contain.append(term)
+                                must_contain.add(term)
                             else:
-                                must_not_contain.append(term)
+                                must_not_contain.add(term)
                         else:
-                            must_not_contain.append(ignored)
+                            must_not_contain.add(ignored)
                     #
                     for pref in profile["preferred"]:
                         score: int = pref["score"]
@@ -310,25 +326,14 @@ class ReleaseProfile(ConfigBase):
                             if (self.strict_negative_scores and score < 0) or (
                                 term_trash_id and term_trash_id in self.filter.exclude
                             ):
-                                must_not_contain.append(term)
+                                must_not_contain.add(term)
                             else:
                                 preferred.append(PreferredWord(term=term, score=score))
                     #
-                    return ReleaseProfile(
-                        must_contain=must_contain,
-                        must_not_contain=must_not_contain,
-                        preferred=preferred,
-                        **{
-                            attr_name: getattr(self, attr_name)
-                            for attr_name in (
-                                "enable",
-                                "indexer",
-                                "include_preferred_when_renaming",
-                                "tags",
-                            )
-                            if attr_name in self.__fields_set__
-                        },
-                    )
+                    self.must_contain = must_contain  # type: ignore[assignment]
+                    self.must_not_contain = must_not_contain  # type: ignore[assignment]
+                    self.preferred = preferred
+                    return
         raise ConfigTrashIDNotFoundError(
             f"Unable to find Sonarr release profile file with trash ID '{self.trash_id}'",
         )
@@ -336,13 +341,13 @@ class ReleaseProfile(ConfigBase):
     def _create_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         profile_name: str,
         indexer_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
     ) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/releaseprofile",
             {
                 "name": profile_name,
@@ -353,8 +358,8 @@ class ReleaseProfile(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
-        remote: ReleaseProfile,
+        secrets: SonarrSecrets,
+        remote: Self,
         profile_id: int,
         profile_name: str,
         indexer_ids: Mapping[str, int],
@@ -369,19 +374,19 @@ class ReleaseProfile(ConfigBase):
         )
         if changed:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/releaseprofile/{profile_id}",
                 {"id": profile_id, "name": profile_name, **remote_attrs},
             )
             return True
         return False
 
-    def _delete_remote(self, tree: str, sonarr_secrets: SonarrSecrets, profile_id: int) -> None:
+    def _delete_remote(self, tree: str, secrets: SonarrSecrets, profile_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/releaseprofile/{profile_id}")
+        api_delete(secrets, f"/api/v3/releaseprofile/{profile_id}")
 
 
-class SonarrReleaseProfilesSettingsConfig(ConfigBase):
+class SonarrReleaseProfilesSettingsConfig(SonarrConfigBase):
     """
     Configuration parameters for controlling how Buildarr handles release profiles.
     """
@@ -401,20 +406,19 @@ class SonarrReleaseProfilesSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrReleaseProfilesSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        profiles: List[Dict[str, Any]] = api_get(sonarr_secrets, "/api/v3/releaseprofile")
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        profiles: List[Dict[str, Any]] = api_get(secrets, "/api/v3/releaseprofile")
         indexer_ids: Dict[str, int] = (
-            {tag["name"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/indexer")}
+            {tag["name"]: tag["id"] for tag in api_get(secrets, "/api/v3/indexer")}
             if any(profile["indexerId"] for profile in profiles)
             else {}
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(profile["tags"] for profile in profiles)
             else {}
         )
-        return SonarrReleaseProfilesSettingsConfig(
+        return cls(
             definitions={
                 profile["name"]: ReleaseProfile._from_remote(indexer_ids, tag_ids, profile)
                 for profile in profiles
@@ -424,26 +428,25 @@ class SonarrReleaseProfilesSettingsConfig(ConfigBase):
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrReleaseProfilesSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         #
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         #
         profile_ids: Dict[str, int] = {
             profile_json["name"]: profile_json["id"]
-            for profile_json in api_get(sonarr_secrets, "/api/v3/releaseprofile")
+            for profile_json in api_get(secrets, "/api/v3/releaseprofile")
         }
         indexer_ids: Dict[str, int] = (
-            {tag["name"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/indexer")}
+            {tag["name"]: tag["id"] for tag in api_get(secrets, "/api/v3/indexer")}
             if any(p.indexer for p in self.definitions.values())
             or any(p.indexer for p in remote.definitions.values())
             else {}
         )
         tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")}
+            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
             if any(profile.tags for profile in self.definitions.values())
             or any(profile.tags for profile in remote.definitions.values())
             else {}
@@ -454,23 +457,23 @@ class SonarrReleaseProfilesSettingsConfig(ConfigBase):
             #
             if profile_name not in remote.definitions:
                 profile._create_remote(
-                    profile_tree,
-                    sonarr_secrets,
-                    profile_name,
-                    indexer_ids,
-                    tag_ids,
+                    tree=profile_tree,
+                    secrets=secrets,
+                    profile_name=profile_name,
+                    indexer_ids=indexer_ids,
+                    tag_ids=tag_ids,
                 )
                 changed = True
             #
             else:
                 if profile._update_remote(
-                    profile_tree,
-                    sonarr_secrets,
-                    remote.definitions[profile_name],
-                    profile_ids[profile_name],
-                    profile_name,
-                    indexer_ids,
-                    tag_ids,
+                    tree=profile_tree,
+                    secrets=secrets,
+                    remote=remote.definitions[profile_name],
+                    profile_id=profile_ids[profile_name],
+                    profile_name=profile_name,
+                    indexer_ids=indexer_ids,
+                    tag_ids=tag_ids,
                 ):
                     changed = True
         #
@@ -479,9 +482,9 @@ class SonarrReleaseProfilesSettingsConfig(ConfigBase):
                 profile_tree = f"{tree}.definitions[{repr(profile_name)}]"
                 if self.delete_unmanaged:
                     profile._delete_remote(
-                        profile_tree,
-                        sonarr_secrets,
-                        profile_ids[profile_name],
+                        tree=profile_tree,
+                        secrets=secrets,
+                        profile_id=profile_ids[profile_name],
                     )
                     changed = True
                 else:

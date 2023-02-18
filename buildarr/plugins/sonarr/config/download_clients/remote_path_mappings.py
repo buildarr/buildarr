@@ -25,11 +25,12 @@ from typing import Any, Dict, List, Mapping, Tuple
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, RemoteMapEntry
+from buildarr.config import ConfigEnum, NonEmptyStr, RemoteMapEntry
 from buildarr.logging import plugin_logger
 
+from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
-from ...util import api_delete, api_get, api_post, api_put
+from ..types import SonarrConfigBase
 
 
 class Ensure(ConfigEnum):
@@ -46,7 +47,7 @@ class Ensure(ConfigEnum):
     absent = "absent"
 
 
-class RemotePathMapping(ConfigBase):
+class RemotePathMapping(SonarrConfigBase):
     """
     Remote path mapping definitions themselves are relatively simple.
 
@@ -91,9 +92,9 @@ class RemotePathMapping(ConfigBase):
     def _from_remote(cls, remote_attrs: Mapping[str, Any]) -> Self:
         return cls(**cls.get_local_attrs(cls._remote_map, remote_attrs))
 
-    def _create_remote(self, tree: str, sonarr_secrets: SonarrSecrets) -> None:
+    def _create_remote(self, tree: str, secrets: SonarrSecrets) -> None:
         api_post(
-            sonarr_secrets,
+            secrets,
             "/api/v3/remotepathmapping",
             self.get_create_remote_attrs(tree, self._remote_map),
         )
@@ -101,7 +102,7 @@ class RemotePathMapping(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         remotepathmapping_id: int,
     ) -> bool:
@@ -114,7 +115,7 @@ class RemotePathMapping(ConfigBase):
         )
         if updated:
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/remotepathmapping/{remotepathmapping_id}",
                 {"id": remotepathmapping_id, **remote_attrs},
             )
@@ -124,14 +125,14 @@ class RemotePathMapping(ConfigBase):
     def _delete_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remotepathmapping_id: int,
     ) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
-        api_delete(sonarr_secrets, f"/api/v3/remotepathmapping/{remotepathmapping_id}")
+        api_delete(secrets, f"/api/v3/remotepathmapping/{remotepathmapping_id}")
 
 
-class SonarrRemotePathMappingsSettingsConfig(ConfigBase):
+class SonarrRemotePathMappingsSettingsConfig(SonarrConfigBase):
     """
     Remote path mappings are used to associate a path on a download client remote host
     with its associated path on the local Sonarr instance.
@@ -179,12 +180,12 @@ class SonarrRemotePathMappingsSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def _from_remote(cls, sonarr_secrets: SonarrSecrets) -> Self:
+    def _from_remote(cls, secrets: SonarrSecrets) -> Self:
         return cls(
             definitions=sorted(
                 (
                     RemotePathMapping._from_remote(rpm)
-                    for rpm in api_get(sonarr_secrets, "/api/v3/remotepathmapping")
+                    for rpm in api_get(secrets, "/api/v3/remotepathmapping")
                 ),
                 key=lambda v: (v.host, v.remote_path, v.local_path),
             ),
@@ -193,7 +194,7 @@ class SonarrRemotePathMappingsSettingsConfig(ConfigBase):
     def _update_remote(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
     ) -> bool:
         # Track whether remote resource path mappings have been updated.
@@ -202,7 +203,7 @@ class SonarrRemotePathMappingsSettingsConfig(ConfigBase):
         # data structures.
         remote_rpm_ids: Dict[Tuple[str, str, str], int] = {
             (rpm["host"], rpm["remotePath"], rpm["localPath"]): rpm["id"]
-            for rpm in api_get(sonarr_secrets, "/api/v3/remotepathmapping")
+            for rpm in api_get(secrets, "/api/v3/remotepathmapping")
         }
         local_rpms: Dict[Tuple[str, str, str], RemotePathMapping] = {
             (rpm.host, rpm.remote_path, rpm.local_path): rpm for rpm in self.definitions
@@ -221,14 +222,18 @@ class SonarrRemotePathMappingsSettingsConfig(ConfigBase):
                     plugin_logger.debug("%s: %s (exists)", rpm_tree, repr(rpm))
                 else:
                     plugin_logger.info("%s: %s -> (created)", rpm_tree, repr(rpm))
-                    rpm._create_remote(rpm_tree, sonarr_secrets)
+                    rpm._create_remote(tree=rpm_tree, secrets=secrets)
                     changed = True
             # If the remote path mapping should not exist, check that it does not
             # exist in the remote, and if it does, delete it.
             else:
                 if rpm_tuple in remote_rpms:
                     plugin_logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
-                    rpm._delete_remote(rpm_tree, sonarr_secrets, remote_rpm_ids[rpm_tuple])
+                    rpm._delete_remote(
+                        tree=rpm_tree,
+                        secrets=secrets,
+                        remotepathmapping_id=remote_rpm_ids[rpm_tuple],
+                    )
                     changed = True
                 else:
                     plugin_logger.debug("%s: %s (does not exist)", rpm_tree, repr(rpm))
@@ -241,7 +246,11 @@ class SonarrRemotePathMappingsSettingsConfig(ConfigBase):
                 rpm_tree = f"{tree}.definitions[{j}]"
                 if self.delete_unmanaged:
                     plugin_logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
-                    rpm._delete_remote(rpm_tree, sonarr_secrets, remote_rpm_ids[rpm_tuple])
+                    rpm._delete_remote(
+                        tree=rpm_tree,
+                        secrets=secrets,
+                        remotepathmapping_id=remote_rpm_ids[rpm_tuple],
+                    )
                     changed = True
                 else:
                     plugin_logger.debug("%s: %s (unmanaged)", rpm_tree, repr(rpm))

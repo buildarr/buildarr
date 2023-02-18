@@ -22,16 +22,16 @@ Sonarr plugin general settings configuration.
 from __future__ import annotations
 
 from ipaddress import IPv4Address
-from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
 
 from pydantic import Field
 from typing_extensions import Self
 
-from buildarr.config import ConfigBase, ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
-from buildarr.secrets import SecretsPlugin
+from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
 
+from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
-from ..util import api_get, api_put
+from .types import SonarrConfigBase
 
 
 class AuthenticationMethod(ConfigEnum):
@@ -86,7 +86,7 @@ class UpdateMechanism(ConfigEnum):
     docker = "docker"
 
 
-class GeneralSettings(ConfigBase):
+class GeneralSettings(SonarrConfigBase):
     """
     Sonarr general settings base class.
     """
@@ -94,17 +94,13 @@ class GeneralSettings(ConfigBase):
     _remote_map: List[RemoteMapEntry]
 
     @classmethod
-    def _from_remote(
-        cls,
-        sonarr_secrets: SonarrSecrets,
-        remote_attrs: Mapping[str, Any],
-    ) -> Self:
+    def _from_remote(cls, remote_attrs: Mapping[str, Any]) -> Self:
         return cls(**cls.get_local_attrs(cls._remote_map, remote_attrs))
 
     def _update_remote_attrs(
         self,
         tree: str,
-        sonarr_secrets: SonarrSecrets,
+        secrets: SonarrSecrets,
         remote: Self,
         check_unmanaged: bool = False,
     ) -> Tuple[bool, Dict[str, Any]]:
@@ -478,81 +474,79 @@ class BackupGeneralSettings(GeneralSettings):
     ]
 
 
-class SonarrGeneralSettingsConfig(ConfigBase):
+class SonarrGeneralSettingsConfig(SonarrConfigBase):
     """
     Sonarr general settings.
     """
 
-    host = HostGeneralSettings()
-    security = SecurityGeneralSettings()
-    proxy = ProxyGeneralSettings()
-    logging = LoggingGeneralSettings()
-    analytics = AnalyticsGeneralSettings()
-    updates = UpdatesGeneralSettings()
-    backup = BackupGeneralSettings()
+    host: HostGeneralSettings = HostGeneralSettings()
+    security: SecurityGeneralSettings = SecurityGeneralSettings()
+    proxy: ProxyGeneralSettings = ProxyGeneralSettings()
+    logging: LoggingGeneralSettings = LoggingGeneralSettings()
+    analytics: AnalyticsGeneralSettings = AnalyticsGeneralSettings()
+    updates: UpdatesGeneralSettings = UpdatesGeneralSettings()
+    backup: BackupGeneralSettings = BackupGeneralSettings()
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrGeneralSettingsConfig:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
-        settings = api_get(sonarr_secrets, "/api/v3/config/host")
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
+        settings = api_get(secrets, "/api/v3/config/host")
         return cls(
-            host=HostGeneralSettings._from_remote(sonarr_secrets, settings),
-            security=SecurityGeneralSettings._from_remote(sonarr_secrets, settings),
-            proxy=ProxyGeneralSettings._from_remote(sonarr_secrets, settings),
-            logging=LoggingGeneralSettings._from_remote(sonarr_secrets, settings),
-            analytics=AnalyticsGeneralSettings._from_remote(sonarr_secrets, settings),
-            updates=UpdatesGeneralSettings._from_remote(sonarr_secrets, settings),
-            backup=BackupGeneralSettings._from_remote(sonarr_secrets, settings),
+            host=HostGeneralSettings._from_remote(settings),
+            security=SecurityGeneralSettings._from_remote(settings),
+            proxy=ProxyGeneralSettings._from_remote(settings),
+            logging=LoggingGeneralSettings._from_remote(settings),
+            analytics=AnalyticsGeneralSettings._from_remote(settings),
+            updates=UpdatesGeneralSettings._from_remote(settings),
+            backup=BackupGeneralSettings._from_remote(settings),
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrGeneralSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         host_updated, host_attrs = self.host._update_remote_attrs(
-            f"{tree}.host",
-            sonarr_secrets,
-            remote.host,
+            tree=f"{tree}.host",
+            secrets=secrets,
+            remote=remote.host,
             check_unmanaged=check_unmanaged,
         )
         security_updated, security_attrs = self.security._update_remote_attrs(
-            f"{tree}.security",
-            sonarr_secrets,
-            remote.security,
+            tree=f"{tree}.security",
+            secrets=secrets,
+            remote=remote.security,
             check_unmanaged=check_unmanaged,
         )
         proxy_updated, proxy_attrs = self.proxy._update_remote_attrs(
-            f"{tree}.proxy",
-            sonarr_secrets,
-            remote.proxy,
+            tree=f"{tree}.proxy",
+            secrets=secrets,
+            remote=remote.proxy,
             check_unmanaged=check_unmanaged,
         )
         logging_updated, logging_attrs = self.logging._update_remote_attrs(
-            f"{tree}.logging",
-            sonarr_secrets,
-            remote.logging,
+            tree=f"{tree}.logging",
+            secrets=secrets,
+            remote=remote.logging,
             check_unmanaged=check_unmanaged,
         )
         analytics_updated, analytics_attrs = self.analytics._update_remote_attrs(
-            f"{tree}.analytics",
-            sonarr_secrets,
-            remote.analytics,
+            tree=f"{tree}.analytics",
+            secrets=secrets,
+            remote=remote.analytics,
             check_unmanaged=check_unmanaged,
         )
         updates_updated, updates_attrs = self.updates._update_remote_attrs(
-            f"{tree}.updates",
-            sonarr_secrets,
-            remote.updates,
+            tree=f"{tree}.updates",
+            secrets=secrets,
+            remote=remote.updates,
             check_unmanaged=check_unmanaged,
         )
         backup_updated, backup_attrs = self.backup._update_remote_attrs(
-            f"{tree}.backup",
-            sonarr_secrets,
-            remote.backup,
+            tree=f"{tree}.backup",
+            secrets=secrets,
+            remote=remote.backup,
             check_unmanaged=check_unmanaged,
         )
         if any(
@@ -566,9 +560,9 @@ class SonarrGeneralSettingsConfig(ConfigBase):
                 backup_updated,
             ],
         ):
-            remote_config = api_get(sonarr_secrets, "/api/v3/config/host")
+            remote_config = api_get(secrets, "/api/v3/config/host")
             api_put(
-                sonarr_secrets,
+                secrets,
                 f"/api/v3/config/host/{remote_config['id']}",
                 {
                     # There are some undocumented values that are not

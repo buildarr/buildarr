@@ -13,26 +13,26 @@
 # You should have received a copy of the GNU General Public License along with Buildarr.
 # If not, see <https://www.gnu.org/licenses/>.
 
+
 """
 Sonarr plugin profiles settings configuration.
 """
 
 from __future__ import annotations
 
-from buildarr.config import ConfigBase
-
+from ..types import SonarrConfigBase
 from .delay import SonarrDelayProfilesSettingsConfig
 from .language import SonarrLanguageProfilesSettingsConfig
 from .quality import SonarrQualityProfilesSettingsConfig
 from .release import SonarrReleaseProfilesSettingsConfig
 
 
-class SonarrProfilesSettingsConfig(ConfigBase):
+class SonarrProfilesSettingsConfig(SonarrConfigBase):
     """
     Sonarr plugin profiles settings configuration.
     """
 
-    quality_profiles = SonarrQualityProfilesSettingsConfig()
-    language_profiles = SonarrLanguageProfilesSettingsConfig()
-    delay_profiles = SonarrDelayProfilesSettingsConfig()
-    release_profiles = SonarrReleaseProfilesSettingsConfig()
+    quality_profiles: SonarrQualityProfilesSettingsConfig = SonarrQualityProfilesSettingsConfig()
+    language_profiles: SonarrLanguageProfilesSettingsConfig = SonarrLanguageProfilesSettingsConfig()
+    delay_profiles: SonarrDelayProfilesSettingsConfig = SonarrDelayProfilesSettingsConfig()
+    release_profiles: SonarrReleaseProfilesSettingsConfig = SonarrReleaseProfilesSettingsConfig()

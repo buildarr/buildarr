@@ -21,17 +21,19 @@ Sonarr plugin tags settings configuration.
 
 from __future__ import annotations
 
-from typing import Dict, List, cast
+from typing import Dict, List
 
-from buildarr.config import ConfigBase, NonEmptyStr
+from typing_extensions import Self
+
+from buildarr.config import NonEmptyStr
 from buildarr.logging import plugin_logger
-from buildarr.secrets import SecretsPlugin
 
+from ..api import api_get, api_post
 from ..secrets import SonarrSecrets
-from ..util import api_get, api_post
+from .types import SonarrConfigBase
 
 
-class SonarrTagsSettingsConfig(ConfigBase):
+class SonarrTagsSettingsConfig(SonarrConfigBase):
     """
     Tags are used to associate media files with certain resources (e.g. release profiles).
 
@@ -68,27 +70,24 @@ class SonarrTagsSettingsConfig(ConfigBase):
     """
 
     @classmethod
-    def from_remote(cls, secrets: SecretsPlugin) -> SonarrTagsSettingsConfig:
+    def from_remote(cls, secrets: SonarrSecrets) -> Self:
         return cls(
-            definitions=[
-                tag["label"] for tag in api_get(cast(SonarrSecrets, secrets), "/api/v3/tag")
-            ],
+            definitions=[tag["label"] for tag in api_get(secrets, "/api/v3/tag")],
         )
 
     def update_remote(
         self,
         tree: str,
-        secrets: SecretsPlugin,
-        remote: SonarrTagsSettingsConfig,
+        secrets: SonarrSecrets,
+        remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
         # This only does creations and updates.
         # Deletes (and empty tag list prints) are done AFTER all other modifications are made.
         # TODO: Implement tag deletions.
         changed = False
-        sonarr_secrets = cast(SonarrSecrets, secrets)
         current_tags: Dict[str, int] = {
-            tag["label"]: tag["id"] for tag in api_get(sonarr_secrets, "/api/v3/tag")
+            tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")
         }
         if self.definitions:
             for i, tag in enumerate(self.definitions):
@@ -96,6 +95,6 @@ class SonarrTagsSettingsConfig(ConfigBase):
                     plugin_logger.debug("%s.definitions[%i]: %s (exists)", tree, i, repr(tag))
                 else:
                     plugin_logger.info("%s.definitions[%i]: %s -> (created)", tree, i, repr(tag))
-                    api_post(sonarr_secrets, "/api/v3/tag", {"label": tag})
+                    api_post(secrets, "/api/v3/tag", {"label": tag})
                     changed = True
         return changed
