@@ -12,7 +12,7 @@ sonarr:
         url_base: null
         instance_name: "Sonarr (Example)"
       security:
-        authentication_method: "none"
+        authentication: "none"
       proxy:
         enable: false
       logging:

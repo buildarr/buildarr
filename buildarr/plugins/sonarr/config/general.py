@@ -24,7 +24,7 @@ from __future__ import annotations
 from ipaddress import IPv4Address
 from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
 
-from pydantic import Field
+from pydantic import Field, root_validator
 from typing_extensions import Self
 
 from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
@@ -205,20 +205,16 @@ class SecurityGeneralSettings(GeneralSettings):
     Requires a restart of Sonarr to take effect.
     """
 
-    # TODO: constraint - required when authentication is not none
     username: Optional[str] = None
     """
-    Username for the administrator user.
-    Only used when authentication is enforced.
+    Username for the administrator user. Required if authentication is enabled.
 
     Requires a restart of Sonarr to take effect.
     """
 
-    # TODO: constraint - required when authentication is not none
     password: Optional[Password] = None
     """
-    Password for the administrator user.
-    Only used when authentication is enforced.
+    Password for the administrator user. Required if authentication is enabled.
 
     Requires a restart of Sonarr to take effect.
     """
@@ -241,9 +237,12 @@ class SecurityGeneralSettings(GeneralSettings):
             "username",
             "username",
             {
-                "optional": True,  # Set to default value (None) if not found on remote
-                "set_if": lambda v: v is not None,  # Do not send to remote if set to None
+                # Set to default value (`None`) if not found on remote.
+                "optional": True,
+                # Due to the validator, gets set to `None` if authentication is disabled
+                # on the remote instance.
                 "decoder": lambda v: v or None,
+                # Sonarr isn't too picky about this, but replicate the behaviour of the UI.
                 "encoder": lambda v: v or "",
             },
         ),
@@ -251,12 +250,49 @@ class SecurityGeneralSettings(GeneralSettings):
             "password",
             "password",
             {
-                "optional": True,  # Set to default value (None) if not found on remote
-                "set_if": lambda v: v is not None,  # Do not send to remote if set to None
+                # Set to default value (`None`) if not found on remote.
+                "optional": True,
+                # Due to the validator, gets set to `None` if authentication is disabled
+                # on the remote instance.
+                "decoder": lambda v: v or None,
+                # Sonarr isn't too picky about this, but replicate the behaviour of the UI.
+                "encoder": lambda v: v.get_secret_value() if v else "",
             },
         ),
         ("certificate_validation", "certificateValidation", {}),
     ]
+
+    @root_validator
+    def username_password_constraints(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Enforce the following constraints on the `username` and `password` attributes:
+
+        * If `authentication` is `none`, set `username` and `password` to `None`.
+        * If `authentication` is a value other than `none` (i.e. require authentication),
+          ensure that `username` and `password` are set to a value other than `None`.
+
+        This will apply to both the local Buildarr configuration and
+        the remote Sonarr instance configuration.
+
+        Args:
+            values (Dict[str, Any]): Configuration attributes
+
+        Raises:
+            ValueError: If `username` or `password` are required but empty
+
+        Returns:
+            Validated configuration attributes
+        """
+        if values["authentication"] == AuthenticationMethod.none:
+            values["username"] = None
+            values["password"] = None
+        else:
+            if not values["username"] or not values["password"]:
+                raise ValueError(
+                    "'username' and 'password' attributes required "
+                    "when authentication is enabled",
+                )
+        return values
 
 
 class ProxyGeneralSettings(GeneralSettings):
@@ -332,7 +368,10 @@ class ProxyGeneralSettings(GeneralSettings):
         (
             "password",
             "proxyPassword",
-            {"decoder": lambda v: v or None, "encoder": lambda v: v or ""},
+            {
+                "decoder": lambda v: v or None,
+                "encoder": lambda v: v.get_secret_value() if v else "",
+            },
         ),
         (
             "ignored_addresses",
