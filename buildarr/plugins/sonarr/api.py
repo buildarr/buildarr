@@ -179,12 +179,40 @@ def api_error(
     """
 
     error_message = (
-        f"Unexpected response with status code {response.status_code} from from '{method} {url}'"
+        f"Unexpected response with status code {response.status_code} from from '{method} {url}':"
     )
     if parse_response:
         res_json = response.json()
         try:
-            error_message += f": {res_json['message']}\n{res_json['description']}"
+            error_message += f" {_api_error(res_json)}"
+        except TypeError:
+            for error in res_json:
+                error_message += f"\n{_api_error(error)}"
         except KeyError:
-            error_message += f": {res_json}"
+            error_message += f" {res_json}"
     raise SonarrAPIError(error_message, response=response)
+
+
+def _api_error(res_json: Any) -> str:
+    """
+    Generate an error message from a response object.
+
+    Args:
+        res_json (Any): Response object
+
+    Returns:
+        String containing one or more error messages
+    """
+
+    try:
+        return (
+            f"{res_json['propertyName']}: "
+            f"{res_json['errorMessage']} (attempted value: {res_json['attemptedValue']})"
+        )
+    except KeyError:
+        pass
+    try:
+        return f"{res_json['message']}\n{res_json['description']}"
+    except KeyError:
+        pass
+    return res_json["message"]

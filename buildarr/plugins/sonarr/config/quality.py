@@ -29,7 +29,7 @@ from typing import Dict, Optional, cast
 from pydantic import Field
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigBase, NonEmptyStr, TrashID
+from buildarr.config import ConfigBase, TrashID
 from buildarr.config.exceptions import ConfigTrashIDNotFoundError
 
 from ..api import api_get, api_put
@@ -42,7 +42,7 @@ class QualityDefinition(SonarrConfigBase):
     Manually set quality definitions can have the following parameters.
     """
 
-    title: Optional[NonEmptyStr] = None
+    title: Optional[str] = None
     """
     The name of the quality in the GUI.
 
@@ -166,16 +166,16 @@ class SonarrQualitySettingsConfig(ConfigBase):
     def from_remote(cls, secrets: SonarrSecrets) -> Self:
         return cls(
             definitions={
-                definition["quality"]["name"]: QualityDefinition(
+                definition_json["quality"]["name"]: QualityDefinition(
                     title=(
-                        definition["title"]
-                        if definition["title"] != definition["quality"]["name"]
+                        definition_json["title"]
+                        if definition_json["title"] != definition_json["quality"]["name"]
                         else None
                     ),
-                    min=definition["minSize"],
-                    max=definition.get("maxSize", None),
+                    min=definition_json["minSize"],
+                    max=definition_json.get("maxSize", None),
                 )
-                for definition in api_get(secrets, "/api/v3/qualitydefinition")
+                for definition_json in api_get(secrets, "/api/v3/qualitydefinition")
             }
         )
 
@@ -187,25 +187,30 @@ class SonarrQualitySettingsConfig(ConfigBase):
         check_unmanaged: bool = False,
     ) -> bool:
         changed = False
-        definition_ids: Dict[str, int] = {
-            definition_json["quality"]["name"]: definition_json["id"]
+        remote_definitions_json = {
+            definition_json["id"]: definition_json
             for definition_json in api_get(secrets, "/api/v3/qualitydefinition")
+        }
+        definition_ids: Dict[str, int] = {
+            definition_json["quality"]["name"]: definition_id
+            for definition_id, definition_json in remote_definitions_json.items()
         }
         for definition_name, local_definition in self.definitions.items():
             updated, remote_attrs = local_definition.get_update_remote_attrs(
-                f"{tree}[{repr(definition_name)}]",
-                cast(SonarrQualitySettingsConfig, remote).definitions[definition_name],
-                [
+                tree=f"{tree}[{repr(definition_name)}]",
+                remote=remote.definitions[definition_name],
+                remote_map=[
                     ("title", "title", {"encoder": lambda v: v or definition_name}),
                     ("min", "minSize", {}),
                     ("max", "maxSize", {}),
                 ],
             )
             if updated:
+                definition_id = definition_ids[definition_name]
                 api_put(
                     secrets,
-                    f"/api/v3/qualitydefinition/{definition_ids[definition_name]}",
-                    remote_attrs,
+                    f"/api/v3/qualitydefinition/{definition_id}",
+                    {**remote_definitions_json[definition_id], **remote_attrs},
                 )
                 changed = True
         return changed
