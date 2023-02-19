@@ -107,7 +107,7 @@ class QualityProfile(SonarrConfigBase):
     This attribute is required if `upgrades_allowed` is set to `True`.
     """
 
-    qualities: Annotated[List[Union[str, QualityGroup]], Field(min_items=1)]
+    qualities: Annotated[List[Union[NonEmptyStr, QualityGroup]], Field(min_items=1)]
     """
     The qualities to enable downloading episodes for. The order determines the priority
     (highest priority first, lowest priority last).
@@ -131,12 +131,39 @@ class QualityProfile(SonarrConfigBase):
     At least one quality must be specified.
     """
 
-    # TODO: validate that there are no duplicate quality definitions in qualities
-
     @root_validator
-    def required_if_upgrades_allowed(cls, values):
-        if values["upgrades_allowed"] and not values["upgrade_until"]:
+    def validate_qualityprofile(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate the quality profile against required constraints.
+
+        Args:
+            values (Dict[str, Any]): Parsed values
+
+        Raises:
+            ValueError: If `upgrade_until` is not defined when `upgrades_allowed` is `True`
+            ValueError: If duplicate allowed quality entries are defined
+            ValueError: If `upgrade_until` is set to a disabled quality name
+
+        Returns:
+            Validated values
+        """
+        upgrades_allowed: bool = values["upgrades_allowed"]
+        upgrade_until: str = values["upgrade_until"]
+        qualities: Sequence[Union[str, QualityGroup]] = values["qualities"]
+        if upgrades_allowed and not upgrade_until:
             raise ValueError("'upgrade_until' is required if 'upgrades_allowed' is True")
+        upgrade_until_allowed = False
+        quality_names: Set[str] = set()
+        for quality in qualities:
+            quality_name = quality.name if isinstance(quality, QualityGroup) else quality
+            if upgrade_until == quality_name:
+                upgrade_until_allowed = True
+            if quality_name in quality_names:
+                raise ValueError(f"Duplicate entries of quality name '{quality_name}' exist")
+            else:
+                quality_names.add(quality_name)
+        if not upgrade_until_allowed:
+            raise ValueError("'upgrade_until' must be set to an allowed quality name")
         return values
 
     @classmethod
