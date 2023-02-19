@@ -322,21 +322,21 @@ class SonarrMetadataSettingsConfig(ConfigBase):
         return any(
             [
                 self.kodi_emby._update_remote(
-                    tree=tree,
+                    tree=f"{tree}.kodi_emby",
                     secrets=secrets,
                     remote=remote.kodi_emby,
                     metadata=kodi_emby_metadata,
                     check_unmanaged=check_unmanaged,
                 ),
                 self.roksbox._update_remote(
-                    tree=tree,
+                    tree=f"{tree}.roksbox",
                     secrets=secrets,
                     remote=remote.roksbox,
                     metadata=roksbox_metadata,
                     check_unmanaged=check_unmanaged,
                 ),
                 self.wdtv._update_remote(
-                    tree=tree,
+                    tree=f"{tree}.wdtv",
                     secrets=secrets,
                     remote=remote.wdtv,
                     metadata=wdtv_metadata,
