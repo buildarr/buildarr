@@ -1,13 +1,9 @@
 name: release
 
 on:
-  workflow_run:
-    workflows:
-      - pre-commit
-    tags:
-      - "v*.*.*"
+  release:
     types:
-      - completed
+      - published
 
 jobs:
   release:
