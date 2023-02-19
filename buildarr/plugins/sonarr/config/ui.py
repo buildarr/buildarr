@@ -205,10 +205,11 @@ class SonarrUISettingsConfig(SonarrConfigBase):
             check_unmanaged=check_unmanaged,
         )
         if updated:
+            config_id = api_get(secrets, "/api/v3/config/ui")["id"]
             api_put(
                 secrets,
-                f"/api/v3/config/ui/{api_get(secrets, '/api/v3/config/ui')['id']}",
-                remote_attrs,
+                f"/api/v3/config/ui/{config_id}",
+                {"id": config_id, **remote_attrs},
             )
             return True
         return False
