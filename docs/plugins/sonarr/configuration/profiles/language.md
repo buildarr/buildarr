@@ -7,8 +7,6 @@ sonarr:
   settings:
     profiles:
       language_profiles:
-        # Set to `true` or `false` as desired. (Default `false`)
-        delete_unmanaged: true
         definitions:
           # Add language profiles here.
           # The name of the block becomes the name of the quality profile.
@@ -16,7 +14,7 @@ sonarr:
             upgrades_allowed: true
             upgrade_until: "Japanese"
             # Highest priority quality first, lowest priority goes last.
-            qualities:
+            languages:
               - "Japanese"
               - "English"
           # Add additional language profiles here as needed.

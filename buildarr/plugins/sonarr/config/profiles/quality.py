@@ -145,25 +145,38 @@ class QualityProfile(SonarrConfigBase):
             ValueError: If `upgrade_until` is set to a disabled quality name
 
         Returns:
-            Validated values
+            Validated/modified values
         """
-        upgrades_allowed: bool = values["upgrades_allowed"]
-        upgrade_until: str = values["upgrade_until"]
-        qualities: Sequence[Union[str, QualityGroup]] = values["qualities"]
-        if upgrades_allowed and not upgrade_until:
-            raise ValueError("'upgrade_until' is required if 'upgrades_allowed' is True")
-        upgrade_until_allowed = False
+        try:
+            upgrades_allowed: bool = values["upgrades_allowed"]
+            upgrade_until: str = values["upgrade_until"]
+            qualities: Sequence[Union[str, QualityGroup]] = values["qualities"]
+        except KeyError as err:
+            raise ValueError(f"required attribute undefined or unable to be parsed: {str(err)}")
+        # `upgrade_until` checks.
+        if upgrades_allowed:
+            if not upgrade_until:
+                raise ValueError("'upgrade_until' is required if 'upgrades_allowed' is True")
+            for quality in qualities:
+                quality_name = quality.name if isinstance(quality, QualityGroup) else quality
+                if upgrade_until == quality_name:
+                    break
+            else:
+                raise ValueError("'upgrade_until' must be set to an allowed quality name")
+        else:
+            # If `upgrades_allowed` is `False`, set `upgrade_until` to `None`
+            # to make sure Buildarr ignores whatever it is currently set to
+            # on the remote instance.
+            values["upgrade_until"] = None
+        # `qualities` checks.
         quality_names: Set[str] = set()
         for quality in qualities:
             quality_name = quality.name if isinstance(quality, QualityGroup) else quality
-            if upgrade_until == quality_name:
-                upgrade_until_allowed = True
             if quality_name in quality_names:
                 raise ValueError(f"Duplicate entries of quality name '{quality_name}' exist")
             else:
                 quality_names.add(quality_name)
-        if not upgrade_until_allowed:
-            raise ValueError("'upgrade_until' must be set to an allowed quality name")
+        # Return validated/modified values.
         return values
 
     @classmethod
@@ -178,18 +191,15 @@ class QualityProfile(SonarrConfigBase):
                 "upgrade_until",
                 "cutoff",
                 {
-                    "root_decoder": lambda vs: next(
-                        (
-                            quality["name"]
-                            for quality in ((q if "id" in q else q["quality"]) for q in vs["items"])
-                            if quality["id"] == vs["cutoff"]
-                        ),
-                        None,
+                    "root_decoder": lambda vs: cls._upgrade_until_decoder(
+                        items=vs["items"],
+                        cutoff=vs["cutoff"],
                     ),
-                    "encoder": lambda v: (
-                        (group_ids[v] if v in group_ids else quality_definitions[v]["id"])
-                        if v is not None
-                        else 0
+                    "root_encoder": lambda vs: cls._upgrade_until_encoder(
+                        quality_definitions=quality_definitions,
+                        group_ids=group_ids,
+                        qualities=vs.qualities,
+                        upgrade_until=vs.upgrade_until,
                     ),
                 },
             ),
@@ -202,6 +212,47 @@ class QualityProfile(SonarrConfigBase):
                 },
             ),
         ]
+
+    @classmethod
+    def _upgrade_until_decoder(
+        cls,
+        items: Sequence[Mapping[str, Any]],
+        cutoff: int,
+    ) -> str:
+        for quality_item in items:
+            quality: Mapping[str, Any] = (
+                quality_item  # Quality group
+                if "id" in quality_item
+                else quality_item["quality"]  # Quality definition (singular)
+            )
+            if quality["id"] == cutoff:
+                return quality["name"]
+        else:
+            raise RuntimeError(
+                "Inconsistent Sonarr instance state: "
+                f"'cutoff' quality ID {cutoff} not found in 'items': {items}",
+            )
+
+    @classmethod
+    def _upgrade_until_encoder(
+        cls,
+        quality_definitions: Mapping[str, Mapping[str, Any]],
+        group_ids: Mapping[str, int],
+        qualities: Sequence[Union[str, QualityGroup]],
+        upgrade_until: Optional[str],
+    ) -> int:
+        if not upgrade_until:
+            quality = qualities[0]
+            return (
+                group_ids[quality.name]
+                if isinstance(quality, QualityGroup)
+                else quality_definitions[quality]["id"]
+            )
+        return (
+            group_ids[upgrade_until]
+            if upgrade_until in group_ids
+            else quality_definitions[upgrade_until]["id"]
+        )
 
     @classmethod
     def _from_remote(cls, remote_attrs: Mapping[str, Any]) -> Self:
