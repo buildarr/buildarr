@@ -7,9 +7,24 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "buildarr"
-version = "0.1.1"
+version = "0.1.2"
 description = "Constructs and configures Arr PVR stacks"
 authors = ["Callum Dickinson <callum.dickinson.nz@gmail.com>"]
+license = "GPL-3.0-or-later"
+homepage = "https://buildarr.github.io"
+repository = "https://github.com/buildarr/buildarr"
+documentation = "https://buildarr.github.io"
+keywords = ["buildarr", "sonarr", "radarr", "prowlarr"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Pydantic",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed"
+]
 readme = "README.md"
 packages = [{include = "buildarr"}]
 
