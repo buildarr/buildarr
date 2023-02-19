@@ -21,7 +21,7 @@ Sonarr plugin media management settings configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from pydantic import Field
 from typing_extensions import Self
@@ -274,10 +274,12 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
     Only enable when Sonarr is unable to detect free space from your series root folder.
     """
 
-    minimum_free_space: int = Field(100, ge=0)  # MB
+    minimum_free_space: int = Field(100, ge=100)  # MB
     """
     Prevent import if it would leave less than the specified
     amount of disk space (in megabytes) available.
+
+    Minimum value is 100 MB.
     """
 
     use_hardlinks: bool = True
@@ -416,7 +418,7 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
     ```
     """
 
-    chown_group: Optional[NonEmptyStr] = None
+    chown_group: Optional[str] = None
     """
     Group name or gid. Use gid for remote file systems.
 
@@ -424,7 +426,7 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
     It's better to ensure the download client uses the same group as Sonarr.
     """
 
-    root_folders: List[NonEmptyStr] = []
+    root_folders: Set[NonEmptyStr] = set()
     """
     This allows you to create a root path for a place to either
     place new imported downloads, or to allow Sonarr to scan existing media.
@@ -436,6 +438,19 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
           root_folders:
             - "/path/to/rootfolder"
     ```
+    """
+
+    delete_unmanaged_root_folders: bool = False
+    """
+    Delete root folder definitions from Sonarr if they are not
+    explicitly defined in Buildarr.
+
+    Before enabling this option, ensure all the root folders
+    you want Sonarr to scan are defined in Buildarr,
+    as Sonarr might remove imported media from its database
+    when root folder definitions are deleted.
+
+    *Added in version 0.1.2.*
     """
 
     _naming_remote_map: List[RemoteMapEntry] = [
@@ -461,6 +476,7 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
         ("use_hardlinks", "copyUsingHardlinks", {}),
         ("import_extra_files", "importExtraFiles", {}),
         # File Management
+        ("unmonitor_deleted_episodes", "autoUnmonitorPreviouslyDownloadedEpisodes", {}),
         ("propers_and_repacks", "downloadPropersAndRepacks", {}),
         ("analyze_video_files", "enableMediaInfo", {}),
         ("rescan_series_folder_after_refresh", "rescanAfterRefresh", {}),
@@ -565,15 +581,14 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
             remote,
             self._mediamanagement_remote_map,
             check_unmanaged=check_unmanaged,
+            set_unchanged=True,
         )
         if updated:
+            config_id = api_get(secrets, "/api/v3/config/mediamanagement")["id"]
             api_put(
                 secrets,
-                (
-                    "/api/v3/config/mediamanagement/"
-                    f"{api_get(secrets, '/api/v3/config/mediamanagement')['id']}"
-                ),
-                remote_attrs,
+                f"/api/v3/config/mediamanagement/{config_id}",
+                {"id": config_id, **remote_attrs},
             )
             return True
         return False
@@ -585,19 +600,20 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
         remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
+        tree = f"{tree}.root_folders"
         changed = False
         current_root_folders: Dict[str, int] = {
             rf["path"]: rf["id"] for rf in api_get(secrets, "/api/v3/rootfolder")
         }
         expected_root_folders = set(self.root_folders)
-        # TODO: change root_folders so that you can set check_unmanaged specifically for it
-        #       e.g. "delete_unmanaged"
-        if check_unmanaged:
+        if self.delete_unmanaged_root_folders:
+            i = -1
             for root_folder, root_folder_id in current_root_folders.items():
                 if root_folder not in expected_root_folders:
-                    plugin_logger.info("%s: %s -> (deleted)", tree, repr(str(root_folder)))
+                    plugin_logger.info("%s[%i]: %s -> (deleted)", tree, i, repr(str(root_folder)))
                     api_delete(secrets, f"/api/v3/rootfolder/{root_folder_id}")
                     changed = True
+                    i -= 1
         for i, root_folder in enumerate(self.root_folders):
             if root_folder in current_root_folders:
                 plugin_logger.debug("%s[%i]: %s (exists)", tree, i, repr(str(root_folder)))

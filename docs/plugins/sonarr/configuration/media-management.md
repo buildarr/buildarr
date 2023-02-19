@@ -30,5 +30,6 @@
         - chmod_folder
         - chown_group
         - root_folders
+        - delete_unmanaged_root_folders
       show_root_heading: false
       show_source: false
