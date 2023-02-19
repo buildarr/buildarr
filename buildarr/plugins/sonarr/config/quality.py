@@ -214,3 +214,8 @@ class SonarrQualitySettingsConfig(ConfigBase):
                 )
                 changed = True
         return changed
+
+    # Tell Pydantic to validate in-place assignments of attributes.
+    # This ensures that any validators that parse attributes to consistent values run.
+    class Config(SonarrConfigBase.Config):
+        validate_assignment = True

@@ -22,7 +22,6 @@ Sonarr plugin release profile configuration.
 from __future__ import annotations
 
 import json
-import sys
 
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, cast
@@ -201,10 +200,7 @@ class ReleaseProfile(SonarrConfigBase):
 
     @validator("preferred")
     def sort_preferred(cls, preferred: Iterable[PreferredWord]) -> List[PreferredWord]:
-        return sorted(
-            preferred,
-            key=lambda q: ((sys.maxsize - q.score), q.term),
-        )
+        return sorted(preferred, key=lambda p: (-p.score, p.term))
 
     @classmethod
     def _get_remote_map(
@@ -384,6 +380,11 @@ class ReleaseProfile(SonarrConfigBase):
     def _delete_remote(self, tree: str, secrets: SonarrSecrets, profile_id: int) -> None:
         plugin_logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/releaseprofile/{profile_id}")
+
+    # Tell Pydantic to validate in-place assignments of attributes.
+    # This ensures that any validators that parse attributes to consistent values run.
+    class Config(SonarrConfigBase.Config):
+        validate_assignment = True
 
 
 class SonarrReleaseProfilesSettingsConfig(SonarrConfigBase):

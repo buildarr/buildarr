@@ -21,7 +21,7 @@ Sonarr plugin language profile configuration.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set
 
 from pydantic import Field, root_validator
 from typing_extensions import Annotated, Self
@@ -114,7 +114,7 @@ class LanguageProfile(SonarrConfigBase):
           Anime: # Name of the language profile
             upgrades_allowed: true
             upgrade_until: "Japanese" # Required if upgrades are allowed
-            qualities: # Required
+            languages: # Required
               - "Japanese"
               - "English"
     ```
@@ -154,9 +154,49 @@ class LanguageProfile(SonarrConfigBase):
     """
 
     @root_validator
-    def required_if_upgrades_allowed(cls, values):
-        if values["upgrades_allowed"] and not values["upgrade_until"]:
-            raise ValueError("Field 'upgrade_until' is required if 'upgrades_allowed' is True")
+    def validate_languageprofile(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate the language profile against required constraints.
+
+        Args:
+            values (Dict[str, Any]): Parsed values
+
+        Raises:
+            ValueError: If `upgrade_until` is not defined when `upgrades_allowed` is `True`
+            ValueError: If duplicate allowed languages are defined
+            ValueError: If `upgrade_until` is set to a disabled language
+
+        Returns:
+            Validated/modified values
+        """
+        try:
+            upgrades_allowed: bool = values["upgrades_allowed"]
+            upgrade_until: str = values["upgrade_until"]
+            languages: Sequence[Language] = values["languages"]
+        except KeyError as err:
+            raise ValueError(f"required attribute undefined or unable to be parsed: {str(err)}")
+        # `upgrade_until` checks.
+        if upgrades_allowed:
+            if not upgrade_until:
+                raise ValueError("'upgrade_until' is required if 'upgrades_allowed' is True")
+            for language in languages:
+                if upgrade_until == language:
+                    break
+            else:
+                raise ValueError("'upgrade_until' must be set to an allowed quality name")
+        else:
+            # If `upgrades_allowed` is `False`, set `upgrade_until` to `None`
+            # to make sure Buildarr ignores whatever it is currently set to
+            # on the remote instance.
+            values["upgrade_until"] = None
+        # `languages` checks.
+        language_set: Set[Language] = set()
+        for language in languages:
+            if language in language_set:
+                raise ValueError(f"Duplicate entries of language '{language.name}' exist")
+            else:
+                language_set.add(language)
+        # Return validated/modified values.
         return values
 
     @classmethod
@@ -171,7 +211,10 @@ class LanguageProfile(SonarrConfigBase):
                 "cutoff",
                 {
                     "decoder": lambda v: Language(v["name"]),
-                    "encoder": lambda v: {"id": language_ids[v], "name": v.value},
+                    "root_encoder": lambda vs: cls._upgrade_until_encoder(
+                        language_ids=language_ids,
+                        language=vs.upgrade_until if vs.upgrade_until else vs.languages[0],
+                    ),
                 },
             ),
             (
@@ -185,6 +228,14 @@ class LanguageProfile(SonarrConfigBase):
                 },
             ),
         ]
+
+    @classmethod
+    def _upgrade_until_encoder(
+        cls,
+        language_ids: Mapping[Language, int],
+        language: Language,
+    ) -> Dict[str, Any]:
+        return {"id": language_ids[language], "name": language.value}
 
     @classmethod
     def _languages_encoder(
