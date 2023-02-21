@@ -26,15 +26,16 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type
 from pydantic import Field, HttpUrl, PositiveInt
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigEnum, ConfigIntEnum, NonEmptyStr, Password, RemoteMapEntry, RssUrl
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, BaseIntEnum, NonEmptyStr, Password, RssUrl
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
 
 
-class NabCategory(ConfigIntEnum):
+class NabCategory(BaseIntEnum):
     """
     Newznab/Torznab category enumeration.
     """
@@ -61,7 +62,7 @@ class NabCategory(ConfigIntEnum):
     # TV_DOCUMENTARY = "TV/Documentary"
 
 
-class FilelistCategory(ConfigEnum):
+class FilelistCategory(BaseEnum):
     """
     Filelist category enumeration.
     """

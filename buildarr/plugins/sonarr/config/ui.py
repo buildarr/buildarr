@@ -25,14 +25,15 @@ from typing import List
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigEnum, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
+from buildarr.types import BaseEnum
 
 from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
 
 
-class FirstDayOfWeek(ConfigEnum):
+class FirstDayOfWeek(BaseEnum):
     """
     First day of the week enumeration for Sonarr.
     """
@@ -41,7 +42,7 @@ class FirstDayOfWeek(ConfigEnum):
     monday = 1
 
 
-class WeekColumnHeader(ConfigEnum):
+class WeekColumnHeader(BaseEnum):
     """
     Week column header enumeration for Sonarr.
     """
@@ -52,7 +53,7 @@ class WeekColumnHeader(ConfigEnum):
     day_first_padded = "ddd DD/MM"
 
 
-class ShortDateFormat(ConfigEnum):
+class ShortDateFormat(BaseEnum):
     """
     Short date format enumeration for Sonarr.
     """
@@ -65,7 +66,7 @@ class ShortDateFormat(ConfigEnum):
     iso8601 = "YYYY-MM-DD"
 
 
-class LongDateFormat(ConfigEnum):
+class LongDateFormat(BaseEnum):
     """
     Long date format enumeration for SOnarr.
     """
@@ -74,7 +75,7 @@ class LongDateFormat(ConfigEnum):
     day_first = "dddd, D MMMM YYYY"
 
 
-class TimeFormat(ConfigEnum):
+class TimeFormat(BaseEnum):
     """
     Time format enumeration for Sonarr.
     """

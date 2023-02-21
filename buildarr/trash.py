@@ -25,17 +25,16 @@ from tempfile import TemporaryDirectory
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-from .config import BuildarrConfig
 from .logging import logger
+from .state import state
 
 
-def fetch(buildarr_config: BuildarrConfig, download_dir: Path) -> None:
+def fetch(download_dir: Path) -> None:
     """
     Download the TRaSH-Guides metadata from the URL specified in the Buildarr config
     to the given local directory.
 
     Args:
-        buildarr_config (BuildarrConfig): Buildarr configuration object
         download_dir (Path): Local folder to download the file to
     """
 
@@ -47,7 +46,7 @@ def fetch(buildarr_config: BuildarrConfig, download_dir: Path) -> None:
         trash_metadata_filename = temp_dir / "trash-metadata.zip"
 
         logger.debug("Downloading TRaSH metadata")
-        urlretrieve(buildarr_config.trash_metadata_download_url, trash_metadata_filename)
+        urlretrieve(state.config.buildarr.trash_metadata_download_url, trash_metadata_filename)
         logger.debug("Finished downloading TRaSH metadata")
 
         logger.debug("Extracting TRaSH metadata")
@@ -57,7 +56,7 @@ def fetch(buildarr_config: BuildarrConfig, download_dir: Path) -> None:
 
         logger.debug("Moving TRaSH metadata files to download directory")
         for subfile in (
-            temp_dir / "trash-metadata" / buildarr_config.trash_metadata_dir_prefix
+            temp_dir / "trash-metadata" / state.config.buildarr.trash_metadata_dir_prefix
         ).iterdir():
             move(str(subfile), download_dir)
         logger.debug("Finished moving TRaSH metadata files to download directory")

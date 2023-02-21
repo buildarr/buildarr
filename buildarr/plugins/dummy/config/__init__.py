@@ -26,11 +26,12 @@ from typing import TYPE_CHECKING, Dict, Optional
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigPlugin, NonEmptyStr, Port
+from buildarr.config import ConfigPlugin
+from buildarr.types import NonEmptyStr, Port
 
 from ..api import get_initialize_js
 from ..secrets import DummySecrets
-from ..util import DummyApiKey, DummyProtocol
+from ..types import DummyApiKey, DummyProtocol
 from .settings import DummySettingsConfig
 
 # Allow Mypy to properly resolve secrets type declarations in configuration classes.

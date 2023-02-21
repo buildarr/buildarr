@@ -15,34 +15,14 @@
 
 
 """
-Sonarr plugin configuration utility classes and functions.
+Buildarr secrets metadata interface.
 """
 
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from .base import SecretsBase
+from .load import load
+from .models import SecretsPlugin, SecretsType
 
-from pydantic import ConstrainedStr
-
-from buildarr.config import ConfigBase
-
-if TYPE_CHECKING:
-    from ..secrets import SonarrSecrets
-
-    class SonarrConfigBase(ConfigBase[SonarrSecrets]):
-        ...
-
-else:
-
-    class SonarrConfigBase(ConfigBase):
-        ...
-
-
-class TraktAuthUser(ConstrainedStr):
-    """
-    Constrained string type to make the Trakt auth user case-insensitive.
-    """
-
-    min_length = 1
-    to_lower = True
+__all__ = ["SecretsBase", "SecretsPlugin", "SecretsType", "load"]

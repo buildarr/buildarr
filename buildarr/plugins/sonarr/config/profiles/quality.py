@@ -26,8 +26,9 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union
 from pydantic import Field, root_validator
 from typing_extensions import Annotated, Self
 
-from buildarr.config import NonEmptyStr, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import NonEmptyStr
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets

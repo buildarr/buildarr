@@ -15,11 +15,35 @@
 
 
 """
-Buildarr configuration exception classes.
+Buildarr general utility functions.
 """
 
 
-from typing import Any, Dict, Mapping
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING, Mapping
+
+if TYPE_CHECKING:
+    from os import PathLike
+    from typing import Any, Dict, Union
+
+
+__all__ = ["get_absolute_path", "merge_dicts"]
+
+
+def get_absolute_path(path: Union[str, PathLike]) -> Path:
+    """
+    Return the absolute, fully resolved version of the given path.
+
+    Args:
+        path (Union[str, PathLike]): Path to resolve
+
+    Returns:
+        Fully resolved absolute path
+    """
+
+    return Path(path).absolute().resolve()
 
 
 def merge_dicts(*dicts: Mapping[Any, Any]) -> Dict[Any, Any]:

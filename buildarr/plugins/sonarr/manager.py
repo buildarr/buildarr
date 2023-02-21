@@ -15,7 +15,7 @@
 
 
 """
-# Sonarr plugin manager class.
+Sonarr plugin manager class.
 """
 
 
@@ -23,9 +23,9 @@ from __future__ import annotations
 
 from buildarr.manager import ManagerPlugin
 
-from .config import SonarrConfig
+from .config import SonarrInstanceConfig
 from .secrets import SonarrSecrets
 
 
-class SonarrManager(ManagerPlugin[SonarrConfig, SonarrSecrets]):
+class SonarrManager(ManagerPlugin[SonarrInstanceConfig, SonarrSecrets]):
     pass

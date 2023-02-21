@@ -15,34 +15,29 @@
 
 
 """
-Sonarr plugin configuration utility classes and functions.
+Buildarr plugin type hints.
 """
 
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from pydantic import ConstrainedStr
-
-from buildarr.config import ConfigBase
+from typing import TYPE_CHECKING, TypeVar
 
 if TYPE_CHECKING:
-    from ..secrets import SonarrSecrets
-
-    class SonarrConfigBase(ConfigBase[SonarrSecrets]):
-        ...
-
-else:
-
-    class SonarrConfigBase(ConfigBase):
-        ...
+    from ..config import ConfigPlugin
+    from ..secrets import SecretsPlugin
 
 
-class TraktAuthUser(ConstrainedStr):
-    """
-    Constrained string type to make the Trakt auth user case-insensitive.
-    """
+Config = TypeVar("Config", bound="ConfigPlugin")
+"""
+Type variable for the configuration object of a plugin.
 
-    min_length = 1
-    to_lower = True
+When creating plugins, substitute `Config` for the implementing type.
+"""
+
+Secrets = TypeVar("Secrets", bound="SecretsPlugin")
+"""
+Type variable for a secrets module of a plugin.
+
+When creating plugins, substitute `Secrets` for the implementing type.
+"""

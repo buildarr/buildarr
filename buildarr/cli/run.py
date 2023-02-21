@@ -21,17 +21,18 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Set, cast
+from typing import Dict, List, Set
 
 import click
 
 from importlib_metadata import version as package_version
 
-from ..config import BuildarrConfig, ConfigBase, ConfigPlugin, load as load_config
+from ..config import ConfigPlugin, ConfigPluginType, load as load_config
 from ..logging import logger, plugin_logger
 from ..manager import ManagerPlugin
-from ..secrets import SecretsPlugin, get_model
-from ..state import plugin_context, plugins
+from ..plugins import plugin_context
+from ..secrets import SecretsPlugin, load as load_secrets
+from ..state import state
 from ..trash import fetch as trash_fetch
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
@@ -85,13 +86,13 @@ def run(config_path: Path, use_plugins: Set[str]) -> None:
     )
 
     # Load and validate the Buildarr configuration.
-    files, config = load_config(use_plugins, config_path)
+    load_config(path=config_path, use_plugins=use_plugins)
 
     # Run the instance update main function.
-    _run(config, use_plugins)
+    _run(use_plugins)
 
 
-def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
+def _run(use_plugins: Set[str] = set()) -> None:
     """
     Buildarr instance update routine.
 
@@ -99,15 +100,11 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
     and push updates as required according to the current local configuration.
 
     Args:
-        config (ConfigBase): Configuration file to load.
         plugins (Set[str], optional): Plugins to load. If empty or unset, load all plugins.
     """
 
     # Dump the currently active Buildarr configuration file to the debug log.
-    logger.debug("Buildarr configuration:\n%s", config.yaml(exclude_unset=True))
-
-    # Get Buildarr-specific configuration from the global config.
-    buildarr_config = cast(BuildarrConfig, config.buildarr)  # type: ignore[attr-defined]
+    logger.debug("Buildarr configuration:\n%s", state.config.yaml(exclude_unset=True))
 
     # List of plugins with which to run the Buildarr update process.
     # Only plugins with explicitly defined configurations get run.
@@ -116,7 +113,7 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
     # Output the currently loaded plugins to the logs.
     logger.info(
         "Plugins loaded: %s",
-        ", ".join(sorted(plugins.keys())) if plugins else "(no plugins found)",
+        ", ".join(sorted(state.plugins.keys())) if state.plugins else "(no plugins found)",
     )
 
     # Generate instance-specific configs for each plugin, with all
@@ -125,11 +122,11 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
     # the Buildarr configuration, make sure it is not run.
     configs: Dict[str, Dict[str, ConfigPlugin]] = {}
     managers: Dict[str, ManagerPlugin] = {}
-    for plugin_name, plugin in plugins.items():
-        if plugin_name in config.__fields_set__:
+    for plugin_name, plugin in state.plugins.items():
+        if plugin_name in state.config.__fields_set__:
             run_plugins.append(plugin_name)
             plugin_manager = plugin.manager()
-            plugin_config = getattr(config, plugin_name)
+            plugin_config: ConfigPluginType = getattr(state.config, plugin_name)
             managers[plugin_name] = plugin_manager
             configs[plugin_name] = {
                 instance_name: plugin_manager.get_instance_config(plugin_config, instance_name)
@@ -143,67 +140,59 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
     if not run_plugins:
         raise RunNoPluginsDefinedError("No loaded plugins configured in Buildarr")
 
-    # Log the plugins being used in this Buildarr run.
-    logger.info("Using plugins: %s", ", ".join(run_plugins))
+    # Log the plugins being executed in this Buildarr run.
+    logger.info("Running with plugins: %s", ", ".join(run_plugins))
 
-    # Load the secrets plugins, and the model used to load and save the secrets file.
-    secrets_model = get_model(set(run_plugins))
-
-    # Load the current secrets file. This will be used as a cache
-    # to help generate the new secrets file which will be used this run.
-    logger.info("Loading secrets file from '%s'", buildarr_config.secrets_file_path)
-    try:
-        old_secrets_obj = secrets_model.read(buildarr_config.secrets_file_path)
-        logger.info("Finished loading secrets file")
-    except FileNotFoundError:
-        logger.info("Secrets file does not exist, will create new file")
-        old_secrets_obj = secrets_model()
+    # Load the secrets file if it exists, and initialise the secrets metadata.
+    # If `use_plugins` is undefined, load using all plugins available
+    # to preserve cached secrets metadata that isn't used.
+    load_secrets(path=state.config.buildarr.secrets_file_path, use_plugins=use_plugins)
 
     # Generate the secrets structure for each plugin and instance,
     # using the old structure cached from file as a base, and
     # fetching them from the remote instance if they don't exist.
-    secrets: Dict[str, Dict[str, SecretsPlugin]] = {}
     for plugin_name in run_plugins:
-        if plugin_name not in secrets:
-            secrets[plugin_name] = {}
+        plugin_secrets: Dict[str, SecretsPlugin] = getattr(state.secrets, plugin_name)
         for instance_name, instance_config in configs[plugin_name].items():
             with plugin_context(plugin_name, instance_name):
                 plugin_logger.info("Checking secrets")
                 try:
-                    instance_secrets = getattr(old_secrets_obj, plugin_name)[instance_name]
+                    instance_secrets = plugin_secrets[instance_name]
                 except KeyError:
                     instance_secrets = None
                 if instance_secrets and instance_secrets.test():
                     plugin_logger.info("Connection test successful using cached secrets")
-                    secrets[plugin_name][instance_name] = instance_secrets
+                    plugin_secrets[instance_name] = instance_secrets
                 else:
                     plugin_logger.info(
                         "Connection test failed using cached secrets (or not cached), "
                         "fetching secrets",
                     )
-                    instance_secrets = plugins[plugin_name].secrets.get(instance_config)
+                    instance_secrets = state.plugins[plugin_name].secrets.get(instance_config)
                     if instance_secrets.test():
-                        plugin_logger.info("Connection test successful using fetched secrets")
-                        secrets[plugin_name][instance_name] = instance_secrets
+                        plugin_logger.info("Connection test uccessful using fetched secrets")
                     else:
                         raise RunInstanceConnectionTestFailedError(
                             "Connection test failed using fetched secrets "
-                            f"for instance '{instance_name}': {repr(instance_secrets)}",
+                            f"for instance '{instance_name}': {instance_secrets}",
                         )
                 plugin_logger.info("Finished checking secrets")
 
     # Save the latest secrets file to disk.
-    logger.info("Saving updated secrets file to '%s'", buildarr_config.secrets_file_path)
-    secrets_model(**secrets).write(buildarr_config.secrets_file_path)
+    logger.info("Saving updated secrets file to '%s'", state.config.buildarr.secrets_file_path)
+    state.secrets.write(state.config.buildarr.secrets_file_path)
     logger.info("Finished saving updated secrets file")
 
-    # Check if any plugins are configured to get metadata from TRaSH-Guides.
+    # Check if any instances are configured to get metadata from TRaSH-Guides.
+    uses_trash_metadata = False
     for plugin_name in run_plugins:
-        if managers[plugin_name].uses_trash_metadata(getattr(config, plugin_name)):
-            uses_trash_metadata = True
+        manager = managers[plugin_name]
+        for instance_config in configs[plugin_name].values():
+            if manager.uses_trash_metadata(instance_config):
+                uses_trash_metadata = True
+                break
+        if uses_trash_metadata:
             break
-    else:
-        uses_trash_metadata = False
 
     # Create a temporary directory for Buildarr to use.
     logger.debug("Creating runtime directory")
@@ -218,7 +207,7 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
             trash_metadata_dir = temp_dir / "trash"
             trash_metadata_dir.mkdir()
             logger.debug("Finished creating TRaSH metadata directory")
-            trash_fetch(buildarr_config, trash_metadata_dir)
+            trash_fetch(trash_metadata_dir)
         else:
             logger.debug("TRaSH metadata not required")
 
@@ -231,7 +220,7 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
             for instance_name, instance_config in configs[plugin_name].items():
                 with plugin_context(plugin_name, instance_name):
                     # Get the instance's secrets object.
-                    instance_secrets = secrets[plugin_name][instance_name]
+                    instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
 
                     # Add actual parameters to resource definitions where
                     # TRaSH IDs are referenced.

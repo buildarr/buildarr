@@ -23,17 +23,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from pydantic import ConstrainedStr
-
-
-class TraktAuthUser(ConstrainedStr):
-    """
-    Constrained string type to make the Trakt auth user case-insensitive.
-    """
-
-    min_length = 1
-    to_lower = True
-
 
 def trakt_expires_encoder(dt: datetime) -> str:
     """

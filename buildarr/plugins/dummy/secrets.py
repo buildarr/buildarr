@@ -24,12 +24,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-from buildarr.config import NonEmptyStr, Port
 from buildarr.secrets import SecretsPlugin
+from buildarr.types import NonEmptyStr, Port
 
 from .api import api_get, get_initialize_js
 from .exceptions import DummyAPIError
-from .util import DummyApiKey, DummyProtocol
+from .types import DummyApiKey, DummyProtocol
 
 # Allow Mypy to properly resolve configuration type declarations in secrets classes.
 if TYPE_CHECKING:

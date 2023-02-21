@@ -26,15 +26,16 @@ from typing import Any, Dict, List, Mapping, Set
 from pydantic import Field
 from typing_extensions import Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, NonEmptyStr
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
 
 
-class PreferredProtocol(ConfigEnum):
+class PreferredProtocol(BaseEnum):
     """
     Enumeration for enabled and preferred protocols in delay profiles.
     """
