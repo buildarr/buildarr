@@ -101,6 +101,18 @@ class SecretsPlugin(SecretsBase, Generic[Config]):
         """
         raise NotImplementedError()
 
+    def test(self) -> bool:
+        """
+        Test whether or not the secrets metadata is valid for connecting to the instance.
+
+        This method should be implemented by sending a lightweight `GET` request
+        that requires authentication to the instance.
+
+        Returns:
+            `True` if the test was successful, otherwise `False`
+        """
+        raise NotImplementedError()
+
 
 class SecretsImpl(SecretsBase):
     """

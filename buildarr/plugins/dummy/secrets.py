@@ -27,7 +27,8 @@ from urllib.parse import urlparse
 from buildarr.config import NonEmptyStr, Port
 from buildarr.secrets import SecretsPlugin
 
-from .api import get_initialize_js
+from .api import api_get, get_initialize_js
+from .exceptions import DummyAPIError
 from .util import DummyApiKey, DummyProtocol
 
 # Allow Mypy to properly resolve configuration type declarations in secrets classes.
@@ -106,3 +107,19 @@ class DummySecrets(_DummySecrets):
                 config.api_key if config.api_key else get_initialize_js(config.host_url)["apiKey"]
             ),
         )
+
+    def test(self) -> bool:
+        """
+        Test whether or not the secrets metadata is valid for connecting to the instance.
+
+        Returns:
+            `True` if the test was successful, otherwise `False`
+        """
+        try:
+            api_get(self, "/api/v1/settings")
+            return True
+        except DummyAPIError as err:
+            if err.response.status_code == 401:
+                return False
+            else:
+                raise

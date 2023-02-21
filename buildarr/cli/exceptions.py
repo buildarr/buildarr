@@ -52,3 +52,12 @@ class RunNoPluginsDefinedError(BuildarrError):
     """
 
     pass
+
+
+class RunInstanceConnectionTestFailedError(BuildarrError):
+    """
+    Exception raised when a connection test to an instance
+    using Buildarr-fetched secrets failed.
+    """
+
+    pass
