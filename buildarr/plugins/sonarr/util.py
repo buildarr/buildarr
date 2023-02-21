@@ -23,8 +23,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import Field, SecretStr
-from typing_extensions import Annotated
+from pydantic import SecretStr
 
-SonarrApiKey = Annotated[SecretStr, Field(min_length=32, max_length=32)]
 SonarrProtocol = Literal["http", "https"]
+
+
+class SonarrApiKey(SecretStr):
+    """
+    Constrained secret string type for a Sonarr API key.
+    """
+
+    min_length = 32
+    max_length = 32

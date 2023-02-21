@@ -53,24 +53,18 @@ from pydantic import (
     BaseModel,
     ConstrainedInt,
     ConstrainedStr,
-    Field,
     HttpUrl,
     SecretStr,
     create_model,
     root_validator,
 )
 from pydantic.validators import _VALIDATORS
-from typing_extensions import Annotated, Self
+from typing_extensions import Self
 
 from ..logging import logger, plugin_logger
 from ..plugins import Secrets
 from ..state import plugins
 from .util import merge_dicts
-
-Password = Annotated[SecretStr, Field(min_length=1)]
-"""
-Constrained secrets string type for password fields. Required to be non-empty.
-"""
 
 RemoteMapEntry = Tuple[str, str, Mapping[str, Any]]
 """
@@ -117,6 +111,14 @@ class ExampleConfig(ExampleConfigBase):
     ]
 ```
 """
+
+
+class Password(SecretStr):
+    """
+    Constrained secret string type for password fields. Required to be non-empty.
+    """
+
+    min_length = 1
 
 
 class RssUrl(AnyUrl):
