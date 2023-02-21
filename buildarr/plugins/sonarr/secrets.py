@@ -27,7 +27,8 @@ from urllib.parse import urlparse
 from buildarr.config import NonEmptyStr, Port
 from buildarr.secrets import SecretsPlugin
 
-from .api import get_initialize_js
+from .api import api_get, get_initialize_js
+from .exceptions import SonarrAPIError
 from .util import SonarrApiKey, SonarrProtocol
 
 if TYPE_CHECKING:
@@ -81,3 +82,13 @@ class SonarrSecrets(_SonarrSecrets):
                 config.api_key if config.api_key else get_initialize_js(config.host_url)["apiKey"]
             ),
         )
+
+    def test(self) -> bool:
+        try:
+            api_get(self, "/api/v3/system/status")
+            return True
+        except SonarrAPIError as err:
+            if err.response.status_code == 401:
+                return False
+            else:
+                raise

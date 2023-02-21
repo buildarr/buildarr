@@ -34,7 +34,7 @@ from ..secrets import SecretsPlugin, get_model
 from ..state import plugin_context, plugins
 from ..trash import fetch as trash_fetch
 from . import cli
-from .exceptions import RunNoPluginsDefinedError
+from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
 
 
 @cli.command(
@@ -168,15 +168,29 @@ def _run(config: ConfigBase, use_plugins: Set[str] = set()) -> None:
             secrets[plugin_name] = {}
         for instance_name, instance_config in configs[plugin_name].items():
             with plugin_context(plugin_name, instance_name):
-                plugin_logger.info("Checking and fetching secrets")
-                # TODO: Test currently cached secrets to see if they are still valid,
-                #       and use those instead of getting new secrets every time.
+                plugin_logger.info("Checking secrets")
                 try:
                     instance_secrets = getattr(old_secrets_obj, plugin_name)[instance_name]
                 except KeyError:
+                    instance_secrets = None
+                if instance_secrets and instance_secrets.test():
+                    plugin_logger.info("Connection test successful using cached secrets")
+                    secrets[plugin_name][instance_name] = instance_secrets
+                else:
+                    plugin_logger.info(
+                        "Connection test failed using cached secrets (or not cached), "
+                        "fetching secrets",
+                    )
                     instance_secrets = plugins[plugin_name].secrets.get(instance_config)
-                secrets[plugin_name][instance_name] = instance_secrets
-                plugin_logger.info("Finished checking and fetching secrets")
+                    if instance_secrets.test():
+                        plugin_logger.info("Connection test successful using fetched secrets")
+                        secrets[plugin_name][instance_name] = instance_secrets
+                    else:
+                        raise RunInstanceConnectionTestFailedError(
+                            "Connection test failed using fetched secrets "
+                            f"for instance '{instance_name}': {repr(instance_secrets)}",
+                        )
+                plugin_logger.info("Finished checking secrets")
 
     # Save the latest secrets file to disk.
     logger.info("Saving updated secrets file to '%s'", buildarr_config.secrets_file_path)
