@@ -39,7 +39,7 @@ def fetch(buildarr_config: BuildarrConfig, download_dir: Path) -> None:
         download_dir (Path): Local folder to download the file to
     """
 
-    logger.debug("Fetching TRaSH metadata")
+    logger.info("Fetching TRaSH metadata")
 
     logger.debug("Creating TRaSH metadata download temporary directory")
     with TemporaryDirectory(prefix="buildarr.") as temp_dir_str:
@@ -64,4 +64,4 @@ def fetch(buildarr_config: BuildarrConfig, download_dir: Path) -> None:
 
         # Temporary directory will be deleted when the with block is exited.
 
-    logger.debug("Finished fetching TRaSH metadata")
+    logger.info("Finished fetching TRaSH metadata")
