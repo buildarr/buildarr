@@ -20,7 +20,8 @@ Buildarr CLI main routine.
 """
 
 
-from ..state import load_plugins, plugins
+from ..plugins import load as load_plugins
+from ..state import state
 from . import cli as main
 from .daemon import daemon  # noqa: F401
 from .run import run  # noqa: F401
@@ -32,7 +33,7 @@ __all__ = ["main"]
 load_plugins()
 
 # Load CLI modules for all installed plugins.
-for plugin_name, plugin in plugins.items():
+for plugin_name, plugin in state.plugins.items():
     main.add_command(plugin.cli, name=plugin_name)
 
 if __name__ == "__main__":

@@ -15,13 +15,13 @@
 
 
 """
-Dummy plugin utility objects and functions.
+Dummy plugin type hints.
 """
 
 
 from typing import Literal
 
-from buildarr.config import Password
+from buildarr.types import Password
 
 DummyApiKey = Password
 """

@@ -36,8 +36,10 @@ from schedule import Job as SchedulerJob, Scheduler  # type: ignore[import]
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
-from ..config import BuildarrConfig, UpdateDay, load as load_config
+from ..config import load as load_config
 from ..logging import logger
+from ..state import state
+from ..types import DayOfWeek
 from . import cli
 from .run import _run as run_apply
 
@@ -60,7 +62,7 @@ class Daemon:
         self,
         config_path: Path,
         watch_config: Optional[bool],
-        update_days: Iterable[UpdateDay],
+        update_days: Iterable[DayOfWeek],
         update_times: Iterable[time],
     ) -> None:
         """
@@ -72,7 +74,7 @@ class Daemon:
         Args:
             config_path (Path): Buildarr configuration file to load
             watch_config (Optional[bool]): Override `watch_config` setting
-            update_days (Iterable[UpdateDay]): Override `update_days` setting
+            update_days (Iterable[DayOfWeek]): Override `update_days` setting
             update_times (Iterable[time]): Override `update_times` setting
         """
         # Set static configuration and override field values.
@@ -94,10 +96,10 @@ class Daemon:
         Load the Buildarr configuration from the given file, and set daemon configuration fields.
         """
         # Load the Buildarr configuration, and save the list of files loaded.
-        self.config_files, self.config = load_config(set(), self.config_path)
+        load_config(self.config_path)
         # Set watch_config, update_days and update_times from either the
         # command line-provided override value or the value from the configuration.
-        buildarr_config = cast(BuildarrConfig, self.config.buildarr)  # type: ignore[attr-defined]
+        buildarr_config = state.config.buildarr
         self.watch_config = (
             self._default_watch_config
             if self._default_watch_config is not None
@@ -164,14 +166,14 @@ class Daemon:
         logger.info(" - Watch configuration files: %s", "Yes" if self.watch_config else "No")
         if self.watch_config:
             logger.info(" - Configuration files to watch:")
-            for config_file in self.config_files:
+            for config_file in state.config_files:
                 logger.info("   - %s", str(config_file))
         logger.info(" - Update at:")
         for update_day, update_time in self.update_daytimes:
             logger.info("   - %s %s", update_day.name.capitalize(), update_time.strftime("%H:%M"))
         # Apply initial configuration to all defined remote instances.
         logger.info("Applying initial configuration")
-        run_apply(self.config)
+        run_apply()
         logger.info("Finished applying initial configuration")
         # Schedule configuration update jobs according to the configuration,
         # so that remote instances are automatically updated periodically.
@@ -199,7 +201,7 @@ class Daemon:
             logger.info("Setting up config file monitoring")
             self.observer = Observer()
             config_dirs: Dict[Path, Set[str]] = {}
-            for config_file in self.config_files:
+            for config_file in state.config_files:
                 if config_file.parent not in config_dirs:
                     config_dirs[config_file.parent] = set()
                 config_dirs[config_file.parent].add(config_file.name)
@@ -224,7 +226,7 @@ class Daemon:
         This method is called by the scheduled automatic update jobs.
         """
         logger.info("Running scheduled update of remote instances")
-        run_apply(self.config)
+        run_apply()
         logger.info("Finished running scheduled update of remote instances")
         logger.info(
             "The next run will be at %s",
@@ -380,8 +382,8 @@ def parse_time(
     "--update-day",
     "update_days",
     metavar="DAY",
-    type=click.Choice([day.name for day in UpdateDay], case_sensitive=False),
-    callback=lambda ctx, param, days: tuple(UpdateDay(day) for day in days),
+    type=click.Choice([day.name for day in DayOfWeek], case_sensitive=False),
+    callback=lambda ctx, param, days: tuple(DayOfWeek(day) for day in days),
     multiple=True,
     help=(
         "Update defined instances on the specified day. "
@@ -405,7 +407,7 @@ def parse_time(
 def daemon(
     config_path: Path,
     watch_config: Optional[bool],
-    update_days: Tuple[UpdateDay, ...],
+    update_days: Tuple[DayOfWeek, ...],
     update_times: Tuple[time, ...],
 ) -> None:
     """
@@ -414,7 +416,7 @@ def daemon(
     Args:
         config_path (Path): Buildarr configuration file to load
         watch_config (Optional[bool]): Override `watch_config` setting
-        update_days (Tuple[UpdateDay, ...]): Override `update_days` setting
+        update_days (Tuple[DayOfWeek, ...]): Override `update_days` setting
         update_times (Tuple[time, ...]): Override `update_times` setting
     """
 

@@ -21,90 +21,9 @@ Buildarr plugin specification.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from .context import plugin_context
+from .load import load
+from .models import Plugin
+from .types import Config, Secrets
 
-if TYPE_CHECKING:
-    from typing import Type
-
-    from click import Group as ClickGroup
-
-    from ..config import ConfigPlugin
-    from ..manager import ManagerPlugin
-    from ..secrets import SecretsPlugin
-
-
-class Plugin:
-    """
-    Buildarr plugin definition.
-
-    To create a Buildarr plugin, set the appropriate
-    plugin classes as class attributes to an implementation of this class.
-
-    ```python
-    from buildarr.plugins import Plugin
-    from buildarr_example.cli import example
-    from buildarr_example.config import ExampleConfig
-    from buildarr_example.secrets import ExampleSecrets
-
-    class ExamplePlugin(Plugin):
-        cli = example
-        config = ExampleConfig
-        secrets = ExampleSecrets
-    ```
-
-    Then, set this class as the entry point for the plugin in your
-    Python package configuration.
-
-    Setuptools `setup.py` entry point definition example:
-    ```python
-    from setuptools import setup
-
-    setup(
-        # ...,
-        entry_points={
-            "buildarr.plugins": [
-                "example = buildarr_example.plugin:ExamplePlugin",
-            ],
-        },
-    )
-    ```
-
-    Setuptools `setup.cfg` entry point definition example:
-    ```ini
-    [options.entry_points]
-    buildarr.plugins =
-        example = buildarr_example.plugin:ExamplePlugin
-    ```
-
-    Setuptools `pyproject.toml` entry point definition example:
-    ```toml
-    [project.entry-points."buildarr.plugins"]
-    "example" = "buildarr_example.plugin:ExamplePlugin"
-    ```
-
-    Poetry plugin definition example:
-    ```toml
-    [tool.poetry.plugins."buildarr.plugins"]
-    "example" = "buildarr_example.plugin:ExamplePlugin"
-    ```
-    """
-
-    cli: ClickGroup
-    config: Type[ConfigPlugin]
-    manager: Type[ManagerPlugin]
-    secrets: Type[SecretsPlugin]
-
-
-Config = TypeVar("Config", bound="ConfigPlugin")
-"""
-Type hint for a configuration module of a plugin.
-
-When creating plugins, substitute `Config` for the implementing config plugin type.
-"""
-
-Secrets = TypeVar("Secrets", bound="SecretsPlugin")
-"""
-Type hint for a secrets module of a plugin.
-
-When creating plugins, substitute `Secrets` for the implementing secrets plugin type.
-"""
+__all__ = ["Config", "Secrets", "Plugin", "load", "plugin_context"]

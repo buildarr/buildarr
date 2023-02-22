@@ -62,29 +62,30 @@ Executing `buildarr run` will result in something resembling the following outpu
 
 ```text
 $ buildarr run
-2023-02-11 14:50:49,356 buildarr:53612 buildarr.main [INFO] Buildarr version 0.1.0 (log level: INFO)
-2023-02-11 14:50:49,357 buildarr:53612 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
-2023-02-11 14:50:49,374 buildarr:53612 buildarr.main [INFO] Finished loading configuration file
-2023-02-11 14:50:49,378 buildarr:53612 buildarr.main [INFO] Plugins loaded: sonarr
-2023-02-11 14:50:49,380 buildarr:53612 buildarr.main [INFO] Using plugins: sonarr
-2023-02-11 14:50:49,381 buildarr:53612 buildarr.main [INFO] Loading secrets file from 'secrets.json'
-2023-02-11 14:50:49,383 buildarr:53612 buildarr.main [INFO] Finished loading secrets file
-2023-02-11 14:50:49,384 buildarr:53612 buildarr.plugins.sonarr default [INFO] Checking and fetching secrets
-2023-02-11 14:50:49,384 buildarr:53612 buildarr.plugins.sonarr default [INFO] Finished checking and fetching secrets
-2023-02-11 14:50:49,385 buildarr:53612 buildarr.main [INFO] Saving updated secrets file to 'secrets.json'
-2023-02-11 14:50:49,386 buildarr:53612 buildarr.main [INFO] Finished saving updated secrets file
-2023-02-11 14:50:49,388 buildarr:53612 buildarr.plugins.sonarr default [INFO] Getting remote configuration
-2023-02-11 14:50:49,886 buildarr:53612 buildarr.plugins.sonarr default [INFO] Finished getting remote configuration
-2023-02-11 14:50:49,931 buildarr:53612 buildarr.plugins.sonarr default [INFO] Updating remote configuration
-2023-02-11 14:50:50,321 buildarr:53612 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Example)'
-2023-02-11 14:50:50,417 buildarr:53612 buildarr.plugins.sonarr default [INFO] Remote configuration successfully updated
-2023-02-11 14:50:50,417 buildarr:53612 buildarr.plugins.sonarr default [INFO] Finished updating remote configuration
+2023-02-22 21:21:25,047 buildarr:1 buildarr.main [INFO] Buildarr version 0.1.2 (log level: INFO)
+2023-02-22 21:21:25,048 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
+2023-02-22 21:21:25,080 buildarr:1 buildarr.main [INFO] Finished loading configuration file
+2023-02-22 21:21:25,104 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
+2023-02-22 21:21:25,108 buildarr:1 buildarr.main [INFO] Running with plugins: sonarr
+2023-02-22 21:21:25,110 buildarr:1 buildarr.main [INFO] Loading secrets file from '/config/secrets.json'
+2023-02-22 21:21:25,111 buildarr:1 buildarr.main [INFO] Finished loading secrets file
+2023-02-22 21:21:25,112 buildarr:1 buildarr.plugins.sonarr default [INFO] Checking secrets
+2023-02-22 21:21:25,138 buildarr:1 buildarr.plugins.sonarr default [INFO] Connection test successful using cached secrets
+2023-02-22 21:21:25,138 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished checking secrets
+2023-02-22 21:21:25,138 buildarr:1 buildarr.main [INFO] Saving updated secrets file to 'secrets.json'
+2023-02-22 21:21:25,140 buildarr:1 buildarr.main [INFO] Finished saving updated secrets file
+2023-02-22 21:21:26,010 buildarr:1 buildarr.plugins.sonarr default [INFO] Getting remote configuration
+2023-02-22 21:21:26,334 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished getting remote configuration
+2023-02-22 21:21:26,406 buildarr:1 buildarr.plugins.sonarr default [INFO] Updating remote configuration
+2023-02-22 21:21:26,783 buildarr:1 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
+2023-02-22 21:21:26,874 buildarr:1 buildarr.plugins.sonarr default [INFO] Remote configuration successfully updated
+2023-02-22 21:21:26,875 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished updating remote configuration
 ```
 
 Of note in particular is the following line:
 
 ```text
-2023-02-11 14:50:50,321 buildarr:53612 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Example)'
+2023-02-22 21:21:26,783 buildarr:1 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
 ```
 
 When Buildarr detects that the remote configuration differents from the locally defined configuration, the remote configuration will be updated. In this case, Buildarr detected that on the `default` instance configured in the Sonarr plugin, the configured GUI instance name is different from the locally defined value, so it updated the Sonarr instance to reflect the change.
@@ -103,45 +104,46 @@ This is intended to be used to keep a *Arr stack continually up to date, particu
 There are several options for changing how Buildarr daemon runs in the [Buildarr configuration](configuration.md#buildarr-settings).
 
 ```text
-2023-02-11 13:43:48,890 buildarr:4308 buildarr.main [INFO] Buildarr version 0.1.0 (log level: INFO)
-2023-02-11 13:43:48,891 buildarr:4308 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
-2023-02-11 13:43:48,898 buildarr:4308 buildarr.main [INFO] Finished loading configuration file
-2023-02-11 13:43:48,900 buildarr:4308 buildarr.main [INFO] Daemon configuration:
-2023-02-11 13:43:48,900 buildarr:4308 buildarr.main [INFO]  - Watch configuration files: Yes
-2023-02-11 13:43:48,900 buildarr:4308 buildarr.main [INFO]  - Configuration files to watch:
-2023-02-11 13:43:48,900 buildarr:4308 buildarr.main [INFO]    - /config/buildarr.yml
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]  - Update at:
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]    - Monday 03:00
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]    - Tuesday 03:00
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]    - Wednesday 03:00
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]    - Thursday 03:00
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]    - Friday 03:00
-2023-02-11 13:43:48,901 buildarr:4308 buildarr.main [INFO]    - Saturday 03:00
-2023-02-11 13:43:48,902 buildarr:4308 buildarr.main [INFO]    - Sunday 03:00
-2023-02-11 13:43:48,902 buildarr:4308 buildarr.main [INFO] Applying initial configuration
-2023-02-11 13:43:48,904 buildarr:4308 buildarr.main [INFO] Plugins loaded: sonarr
-2023-02-11 13:43:48,906 buildarr:4308 buildarr.main [INFO] Using plugins: sonarr
-2023-02-11 13:43:48,907 buildarr:4308 buildarr.main [INFO] Loading secrets file from 'secrets.json'
-2023-02-11 13:43:48,909 buildarr:4308 buildarr.main [INFO] Finished loading secrets file
-2023-02-11 13:43:48,910 buildarr:4308 buildarr.plugins.sonarr default [INFO] Checking and fetching secrets
-2023-02-11 13:43:48,910 buildarr:4308 buildarr.plugins.sonarr default [INFO] Finished checking and fetching secrets
-2023-02-11 13:43:48,910 buildarr:4308 buildarr.main [INFO] Saving updated secrets file to 'secrets.json'
-2023-02-11 13:43:48,911 buildarr:4308 buildarr.main [INFO] Finished saving updated secrets file
-2023-02-11 13:43:48,914 buildarr:4308 buildarr.plugins.sonarr default [INFO] Getting remote configuration
-2023-02-11 13:43:49,870 buildarr:4308 buildarr.plugins.sonarr default [INFO] Finished getting remote configuration
-2023-02-11 13:43:49,914 buildarr:4308 buildarr.plugins.sonarr default [INFO] Updating remote configuration
-2023-02-11 13:43:49,954 buildarr:4308 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
-2023-02-11 13:43:50,177 buildarr:4308 buildarr.plugins.sonarr default [INFO] Remote configuration successfully updated
-2023-02-11 13:43:50,177 buildarr:4308 buildarr.plugins.sonarr default [INFO] Finished updating remote configuration
-2023-02-11 13:43:50,178 buildarr:4308 buildarr.main [INFO] Finished applying initial configuration
-2023-02-11 13:43:50,179 buildarr:4308 buildarr.main [INFO] Scheduling update jobs
-2023-02-11 13:43:50,180 buildarr:4308 buildarr.main [INFO] Finished scheduling update jobs
-2023-02-11 13:43:50,180 buildarr:4308 buildarr.main [INFO] The next run will be at 2023-02-12 03:00
-2023-02-11 13:43:50,181 buildarr:4308 buildarr.main [INFO] Setting up config file monitoring
-2023-02-11 13:43:50,183 buildarr:4308 buildarr.main [INFO] Finished setting up config file monitoring
-2023-02-11 13:43:50,183 buildarr:4308 buildarr.main [INFO] Setting up signal handlers
-2023-02-11 13:43:50,183 buildarr:4308 buildarr.main [INFO] Finished setting up signal handlers
-2023-02-11 13:43:50,184 buildarr:4308 buildarr.main [INFO] Buildarr ready.
+2023-02-22 21:21:25,047 buildarr:1 buildarr.main [INFO] Buildarr version 0.1.2 (log level: INFO)
+2023-02-22 21:21:25,048 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
+2023-02-22 21:21:25,080 buildarr:1 buildarr.main [INFO] Finished loading configuration file
+2023-02-22 21:21:25,084 buildarr:1 buildarr.main [INFO] Daemon configuration:
+2023-02-22 21:21:25,084 buildarr:1 buildarr.main [INFO]  - Watch configuration files: Yes
+2023-02-22 21:21:25,084 buildarr:1 buildarr.main [INFO]  - Configuration files to watch:
+2023-02-22 21:21:25,085 buildarr:1 buildarr.main [INFO]    - /config/buildarr.yml
+2023-02-22 21:21:25,085 buildarr:1 buildarr.main [INFO]  - Update at:
+2023-02-22 21:21:25,085 buildarr:1 buildarr.main [INFO]    - Monday 03:00
+2023-02-22 21:21:25,085 buildarr:1 buildarr.main [INFO]    - Tuesday 03:00
+2023-02-22 21:21:25,085 buildarr:1 buildarr.main [INFO]    - Wednesday 03:00
+2023-02-22 21:21:25,086 buildarr:1 buildarr.main [INFO]    - Thursday 03:00
+2023-02-22 21:21:25,086 buildarr:1 buildarr.main [INFO]    - Friday 03:00
+2023-02-22 21:21:25,086 buildarr:1 buildarr.main [INFO]    - Saturday 03:00
+2023-02-22 21:21:25,086 buildarr:1 buildarr.main [INFO]    - Sunday 03:00
+2023-02-22 21:21:25,086 buildarr:1 buildarr.main [INFO] Applying initial configuration
+2023-02-22 21:21:25,104 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
+2023-02-22 21:21:25,108 buildarr:1 buildarr.main [INFO] Running with plugins: sonarr
+2023-02-22 21:21:25,110 buildarr:1 buildarr.main [INFO] Loading secrets file from '/config/secrets.json'
+2023-02-22 21:21:25,111 buildarr:1 buildarr.main [INFO] Finished loading secrets file
+2023-02-22 21:21:25,112 buildarr:1 buildarr.plugins.sonarr default [INFO] Checking secrets
+2023-02-22 21:21:25,138 buildarr:1 buildarr.plugins.sonarr default [INFO] Connection test successful using cached secrets
+2023-02-22 21:21:25,138 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished checking secrets
+2023-02-22 21:21:25,138 buildarr:1 buildarr.main [INFO] Saving updated secrets file to 'secrets.json'
+2023-02-22 21:21:25,140 buildarr:1 buildarr.main [INFO] Finished saving updated secrets file
+2023-02-22 21:21:26,010 buildarr:1 buildarr.plugins.sonarr default [INFO] Getting remote configuration
+2023-02-22 21:21:26,334 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished getting remote configuration
+2023-02-22 21:21:26,406 buildarr:1 buildarr.plugins.sonarr default [INFO] Updating remote configuration
+2023-02-22 21:21:26,783 buildarr:1 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
+2023-02-22 21:21:26,874 buildarr:1 buildarr.plugins.sonarr default [INFO] Remote configuration successfully updated
+2023-02-22 21:21:26,875 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished updating remote configuration
+2023-02-22 21:21:27,220 buildarr:1 buildarr.main [INFO] Finished applying initial configuration
+2023-02-22 21:21:27,221 buildarr:1 buildarr.main [INFO] Scheduling update jobs
+2023-02-22 21:21:27,221 buildarr:1 buildarr.main [INFO] Finished scheduling update jobs
+2023-02-22 21:21:27,222 buildarr:1 buildarr.main [INFO] The next run will be at 2023-02-23 03:00
+2023-02-22 21:21:27,222 buildarr:1 buildarr.main [INFO] Setting up config file monitoring
+2023-02-22 21:21:27,223 buildarr:1 buildarr.main [INFO] Finished setting up config file monitoring
+2023-02-22 21:21:27,223 buildarr:1 buildarr.main [INFO] Setting up signal handlers
+2023-02-22 21:21:27,223 buildarr:1 buildarr.main [INFO] Finished setting up signal handlers
+2023-02-22 21:21:27,223 buildarr:1 buildarr.main [INFO] Buildarr ready.
 ```
 
 Buildarr daemon supports the following signal types:

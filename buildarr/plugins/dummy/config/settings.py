@@ -28,8 +28,8 @@ from typing import Any, List, Mapping, Optional, Union, cast
 
 from typing_extensions import Self
 
-from buildarr.config import RemoteMapEntry, TrashID
-from buildarr.config.exceptions import ConfigTrashIDNotFoundError
+from buildarr.config import ConfigTrashIDNotFoundError, RemoteMapEntry
+from buildarr.types import TrashID
 
 from ..api import api_get, api_post
 from ..secrets import DummySecrets

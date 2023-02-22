@@ -35,22 +35,24 @@ Now try a `buildarr run`. If the output is similar to the below output, Buildarr
 
 ```bash
 $ buildarr run
-2023-02-11 14:34:48,513 buildarr:60944 buildarr.main [INFO] Buildarr version 0.1.0 (log level: INFO)
-2023-02-11 14:34:48,514 buildarr:60944 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
-2023-02-11 14:34:48,519 buildarr:60944 buildarr.main [INFO] Finished loading configuration file
-2023-02-11 14:34:48,521 buildarr:60944 buildarr.main [INFO] Plugins loaded: sonarr
-2023-02-11 14:34:48,523 buildarr:60944 buildarr.main [INFO] Using plugins: sonarr
-2023-02-11 14:34:48,525 buildarr:60944 buildarr.main [INFO] Loading secrets file from 'secrets.json'
-2023-02-11 14:34:48,527 buildarr:60944 buildarr.main [INFO] Finished loading secrets file
-2023-02-11 14:34:48,527 buildarr:60944 buildarr.plugins.sonarr default [INFO] Checking and fetching secrets
-2023-02-11 14:34:48,527 buildarr:60944 buildarr.plugins.sonarr default [INFO] Finished checking and fetching secrets
-2023-02-11 14:34:48,527 buildarr:60944 buildarr.main [INFO] Saving updated secrets file to 'secrets.json'
-2023-02-11 14:34:48,529 buildarr:60944 buildarr.main [INFO] Finished saving updated secrets file
-2023-02-11 14:34:48,532 buildarr:60944 buildarr.plugins.sonarr default [INFO] Getting remote configuration
-2023-02-11 14:34:48,892 buildarr:60944 buildarr.plugins.sonarr default [INFO] Finished getting remote configuration
-2023-02-11 14:34:48,945 buildarr:60944 buildarr.plugins.sonarr default [INFO] Updating remote configuration
-2023-02-11 14:34:49,266 buildarr:60944 buildarr.plugins.sonarr default [INFO] Remote configuration is up to date
-2023-02-11 14:34:49,266 buildarr:60944 buildarr.plugins.sonarr default [INFO] Finished updating remote configuration
+2023-02-22 20:34:43,271 buildarr:1 buildarr.main [INFO] Buildarr version 0.1.2 (log level: INFO)
+2023-02-22 20:34:43,271 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
+2023-02-22 20:34:43,308 buildarr:1 buildarr.main [INFO] Finished loading configuration file
+2023-02-22 20:34:43,337 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
+2023-02-22 20:34:43,342 buildarr:1 buildarr.main [INFO] Running with plugins: sonarr
+2023-02-22 20:34:43,344 buildarr:1 buildarr.main [INFO] Loading secrets file from '/config/secrets.json'
+2023-02-22 20:34:43,345 buildarr:1 buildarr.main [INFO] Finished loading secrets file
+2023-02-22 20:34:43,345 buildarr:1 buildarr.plugins.sonarr default [INFO] Checking secrets
+2023-02-22 20:34:43,355 buildarr:1 buildarr.plugins.sonarr default [INFO] Connection test failed using cached secrets (or not cached), fetching secrets
+2023-02-22 20:34:43,379 buildarr:1 buildarr.plugins.sonarr default [INFO] Connection test successful using fetched secrets
+2023-02-22 20:34:43,380 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished checking secrets
+2023-02-22 20:34:43,380 buildarr:1 buildarr.main [INFO] Saving updated secrets file to 'secrets.json'
+2023-02-22 20:34:43,381 buildarr:1 buildarr.main [INFO] Finished saving updated secrets file
+2023-02-22 20:34:50,508 buildarr:1 buildarr.plugins.sonarr default [INFO] Getting remote configuration
+2023-02-22 20:34:50,774 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished getting remote configuration
+2023-02-22 20:34:50,832 buildarr:1 buildarr.plugins.sonarr default [INFO] Updating remote configuration
+2023-02-22 20:34:51,177 buildarr:1 buildarr.plugins.sonarr default [INFO] Remote configuration is up to date
+2023-02-22 20:34:51,178 buildarr:1 buildarr.plugins.sonarr default [INFO] Finished updating remote configuration
 ```
 
 ## Configuring your Sonarr instance

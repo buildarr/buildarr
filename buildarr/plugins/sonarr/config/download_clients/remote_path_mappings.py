@@ -25,15 +25,16 @@ from typing import Any, Dict, List, Mapping, Tuple
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, NonEmptyStr
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
 
 
-class Ensure(ConfigEnum):
+class Ensure(BaseEnum):
     """
     Resource 'ensure' value enumeration.
 

@@ -15,7 +15,7 @@
 
 
 """
-Buildarr runtime state.
+Buildarr global runtime state.
 """
 
 
@@ -23,82 +23,61 @@ from __future__ import annotations
 
 import os
 
-from contextlib import contextmanager
 from distutils.util import strtobool
 from typing import TYPE_CHECKING
 
-from stevedore.extension import ExtensionManager  # type: ignore[import]
-
-from .logging import logger, plugin_logger
-
 if TYPE_CHECKING:
-    from importlib.metadata import EntryPoint
-    from typing import Dict, Generator
+    from pathlib import Path
+    from typing import Mapping, Sequence
 
+    from .config import ConfigType
     from .plugins import Plugin
+    from .secrets import SecretsType
 
 
-__all__ = ["testing", "plugins", "load_plugins", "plugin_context"]
-
-testing: bool = bool(strtobool(os.environ.get("BUILDARR_TESTING", "false")))
-
-plugins: Dict[str, Plugin] = {}
+__all__ = ["state"]
 
 
-def load_plugins(namespace: str = "buildarr.plugins") -> None:
+class State:
     """
-    Load plugins from the given namespace.
+    Active Buildarr state tracking class.
 
-    Args:
-        namespace (str): Namespace (entry point) to load plugins from.
-
-    Returns:
-        Name-to-plugin dictionary
+    If anything needs to be shared between plugins or different parts of Buildarr
+    over the life of an update run, generally it goes here.
     """
 
-    for plugin in ExtensionManager(
-        namespace=namespace,
-        invoke_on_load=True,
-        on_load_failure_callback=_on_plugin_failure,
-    ):
-        # Do not load the built-in `buildarr-dummy` plugin
-        # if Buildarr was not started in testing mode.
-        if not testing and plugin.name == "dummy":
-            continue
-        if plugin.name not in plugins:
-            plugins[plugin.name] = plugin.entry_point.load()
-
-
-def _on_plugin_failure(manager: ExtensionManager, entrypoint: EntryPoint, err: Exception) -> None:
+    testing: bool = bool(strtobool(os.environ.get("BUILDARR_TESTING", "false")))
     """
-    Plugin load error handler.
-
-    Args:
-        manager (ExtensionManager): Extension manager used to load the plugin
-        entrypoint (EntryPoint): Entry point metadata of the plugin
-        err (Exception): Exception raised during loading
+    Whether Buildarr is in testing mode or not.
     """
 
-    logger.error("An error occured while loading plugin '%s':", entrypoint.name)
-    logger.exception(err)
-
-
-@contextmanager
-def plugin_context(plugin_name: str, instance_name: str) -> Generator[None, None, None]:
+    plugins: Mapping[str, Plugin] = {}
     """
-    Plugin context manager. Used internally to set the current plugin for logging purposes.
-
-    Args:
-        plugin_name (str): Name of the current plugin
-        instance_name (str): Name of the instance being currently processed
+    The loaded Buildarr plugins, mapped to the plugin's unique name.
     """
 
-    old_plugin_name = plugin_logger.plugin_name
-    old_instance_name = plugin_logger.instance_name
-    try:
-        plugin_logger.plugin_name = plugin_name
-        plugin_logger.instance_name = instance_name
-        yield
-    finally:
-        plugin_logger.plugin_name = old_plugin_name
-        plugin_logger.instance_name = old_instance_name
+    config_files: Sequence[Path] = []
+    """
+    Currently loaded configuration files, in the order they were loaded.
+    """
+
+    config: ConfigType = None  # type: ignore[assignment]
+    """
+    Currently loaded global configuration.
+
+    This includes Buildarr configuration and configuration for enabled plugins.
+    """
+
+    secrets: SecretsType = None  # type: ignore[assignment]
+    """
+    Currently loaded instance secrets.
+    """
+
+
+state = State()
+"""
+Global variable for tracking active Buildarr state.
+
+If anything needs to be shared between plugins or different parts of Buildarr
+over the life of an update run, generally it goes here.
+"""

@@ -25,15 +25,16 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type
 
 from typing_extensions import Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, NonEmptyStr, Password, Port
 
 from ...api import api_delete, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
 
 
-class NzbgetPriority(ConfigEnum):
+class NzbgetPriority(BaseEnum):
     """
     NZBGet media priority.
 
@@ -55,7 +56,7 @@ class NzbgetPriority(ConfigEnum):
     force = 900
 
 
-class NzbvortexPriority(ConfigEnum):
+class NzbvortexPriority(BaseEnum):
     """
     NZBVortex media priority.
 
@@ -71,7 +72,7 @@ class NzbvortexPriority(ConfigEnum):
     high = 1
 
 
-class SabnzbdPriority(ConfigEnum):
+class SabnzbdPriority(BaseEnum):
     """
     SABnzbd media priority.
 
@@ -93,7 +94,7 @@ class SabnzbdPriority(ConfigEnum):
     force = 2
 
 
-class DelugePriority(ConfigEnum):
+class DelugePriority(BaseEnum):
     """
     Deluge queue priority.
 
@@ -107,7 +108,7 @@ class DelugePriority(ConfigEnum):
     first = 1
 
 
-class FloodMediaTag(ConfigEnum):
+class FloodMediaTag(BaseEnum):
     """
     Type of tag to set on media within Flood.
 
@@ -133,7 +134,7 @@ class FloodMediaTag(ConfigEnum):
     network = 6
 
 
-class QbittorrentPriority(ConfigEnum):
+class QbittorrentPriority(BaseEnum):
     """
     qBittorrent queue priority.
 
@@ -147,7 +148,7 @@ class QbittorrentPriority(ConfigEnum):
     first = 1
 
 
-class QbittorrentState(ConfigEnum):
+class QbittorrentState(BaseEnum):
     """
     qBittorrent initial state.
 
@@ -163,7 +164,7 @@ class QbittorrentState(ConfigEnum):
     pause = 2
 
 
-class RtorrentPriority(ConfigEnum):
+class RtorrentPriority(BaseEnum):
     """
     RTorrent media priority.
 
@@ -181,7 +182,7 @@ class RtorrentPriority(ConfigEnum):
     high = 3
 
 
-class TransmissionPriority(ConfigEnum):
+class TransmissionPriority(BaseEnum):
     """
     Transmission queue priority.
 
@@ -195,7 +196,7 @@ class TransmissionPriority(ConfigEnum):
     first = 1
 
 
-class UtorrentPriority(ConfigEnum):
+class UtorrentPriority(BaseEnum):
     """
     uTorrent queue priority.
 
@@ -209,7 +210,7 @@ class UtorrentPriority(ConfigEnum):
     first = 1
 
 
-class UtorrentState(ConfigEnum):
+class UtorrentState(BaseEnum):
     """
     uTorrent initial state.
 

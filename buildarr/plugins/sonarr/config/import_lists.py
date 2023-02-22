@@ -29,13 +29,14 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type
 from pydantic import ConstrainedStr, Field, HttpUrl, PositiveInt
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, Password, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, NonEmptyStr, Password
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
-from .types import SonarrConfigBase
-from .util import TraktAuthUser, trakt_expires_encoder
+from .types import SonarrConfigBase, TraktAuthUser
+from .util import trakt_expires_encoder
 
 
 class YearRange(ConstrainedStr):
@@ -48,7 +49,7 @@ class YearRange(ConstrainedStr):
     # TODO: validate that the end year is higher than the start year
 
 
-class Monitor(ConfigEnum):
+class Monitor(BaseEnum):
     """
     Enumeration for what kind of monitoring should be done in an import list.
     """
@@ -63,7 +64,7 @@ class Monitor(ConfigEnum):
     none = "none"
 
 
-class SeriesType(ConfigEnum):
+class SeriesType(BaseEnum):
     """
     Series type to classify media from an import list.
     """
@@ -73,7 +74,7 @@ class SeriesType(ConfigEnum):
     anime = "anime"
 
 
-class TraktPopularListType(ConfigEnum):
+class TraktPopularListType(BaseEnum):
     """
     Types of popularity list in Trakt.
     """
@@ -91,7 +92,7 @@ class TraktPopularListType(ConfigEnum):
     recommended_by_alltime = 10
 
 
-class TraktUserListType(ConfigEnum):
+class TraktUserListType(BaseEnum):
     """
     Types of user list in Trakt.
     """

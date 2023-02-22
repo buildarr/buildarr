@@ -27,16 +27,17 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Type, Uni
 from pydantic import ConstrainedInt, Field, HttpUrl, NameEmail, SecretStr
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, NonEmptyStr, Password, Port
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
-from .types import SonarrConfigBase
-from .util import TraktAuthUser, trakt_expires_encoder
+from .types import SonarrConfigBase, TraktAuthUser
+from .util import trakt_expires_encoder
 
 
-class OnGrabField(ConfigEnum):
+class OnGrabField(BaseEnum):
     """
     Values for `on_grab_fields` for the Discord connection.
     """
@@ -53,7 +54,7 @@ class OnGrabField(ConfigEnum):
     fanart = 9
 
 
-class OnImportField(ConfigEnum):
+class OnImportField(BaseEnum):
     """
     Values for `on_import_fields` for the Discord connection.
     """
@@ -73,7 +74,7 @@ class OnImportField(ConfigEnum):
     fanart = 12
 
 
-class GotifyPriority(ConfigEnum):
+class GotifyPriority(BaseEnum):
     """
     Gotify notification priority.
     """
@@ -84,7 +85,7 @@ class GotifyPriority(ConfigEnum):
     high = 8
 
 
-class JoinPriority(ConfigEnum):
+class JoinPriority(BaseEnum):
     """
     Join notification priority.
     """
@@ -96,7 +97,7 @@ class JoinPriority(ConfigEnum):
     emergency = 2
 
 
-class ProwlPriority(ConfigEnum):
+class ProwlPriority(BaseEnum):
     """
     Prowl notification priority.
     """
@@ -108,7 +109,7 @@ class ProwlPriority(ConfigEnum):
     emergency = 2
 
 
-class PushoverPriority(ConfigEnum):
+class PushoverPriority(BaseEnum):
     """
     Pushover notification priority.
     """
@@ -128,7 +129,7 @@ class PushoverRetry(ConstrainedInt):
     ge = 30
 
 
-class WebhookMethod(ConfigEnum):
+class WebhookMethod(BaseEnum):
     """
     HTTP method to use on a webhook connection.
     """

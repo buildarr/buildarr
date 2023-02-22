@@ -27,7 +27,7 @@ from urllib.parse import urlparse
 import click
 import click_params  # type: ignore[import]
 
-from .config import DummyConfig
+from .config import DummyInstanceConfig
 from .manager import DummyManager
 from .secrets import DummySecrets
 
@@ -73,8 +73,7 @@ def dump_config(url: str, api_key: str) -> int:
 
     # Create a default configuration object for the Dummy instance,
     # storing the connection information.
-    # TODO: Unnecessary as the secrets already contains this information, so remove this step.
-    dummy_config = DummyConfig(hostname=hostname, port=port, protocol=protocol)
+    dummy_config = DummyInstanceConfig(hostname=hostname, port=port, protocol=protocol)
 
     # Generate the secrets metadata for the Dummy instance.
     dummy_secrets = DummySecrets(
@@ -85,7 +84,7 @@ def dump_config(url: str, api_key: str) -> int:
     )
 
     # Pull the remote Dummy instance configuration, and create the configuration object.
-    dummy_config = DummyManager().from_remote(config=dummy_config, secrets=dummy_secrets)
+    dummy_config = DummyManager().from_remote(instance_config=dummy_config, secrets=dummy_secrets)
 
     # Serialise the Dummy instance configuration into YAML, and write it to standard output.
     click.echo(dummy_config.yaml())

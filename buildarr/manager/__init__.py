@@ -15,7 +15,7 @@
 
 
 """
-Buildarr manager interface functions.
+Buildarr manager interface.
 """
 
 
@@ -51,19 +51,11 @@ class ManagerPlugin(Generic[Config, Secrets]):
     class ExampleManager(ManagerPlugin[ExampleConfig, ExampleSecrets]):
         pass
     ```
+
+    If your plugin has distinct classes for global configuration and
+    instance-specific configuration (e.g. `ExampleConfig` and `ExampleInstanceConfig`),
+    pass `ExampleInstanceConfig` to `ExampleManager`.
     """
-
-    def uses_trash_metadata(self, config: Config) -> bool:
-        """
-        Returns whether or not the given configuration uses TRaSH-Guides metadata.
-
-        Args:
-            config (Config): Configuration object to check
-
-        Returns:
-            `True` if TRaSH-Guides metadata is used, otherwise `False`
-        """
-        return config.uses_trash_metadata
 
     def get_instance_config(self, config: Config, instance_name: str) -> Config:
         """
@@ -79,9 +71,22 @@ class ManagerPlugin(Generic[Config, Secrets]):
         """
         return config.get_instance_config(instance_name)
 
-    def render_trash_metadata(self, config: Config, trash_metadata_dir: Path) -> Config:
+    def uses_trash_metadata(self, instance_config: Config) -> bool:
         """
-        Read TRaSH-Guides metadata, and return a configuration object with all templates rendered.
+        Returns whether or not the given instance configuration uses TRaSH-Guides metadata.
+
+        Args:
+            config (Config): Configuration object to check
+
+        Returns:
+            `True` if TRaSH-Guides metadata is used, otherwise `False`
+        """
+        return instance_config.uses_trash_metadata
+
+    def render_trash_metadata(self, instance_config: Config, trash_metadata_dir: Path) -> Config:
+        """
+        Read TRaSH-Guides metadata, and return an instance configuration object
+        with all templates rendered.
 
         Args:
             config (Config): Configuration object to read.
@@ -90,9 +95,9 @@ class ManagerPlugin(Generic[Config, Secrets]):
         Returns:
             Rendered configuration object
         """
-        return config.render_trash_metadata(trash_metadata_dir)
+        return instance_config.render_trash_metadata(trash_metadata_dir)
 
-    def from_remote(self, config: Config, secrets: Secrets) -> Config:
+    def from_remote(self, instance_config: Config, secrets: Secrets) -> Config:
         """
         Get the remote instance configuration for this section, and return the resulting object.
 
@@ -103,25 +108,29 @@ class ManagerPlugin(Generic[Config, Secrets]):
         Returns:
             Remote instance configuration object
         """
-        return config.from_remote(secrets)
+        return instance_config.from_remote(secrets)
 
     def update_remote(
         self,
         tree: str,
-        local_config: Config,
+        local_instance_config: Config,
         secrets: Secrets,
-        remote_config: Config,
+        remote_instance_config: Config,
     ) -> bool:
         """
-        Compare this configuration to a remote instance's, and update the remote to match.
+        Compare the local configuration to a remote instance, and update the remote to match.
 
         Args:
             tree (str): Configuration tree represented as a string. Mainly used in logging.
-            local_config (Config): Local instance configuration to use when updating the remote.
+            local_instance_config (Config): Local instance configuration to compare to the remote.
             secrets (Secrets): Remote instance host and secrets information.
-            remote_config (Config): Currently active remote instance configuration.
+            remote_instance_config (Config): Currently active remote instance configuration.
 
         Returns:
             `True` if the remote configuration changed, otherwise `False`
         """
-        return local_config.update_remote(tree, secrets, remote_config)
+        return local_instance_config.update_remote(
+            tree=tree,
+            secrets=secrets,
+            remote=remote_instance_config,
+        )

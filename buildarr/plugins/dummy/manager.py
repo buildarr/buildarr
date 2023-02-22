@@ -23,9 +23,9 @@ from __future__ import annotations
 
 from buildarr.manager import ManagerPlugin
 
-from .config import DummyConfig
+from .config import DummyInstanceConfig
 from .secrets import DummySecrets
 
 
-class DummyManager(ManagerPlugin[DummyConfig, DummySecrets]):
+class DummyManager(ManagerPlugin[DummyInstanceConfig, DummySecrets]):
     pass

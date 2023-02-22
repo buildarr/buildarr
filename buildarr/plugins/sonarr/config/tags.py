@@ -25,8 +25,8 @@ from typing import Dict, List
 
 from typing_extensions import Self
 
-from buildarr.config import NonEmptyStr
 from buildarr.logging import plugin_logger
+from buildarr.types import NonEmptyStr
 
 from ..api import api_get, api_post
 from ..secrets import SonarrSecrets

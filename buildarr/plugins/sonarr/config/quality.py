@@ -29,8 +29,9 @@ from typing import Dict, Optional, cast
 from pydantic import Field
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigBase, TrashID
+from buildarr.config import ConfigBase
 from buildarr.config.exceptions import ConfigTrashIDNotFoundError
+from buildarr.types import TrashID
 
 from ..api import api_get, api_put
 from ..secrets import SonarrSecrets

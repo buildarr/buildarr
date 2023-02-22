@@ -27,14 +27,15 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
 from pydantic import Field, root_validator
 from typing_extensions import Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, Password, Port, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
+from buildarr.types import BaseEnum, NonEmptyStr, Password, Port
 
 from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
 
 
-class AuthenticationMethod(ConfigEnum):
+class AuthenticationMethod(BaseEnum):
     """
     Sonarr authentication method.
     """
@@ -44,7 +45,7 @@ class AuthenticationMethod(ConfigEnum):
     form = "forms"
 
 
-class CertificateValidation(ConfigEnum):
+class CertificateValidation(BaseEnum):
     """
     External site HTTPS certification validation method.
     """
@@ -54,7 +55,7 @@ class CertificateValidation(ConfigEnum):
     disabled = "disabled"
 
 
-class ProxyType(ConfigEnum):
+class ProxyType(BaseEnum):
     """
     Proxy server type.
     """
@@ -64,7 +65,7 @@ class ProxyType(ConfigEnum):
     socks5 = "socks5"
 
 
-class SonarrLogLevel(ConfigEnum):
+class SonarrLogLevel(BaseEnum):
     """
     Log level of the Sonarr application.
     """
@@ -74,7 +75,7 @@ class SonarrLogLevel(ConfigEnum):
     TRACE = "trace"
 
 
-class UpdateMechanism(ConfigEnum):
+class UpdateMechanism(BaseEnum):
     """
     Sonarr updating mechanism.
     """

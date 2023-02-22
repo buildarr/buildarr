@@ -26,15 +26,16 @@ from typing import Any, Dict, List, Optional, Set
 from pydantic import Field
 from typing_extensions import Self
 
-from buildarr.config import ConfigEnum, NonEmptyStr, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum, NonEmptyStr
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
 
 
-class MultiEpisodeStyle(ConfigEnum):
+class MultiEpisodeStyle(BaseEnum):
     """
     Multi-episode style enumeration.
     """
@@ -47,7 +48,7 @@ class MultiEpisodeStyle(ConfigEnum):
     prefixed_range = 5
 
 
-class EpisodeTitleRequired(ConfigEnum):
+class EpisodeTitleRequired(BaseEnum):
     """
     Episode title required enumeration.
     """
@@ -57,7 +58,7 @@ class EpisodeTitleRequired(ConfigEnum):
     never = "never"
 
 
-class PropersAndRepacks(ConfigEnum):
+class PropersAndRepacks(BaseEnum):
     """
     Propers and repacks configuration enumeration.
     """
@@ -67,7 +68,7 @@ class PropersAndRepacks(ConfigEnum):
     do_not_prefer = "doNotPrefer"
 
 
-class RescanSeriesFolderAfterRefresh(ConfigEnum):
+class RescanSeriesFolderAfterRefresh(BaseEnum):
     """
     Enumeration for rescan series folder after refresh.
     """
@@ -77,7 +78,7 @@ class RescanSeriesFolderAfterRefresh(ConfigEnum):
     never = "never"
 
 
-class ChangeFileDate(ConfigEnum):
+class ChangeFileDate(BaseEnum):
     """
     Change file date settings enumeration.
     """
@@ -87,7 +88,7 @@ class ChangeFileDate(ConfigEnum):
     utc_air_date = "utcAirDate"
 
 
-class ChmodFolder(ConfigEnum):
+class ChmodFolder(BaseEnum):
     """
     Read-write permissions for media folders.
     """

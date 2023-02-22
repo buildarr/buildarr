@@ -27,7 +27,7 @@ from urllib.parse import urlparse
 import click
 import click_params  # type: ignore[import]
 
-from .config import SonarrConfig
+from .config import SonarrInstanceConfig
 from .manager import SonarrManager
 from .secrets import SonarrSecrets
 
@@ -73,7 +73,7 @@ def dump_config(url: str, api_key: str) -> int:
     click.echo(
         SonarrManager()
         .from_remote(
-            config=SonarrConfig(hostname=hostname, port=port, protocol=protocol),
+            instance_config=SonarrInstanceConfig(hostname=hostname, port=port, protocol=protocol),
             secrets=SonarrSecrets(
                 hostname=hostname,
                 port=port,

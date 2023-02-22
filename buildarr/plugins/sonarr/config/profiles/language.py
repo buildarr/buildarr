@@ -26,15 +26,16 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set
 from pydantic import Field, root_validator
 from typing_extensions import Annotated, Self
 
-from buildarr.config import ConfigEnum, RemoteMapEntry
+from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
+from buildarr.types import BaseEnum
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
 
 
-class Language(ConfigEnum):
+class Language(BaseEnum):
     """
     These are the available languages that can be selected in a language profile.
 

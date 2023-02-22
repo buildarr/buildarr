@@ -135,7 +135,7 @@ Buildarr operates on a principle of "don't touch what is not explicitly defined"
 
 ## Buildarr Settings
 
-##### ::: buildarr.config.BuildarrConfig
+##### ::: buildarr.config.buildarr.BuildarrConfig
     options:
       members:
         - watch_config
