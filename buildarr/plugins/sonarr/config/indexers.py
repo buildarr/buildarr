@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 from pydantic import Field, HttpUrl, PositiveInt
-from typing_extensions import Self
+from typing_extensions import Annotated, Self
 
 from buildarr.config import ConfigEnum, ConfigIntEnum, NonEmptyStr, Password, RemoteMapEntry, RssUrl
 from buildarr.logging import plugin_logger
@@ -882,9 +882,25 @@ INDEXER_TYPES: Tuple[Type[Indexer], ...] = (
     TorrentleechIndexer,
     TorznabIndexer,
 )
+
 INDEXER_TYPE_MAP: Dict[str, Type[Indexer]] = {
     indexer_type._implementation: indexer_type for indexer_type in INDEXER_TYPES
 }
+
+IndexerType = Union[
+    FanzubIndexer,
+    NewznabIndexer,
+    OmgwtfnzbsIndexer,
+    BroadcasthenetIndexer,
+    FilelistIndexer,
+    HdbitsIndexer,
+    IptorrentsIndexer,
+    NyaaIndexer,
+    RarbgIndexer,
+    TorrentrssfeedIndexer,
+    TorrentleechIndexer,
+    TorznabIndexer,
+]
 
 
 class SonarrIndexersSettingsConfig(SonarrConfigBase):
@@ -966,26 +982,9 @@ class SonarrIndexersSettingsConfig(SonarrConfigBase):
     If unsure, leave set at the default of `false`.
     """
 
-    # TODO: Set minimum Python version to 3.11 and subscript INDEXER_TYPES here.
-    definitions: Dict[
-        str,
-        Union[
-            FanzubIndexer,
-            NewznabIndexer,
-            OmgwtfnzbsIndexer,
-            BroadcasthenetIndexer,
-            FilelistIndexer,
-            HdbitsIndexer,
-            IptorrentsIndexer,
-            NyaaIndexer,
-            RarbgIndexer,
-            TorrentrssfeedIndexer,
-            TorrentleechIndexer,
-            TorznabIndexer,
-        ],
-    ] = {}
+    definitions: Dict[str, Annotated[IndexerType, Field(discriminator="type")]] = {}
     """
-    Indexer to manage via Buildarr are defined here.
+    Indexers to manage via Buildarr are defined here.
     """
 
     _remote_map: List[RemoteMapEntry] = [
