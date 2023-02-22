@@ -22,14 +22,14 @@ Sonarr plugin connect settings configuration.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 from pydantic import ConstrainedInt, Field, HttpUrl, NameEmail, SecretStr
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.types import BaseEnum, NonEmptyStr, Password, Port
+from buildarr.types import BaseEnum, BaseIntEnum, NonEmptyStr, Password, Port
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
@@ -37,7 +37,7 @@ from .types import SonarrConfigBase, TraktAuthUser
 from .util import trakt_expires_encoder
 
 
-class OnGrabField(BaseEnum):
+class OnGrabField(BaseIntEnum):
     """
     Values for `on_grab_fields` for the Discord connection.
     """
@@ -54,7 +54,7 @@ class OnGrabField(BaseEnum):
     fanart = 9
 
 
-class OnImportField(BaseEnum):
+class OnImportField(BaseIntEnum):
     """
     Values for `on_import_fields` for the Discord connection.
     """
@@ -468,7 +468,7 @@ class DiscordConnection(Connection):
     If unset, blank or set to `None`, use the machine name.
     """
 
-    on_grab_fields: List[OnGrabField] = [
+    on_grab_fields: Set[OnGrabField] = {
         OnGrabField.overview,
         OnGrabField.rating,
         OnGrabField.genres,
@@ -478,7 +478,7 @@ class DiscordConnection(Connection):
         OnGrabField.release,
         OnGrabField.poster,
         OnGrabField.fanart,
-    ]
+    }
     """
     Set the fields that are passed in for this 'on grab' notification.
     By default, all fields are passed in.
@@ -512,7 +512,7 @@ class DiscordConnection(Connection):
     ```
     """
 
-    on_import_fields: List[OnImportField] = [
+    on_import_fields: Set[OnImportField] = {
         OnImportField.overview,
         OnImportField.rating,
         OnImportField.genres,
@@ -526,7 +526,7 @@ class DiscordConnection(Connection):
         OnImportField.release,
         OnImportField.poster,
         OnImportField.fanart,
-    ]
+    }
     """
     Set the fields that are passed in for this 'on import' notification.
     By default, all fields are passed in.
@@ -583,8 +583,16 @@ class DiscordConnection(Connection):
             "host",
             {"is_field": True, "decoder": lambda v: v or None, "encoder": lambda v: v or ""},
         ),
-        ("on_grab_fields", "grabFields", {"is_field": True}),
-        ("on_import_fields", "importFields", {"is_field": True}),
+        (
+            "on_grab_fields",
+            "grabFields",
+            {"is_field": True, "encoder": lambda v: sorted(f.value for f in v)},
+        ),
+        (
+            "on_import_fields",
+            "importFields",
+            {"is_field": True, "encoder": lambda v: sorted(f.value for f in v)},
+        ),
     ]
 
 
@@ -647,12 +655,12 @@ class EmailConnection(Connection):
     At least one address must be provided.
     """
 
-    cc_addresses: List[NameEmail] = []
+    cc_addresses: Annotated[List[NameEmail], Field(unique_items=True)] = []
     """
     Optional list of email addresses to copy (CC) the mail to.
     """
 
-    bcc_addresses: List[NameEmail] = []
+    bcc_addresses: Annotated[List[NameEmail], Field(unique_items=True)] = []
     """
     Optional list of email addresses to blind copy (BCC) the mail to.
     """
@@ -790,9 +798,9 @@ class JoinConnection(Connection):
     """
 
     # Deprecated, only uncomment if absolutely required by Sonarr
-    # device_ids: List[int] = []
+    # device_ids: Set[int] = set()
 
-    device_names: List[NonEmptyStr] = []
+    device_names: Set[NonEmptyStr] = set()
     """
     List of full or partial device names you'd like to send notifications to.
 
@@ -823,8 +831,10 @@ class JoinConnection(Connection):
             "deviceNames",
             {
                 "is_field": True,
-                "decoder": lambda v: v.split(",") if v else [],
-                "encoder": lambda v: ",".join(v) if v else "",
+                "decoder": lambda v: (
+                    set(d.strip() for d in v.split(",")) if v and v.strip() else set()
+                ),
+                "encoder": lambda v: ",".join(sorted(v)) if v else "",
             },
         ),
         ("priority", "priority", {"is_field": True}),
@@ -945,9 +955,11 @@ class MailgunConnection(Connection):
     The domain from which the mail will be sent.
     """
 
-    recipient_addresses: List[NameEmail] = []
+    recipient_addresses: Annotated[List[NameEmail], Field(min_items=1, unique_items=True)]
     """
     The recipient email addresses of the notification mail.
+
+    At least one recipient address is required.
     """
 
     _implementation: str = "Mailgun"
@@ -1255,7 +1267,7 @@ class PushoverConnection(Connection):
     API key assigned to Sonarr in Pushover.
     """
 
-    devices: List[NonEmptyStr] = []
+    devices: Set[NonEmptyStr] = set()
     """
     List of device names to send notifications to.
 
@@ -1304,7 +1316,7 @@ class PushoverConnection(Connection):
     _remote_map: List[RemoteMapEntry] = [
         ("user_key", "userKey", {"is_field": True}),
         ("api_key", "apiKey", {"is_field": True}),
-        ("devices", "devices", {"is_field": True}),
+        ("devices", "devices", {"is_field": True, "encoder": lambda v: sorted(v)}),
         ("priority", "priority", {"is_field": True}),
         ("retry", "retry", {"is_field": True}),
         ("expire", "expire", {"is_field": True}),
@@ -1341,9 +1353,11 @@ class SendgridConnection(Connection):
     e.g. `Sonarr Notifications <sonarr@example.com>`.
     """
 
-    recipient_addresses: List[NameEmail] = []
+    recipient_addresses: Annotated[List[NameEmail], Field(min_items=1, unique_items=True)]
     """
     The recipient email addresses of the notification mail.
+
+    At least one recipient address is required.
     """
 
     _implementation: str = "SendGrid"

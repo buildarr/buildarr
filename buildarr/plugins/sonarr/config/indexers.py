@@ -515,22 +515,40 @@ class FilelistIndexer(TorrentIndexer):
     as your API key will be sent to this host.
     """
 
-    categories: List[FilelistCategory] = [
+    categories: Set[FilelistCategory] = {
         FilelistCategory.TV_SD,
         FilelistCategory.TV_HD,
         FilelistCategory.TV_4K,
-    ]
+    }
     """
     Categories to monitor for standard/daily show new releases.
 
     Set to an empty list to not monitor for standard/daily shows.
+
+    Values:
+
+    * `Anime`
+    * `Animation`
+    * `TV 4K`
+    * `TV HD`
+    * `TV SD`
+    * `Sport`
     """
 
-    anime_categories: List[FilelistCategory] = []
+    anime_categories: Set[FilelistCategory] = set()
     """
     Categories to monitor for anime new releases.
 
     Leave empty to not monitor for anime.
+
+    Values:
+
+    * `Anime`
+    * `Animation`
+    * `TV 4K`
+    * `TV HD`
+    * `TV SD`
+    * `Sport`
     """
 
     _implementation = "FileList"
@@ -540,8 +558,16 @@ class FilelistIndexer(TorrentIndexer):
         ("username", "username", {"is_field": True}),
         ("passkey", "passKey", {"is_field": True}),
         ("api_url", "apiUrl", {"is_field": True}),
-        ("categories", "categories", {"is_field": True}),
-        ("anime_categories", "animeCategories", {"is_field": True}),
+        (
+            "categories",
+            "categories",
+            {"is_field": True, "encoder": lambda v: sorted(c.value for c in v)},
+        ),
+        (
+            "anime_categories",
+            "animeCategories",
+            {"is_field": True, "encoder": lambda v: sorted(c.value for c in v)},
+        ),
     ]
 
 
