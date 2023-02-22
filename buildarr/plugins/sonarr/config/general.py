@@ -22,7 +22,7 @@ Sonarr plugin general settings configuration.
 from __future__ import annotations
 
 from ipaddress import IPv4Address
-from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Union
 
 from pydantic import Field, root_validator
 from typing_extensions import Self
@@ -148,7 +148,7 @@ class HostGeneralSettings(GeneralSettings):
 
     ssl_port: Port = 9898  # type: ignore[assignment]
     """
-    Enncrypted (HTTPS) listening port for Sonarr.
+    Encrypted (HTTPS) listening port for Sonarr.
 
     If Sonarr is being run via Docker in the default bridge mode,
     this setting shouldn't be changed.
@@ -342,7 +342,7 @@ class ProxyGeneralSettings(GeneralSettings):
     Only enter if authentication is required by the proxy.
     """
 
-    ignored_addresses: List[NonEmptyStr] = []
+    ignored_addresses: Set[NonEmptyStr] = set()
     """
     List of domains/addresses which bypass the proxy. Wildcards (`*`) are supported.
     """
@@ -379,9 +379,9 @@ class ProxyGeneralSettings(GeneralSettings):
             "proxyBypassFilter",
             {
                 "decoder": lambda v: (
-                    [addr.strip() for addr in v.split(",")] if v and v.strip() else []
+                    set(addr.strip() for addr in v.split(",")) if v and v.strip() else []
                 ),
-                "encoder": lambda v: ",".join(v),
+                "encoder": lambda v: ",".join(sorted(v)) if v else "",
             },
         ),
         ("bypass_proxy_for_local_addresses", "proxyBypassLocalAddresses", {}),
