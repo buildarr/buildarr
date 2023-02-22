@@ -1666,9 +1666,35 @@ CONNECTION_TYPES: Tuple[Type[Connection], ...] = (
     TwitterConnection,
     WebhookConnection,
 )
+
 CONNECTION_TYPE_MAP: Dict[str, Type[Connection]] = {
     connection_type._implementation: connection_type for connection_type in CONNECTION_TYPES
 }
+
+ConnectionType = Union[
+    BoxcarConnection,
+    CustomscriptConnection,
+    DiscordConnection,
+    EmailConnection,
+    EmbyConnection,
+    GotifyConnection,
+    JoinConnection,
+    KodiConnection,
+    MailgunConnection,
+    PlexHomeTheaterConnection,
+    PlexMediaCenterConnection,
+    PlexMediaServerConnection,
+    ProwlConnection,
+    PushbulletConnection,
+    PushoverConnection,
+    SendgridConnection,
+    SlackConnection,
+    SynologyIndexerConnection,
+    TelegramConnection,
+    TraktConnection,
+    TwitterConnection,
+    WebhookConnection,
+]
 
 
 class SonarrConnectSettingsConfig(SonarrConfigBase):
@@ -1684,34 +1710,7 @@ class SonarrConnectSettingsConfig(SonarrConfigBase):
     managed by other applications.
     """
 
-    # TODO: Set minimum Python version to 3.11 and subscript CONNECTION_TYPES here.
-    definitions: Dict[
-        str,
-        Union[
-            BoxcarConnection,
-            CustomscriptConnection,
-            DiscordConnection,
-            EmailConnection,
-            EmbyConnection,
-            GotifyConnection,
-            JoinConnection,
-            KodiConnection,
-            MailgunConnection,
-            PlexHomeTheaterConnection,
-            PlexMediaCenterConnection,
-            PlexMediaServerConnection,
-            ProwlConnection,
-            PushbulletConnection,
-            PushoverConnection,
-            SendgridConnection,
-            SlackConnection,
-            SynologyIndexerConnection,
-            TelegramConnection,
-            TraktConnection,
-            TwitterConnection,
-            WebhookConnection,
-        ],
-    ] = {}
+    definitions: Dict[str, Annotated[ConnectionType, Field(discriminator="type")]] = {}
     """
     Connection definitions to configure in Sonarr.
     """

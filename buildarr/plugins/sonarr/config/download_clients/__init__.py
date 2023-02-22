@@ -21,9 +21,10 @@ Sonarr plugin download client settings.
 
 from __future__ import annotations
 
-from typing import Dict, List, Union
+from typing import Dict, List, Mapping, Union
 
-from typing_extensions import Self
+from pydantic import Field
+from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
@@ -53,28 +54,24 @@ from .download_clients import (
 )
 from .remote_path_mappings import SonarrRemotePathMappingsSettingsConfig
 
-# TODO: Set minimum Python version to 3.11 and subscript DOWNLOADCLIENT_TYPES here.
-DownloadClientDefinitions = Dict[
-    str,
-    Union[
-        DownloadstationUsenetDownloadClient,
-        NzbgetDownloadClient,
-        NzbvortexDownloadClient,
-        PneumaticDownloadClient,
-        SabnzbdDownloadClient,
-        UsenetBlackholeDownloadClient,
-        Aria2DownloadClient,
-        DelugeDownloadClient,
-        DownloadstationTorrentDownloadClient,
-        FloodDownloadClient,
-        HadoukenDownloadClient,
-        QbittorrentDownloadClient,
-        RtorrentDownloadClient,
-        TorrentBlackholeDownloadClient,
-        TransmissionDownloadClient,
-        UtorrentDownloadClient,
-        VuzeDownloadClient,
-    ],
+DownloadClientType = Union[
+    DownloadstationUsenetDownloadClient,
+    NzbgetDownloadClient,
+    NzbvortexDownloadClient,
+    PneumaticDownloadClient,
+    SabnzbdDownloadClient,
+    UsenetBlackholeDownloadClient,
+    Aria2DownloadClient,
+    DelugeDownloadClient,
+    DownloadstationTorrentDownloadClient,
+    FloodDownloadClient,
+    HadoukenDownloadClient,
+    QbittorrentDownloadClient,
+    RtorrentDownloadClient,
+    TorrentBlackholeDownloadClient,
+    TransmissionDownloadClient,
+    UtorrentDownloadClient,
+    VuzeDownloadClient,
 ]
 
 
@@ -126,7 +123,7 @@ class SonarrDownloadClientsSettingsConfig(SonarrConfigBase):
     Automatically delete download clients not defined in Buildarr.
     """
 
-    definitions: DownloadClientDefinitions = {}
+    definitions: Dict[str, Annotated[DownloadClientType, Field(discriminator="type")]] = {}
     """
     Download client definitions, for connecting with external media downloaders.
     """
@@ -213,8 +210,8 @@ class SonarrDownloadClientsSettingsConfig(SonarrConfigBase):
         self,
         tree: str,
         secrets: SonarrSecrets,
-        local: DownloadClientDefinitions,
-        remote: DownloadClientDefinitions,
+        local: Mapping[str, DownloadClientType],
+        remote: Mapping[str, DownloadClientType],
         check_unmanaged: bool,
     ) -> bool:
         changed = False

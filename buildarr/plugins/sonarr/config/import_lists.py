@@ -26,8 +26,8 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
-from pydantic import ConstrainedStr, HttpUrl, PositiveInt
-from typing_extensions import Self
+from pydantic import ConstrainedStr, Field, HttpUrl, PositiveInt
+from typing_extensions import Annotated, Self
 
 from buildarr.config import ConfigEnum, NonEmptyStr, Password, RemoteMapEntry
 from buildarr.logging import plugin_logger
@@ -620,9 +620,18 @@ IMPORTLIST_TYPES: Tuple[Type[ImportList], ...] = (
     TraktPopularlistImportList,
     TraktUserImportList,
 )
+
 IMPORTLIST_TYPE_MAP: Dict[str, Type[ImportList]] = {
     importlist_type._implementation: importlist_type for importlist_type in IMPORTLIST_TYPES
 }
+
+ImportListType = Union[
+    SonarrImportList,
+    PlexWatchlistImportList,
+    TraktListImportList,
+    TraktPopularlistImportList,
+    TraktUserImportList,
+]
 
 
 class SonarrImportListsSettingsConfig(SonarrConfigBase):
@@ -669,17 +678,7 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
     Automatically delete import list excusions not defined in Buildarr.
     """
 
-    # TODO: Set minimum Python version to 3.11 and subscript IMPORTLIST_TYPES here.
-    definitions: Dict[
-        str,
-        Union[
-            SonarrImportList,
-            PlexWatchlistImportList,
-            TraktListImportList,
-            TraktPopularlistImportList,
-            TraktUserImportList,
-        ],
-    ] = {}
+    definitions: Dict[str, Annotated[ImportListType, Field(discriminator="type")]] = {}
     """
     Import list definitions go here.
     """

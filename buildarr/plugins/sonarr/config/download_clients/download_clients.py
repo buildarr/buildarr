@@ -1805,6 +1805,7 @@ DOWNLOADLCLIENT_TYPES: Tuple[Type[DownloadClient], ...] = (
     UtorrentDownloadClient,
     VuzeDownloadClient,
 )
+
 DOWNLOADCLIENT_TYPE_MAP: Dict[str, Type[DownloadClient]] = {
     downloadclient_type._implementation: downloadclient_type
     for downloadclient_type in DOWNLOADLCLIENT_TYPES
