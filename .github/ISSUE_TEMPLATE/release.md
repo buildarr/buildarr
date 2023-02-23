@@ -9,33 +9,20 @@ assignees: Callum027
 
 Checklist:
 
-1. [ ] Update the `tool.poetry.version` field in `pyproject.toml`
-2. [ ] Get the raw changelog using the following command:
+1. [ ] Set milestone to `v<new version>`
+1. [ ] Get the raw changelog using the following command:
    ```bash
-   $ git log --oneline --decorate v<previous version>
+   $ git log --oneline --decorate v<new version>..HEAD
    ```
-3. [ ] Add release notes to `docs/release-notes.md` in the following format:
-   ```markdown
-   ## [v<new release>](https://github.com/buildarr/buildarr/releases/tag/v<new release>) - <release date e.g. 2023-02-19>
-
-   This is a <feature|bugfix> release that <short description of release>.
-
-   <longer desription of headline features>
-
-   ### Added
-
-   * Add a thing ([#<issue number](https://github.com/buildarr/buildarr/pull/<issue number>))
-
-   ### Changed
-
-   * Change a thing ([#<issue number](https://github.com/buildarr/buildarr/pull/<issue number>))
-
-   ### Removed
-
-   * Remote a thing ([#<issue number](https://github.com/buildarr/buildarr/pull/<issue number>))
-   ```
-4. [ ] Create pull request: (paste link to pull request here)
-5. [ ] Merge pull request
-6. [ ] Tag the new release
-7. [ ] Check that the release was automatically published to PyPI: (paste link to workflow here)
-8. [ ] Push an update to http://github.com/buildarr/buildarr-docker to release to Docker Hub
+1. [ ] Update the `tool.poetry.version` field in `pyproject.toml`
+1. [ ] Add release notes to `docs/release-notes.md`
+1. [ ] Create pull request: <paste pull request here>
+1. [ ] Merge pull request
+1. [ ] Check that the CI pipeline passed on `main`: <paste CI workflow here>
+1. [ ] Tag the new release
+1. [ ] Check that the release was automatically published to PyPI: <paste release workflow here>
+1. [ ] Push an update to http://github.com/buildarr/buildarr-docker to release to Docker Hub
+1. [ ] Push an update to https://buildarr.github.io
+1. [ ] Close release milestone
+1. [ ] Create new release milestone
+1. [ ] Close this issue
