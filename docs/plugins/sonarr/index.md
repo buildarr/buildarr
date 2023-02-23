@@ -35,7 +35,7 @@ Now try a `buildarr run`. If the output is similar to the below output, Buildarr
 
 ```bash
 $ buildarr run
-2023-02-22 20:34:43,271 buildarr:1 buildarr.main [INFO] Buildarr version 0.1.2 (log level: INFO)
+2023-02-22 20:34:43,271 buildarr:1 buildarr.main [INFO] Buildarr version 0.2.0 (log level: INFO)
 2023-02-22 20:34:43,271 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
 2023-02-22 20:34:43,308 buildarr:1 buildarr.main [INFO] Finished loading configuration file
 2023-02-22 20:34:43,337 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
