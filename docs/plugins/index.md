@@ -8,11 +8,11 @@ Successfully installed plugins will be loaded when Buildarr is run. Configured p
 
 ```text
 $ buildarr run
-2023-02-11 14:50:49,356 buildarr:53612 buildarr.main [INFO] Buildarr version 0.1.0 (log level: INFO)
-2023-02-11 14:50:49,357 buildarr:53612 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
-2023-02-11 14:50:49,374 buildarr:53612 buildarr.main [INFO] Finished loading configuration file
-2023-02-11 14:50:49,378 buildarr:53612 buildarr.main [INFO] Plugins loaded: sonarr
-2023-02-11 14:50:49,380 buildarr:53612 buildarr.main [INFO] Using plugins: sonarr
+2023-02-22 14:50:49,356 buildarr:1 buildarr.main [INFO] Buildarr version 0.2.0 (log level: INFO)
+2023-02-22 14:50:49,357 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
+2023-02-22 14:50:49,374 buildarr:1 buildarr.main [INFO] Finished loading configuration file
+2023-02-22 14:50:49,378 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
+2023-02-22 14:50:49,380 buildarr:1 buildarr.main [INFO] Running with plugins: sonarr
 ...
 ```
 

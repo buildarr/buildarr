@@ -62,7 +62,7 @@ Executing `buildarr run` will result in something resembling the following outpu
 
 ```text
 $ buildarr run
-2023-02-22 21:21:25,047 buildarr:1 buildarr.main [INFO] Buildarr version 0.1.2 (log level: INFO)
+2023-02-22 21:21:25,047 buildarr:1 buildarr.main [INFO] Buildarr version 0.2.0 (log level: INFO)
 2023-02-22 21:21:25,048 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
 2023-02-22 21:21:25,080 buildarr:1 buildarr.main [INFO] Finished loading configuration file
 2023-02-22 21:21:25,104 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
@@ -104,7 +104,7 @@ This is intended to be used to keep a *Arr stack continually up to date, particu
 There are several options for changing how Buildarr daemon runs in the [Buildarr configuration](configuration.md#buildarr-settings).
 
 ```text
-2023-02-22 21:21:25,047 buildarr:1 buildarr.main [INFO] Buildarr version 0.1.2 (log level: INFO)
+2023-02-22 21:21:25,047 buildarr:1 buildarr.main [INFO] Buildarr version 0.2.0 (log level: INFO)
 2023-02-22 21:21:25,048 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
 2023-02-22 21:21:25,080 buildarr:1 buildarr.main [INFO] Finished loading configuration file
 2023-02-22 21:21:25,084 buildarr:1 buildarr.main [INFO] Daemon configuration:
