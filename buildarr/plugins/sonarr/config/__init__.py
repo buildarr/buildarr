@@ -30,7 +30,7 @@ from buildarr.config import ConfigPlugin
 from buildarr.types import NonEmptyStr, Port
 
 from ..api import get_initialize_js
-from ..util import SonarrApiKey, SonarrProtocol
+from ..types import SonarrApiKey, SonarrProtocol
 from .connect import SonarrConnectSettingsConfig
 from .download_clients import SonarrDownloadClientsSettingsConfig
 from .general import SonarrGeneralSettingsConfig

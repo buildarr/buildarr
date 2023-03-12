@@ -23,12 +23,14 @@ from __future__ import annotations
 
 import os
 
+from collections import defaultdict
+from contextlib import contextmanager
 from distutils.util import strtobool
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Mapping, Sequence
+    from typing import DefaultDict, Generator, Mapping, Optional, Sequence, Set
 
     from .config import ConfigType
     from .plugins import Plugin
@@ -36,6 +38,13 @@ if TYPE_CHECKING:
 
 
 __all__ = ["state"]
+
+PluginInstanceRef = Tuple[str, str]
+"""
+A type for plugin-instance references as used in Buildarr internal state.
+
+The first string in the tuple is the plugin name, and the second string is the instance name.
+"""
 
 
 class State:
@@ -68,10 +77,80 @@ class State:
     This includes Buildarr configuration and configuration for enabled plugins.
     """
 
-    secrets: SecretsType = None  # type: ignore[assignment]
+    secrets: SecretsType
     """
     Currently loaded instance secrets.
     """
+
+    _current_plugin: str
+    """
+    The plugin being processed in the current context.
+
+    This state attribute is internal, and shouldn't be accessed by plugins.
+    """
+
+    _current_instance: str
+    """
+    The current instance being processed in the current context.
+
+    This state attribute is internal, and shouldn't be accessed by plugins.
+    """
+
+    _instance_dependencies: DefaultDict[
+        PluginInstanceRef,  # source_plugin_instance
+        Set[PluginInstanceRef],  # target_plugin_instances
+    ]
+    """
+    The dependency tree for linked instances defined in the Buildarr configuration.
+
+    This attribute is populated when instance name references get validated
+    upon fetching instance-specific configurations.
+
+    This state attribute is internal, and shouldn't be accessed by plugins.
+    """
+
+    def __init__(self) -> None:
+        self._reset()
+
+    def _reset(self) -> None:
+        """
+        Reset the runtime state generated during an individual Buildarr run.
+
+        This is called in daemon mode to clean up after runs.
+
+        This state function is internal, and shouldn't be used by plugins.
+        """
+        self.secrets = None  # type: ignore[assignment]
+        self._current_plugin = None  # type: ignore[assignment]
+        self._current_instance = None  # type: ignore[assignment]
+        self._instance_dependencies = defaultdict(set)  # type: ignore[assignment]
+
+    @contextmanager
+    def _with_context(
+        self,
+        plugin_name: Optional[str] = None,
+        instance_name: Optional[str] = None,
+    ) -> Generator[None, None, None]:
+        """
+        Set the current plugin/instance context within a code block.
+
+        This state function is internal, and shouldn't be used by plugins.
+
+        Args:
+            plugin_name (Optional[str], optional): Plugin name to set in the context.
+            instance_name (Optional[str], optional): Instance name to set in the context.
+        """
+        if plugin_name:
+            old_current_plugin = self._current_plugin
+            self._current_plugin = plugin_name
+        if instance_name:
+            old_current_instance = self._current_instance
+            self._current_instance = instance_name
+        yield
+        if plugin_name:
+            self._current_plugin = old_current_plugin
+        if instance_name:
+            self._current_instance = old_current_instance
 
 
 state = State()

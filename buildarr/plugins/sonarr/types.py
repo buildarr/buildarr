@@ -15,7 +15,7 @@
 
 
 """
-Sonarr plugin utility classes and functions.
+Sonarr plugin type hints.
 """
 
 

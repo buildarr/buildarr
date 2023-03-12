@@ -27,8 +27,10 @@ import sys
 
 from typing import TYPE_CHECKING
 
+from .state import state
+
 if TYPE_CHECKING:
-    from typing import Any, Mapping, MutableMapping, Optional, Tuple
+    from typing import Any, Mapping, MutableMapping, Tuple
 
 
 __all__ = ["logger", "plugin_logger"]
@@ -62,9 +64,6 @@ class BuildarrLoggerAdapter(logging.LoggerAdapter):
         lg (Logger): Standard Python logger object
     """
 
-    plugin_name: Optional[str] = None
-    instance_name: Optional[str] = None
-
     @property
     def log_level(self) -> str:
         return logging.getLevelName(self.logger.level)
@@ -80,10 +79,10 @@ class BuildarrLoggerAdapter(logging.LoggerAdapter):
                 "extra": {
                     "plugincontext": (
                         (
-                            f"buildarr.plugins.{self.plugin_name} "
-                            + (f"{self.instance_name} " if self.instance_name else "")
+                            f"buildarr.plugins.{state._current_plugin} "
+                            + (f"{state._current_instance} " if state._current_instance else "")
                         )
-                        if self.plugin_name
+                        if state._current_plugin
                         else "buildarr.main "
                     ),
                 },

@@ -29,7 +29,7 @@ from buildarr.types import NonEmptyStr, Port
 
 from .api import api_get, get_initialize_js
 from .exceptions import SonarrAPIError
-from .util import SonarrApiKey, SonarrProtocol
+from .types import SonarrApiKey, SonarrProtocol
 
 if TYPE_CHECKING:
     from typing_extensions import Self

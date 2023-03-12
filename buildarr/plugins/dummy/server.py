@@ -55,6 +55,7 @@ if "API_ROOT" not in app.config:
 _settings: Dict[str, Any] = {
     "isUpdated": False,  # bool
     "trashValue": None,  # Optional[float]
+    "instanceValue": None,  # Optional[str] (UUID)
 }
 
 

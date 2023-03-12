@@ -34,11 +34,12 @@ The following
     options:
       members:
         - type
+        - instance_name
         - full_url
         - api_key
-        - source_quality_profile_ids
-        - source_language_profile_ids
-        - source_tag_ids
+        - source_quality_profiles
+        - source_language_profiles
+        - source_tags
       show_root_heading: false
       show_source: false
 

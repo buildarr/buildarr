@@ -21,9 +21,8 @@ Buildarr plugin specification.
 
 from __future__ import annotations
 
-from .context import plugin_context
 from .load import load
 from .models import Plugin
 from .types import Config, Secrets
 
-__all__ = ["Config", "Secrets", "Plugin", "load", "plugin_context"]
+__all__ = ["Plugin", "Config", "Secrets", "load"]
