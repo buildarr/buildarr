@@ -41,7 +41,7 @@ from typing import (
 
 import yaml
 
-from pydantic import BaseModel, SecretStr
+from pydantic import AnyUrl, BaseModel, SecretStr
 from pydantic.validators import _VALIDATORS
 from typing_extensions import Self
 
@@ -638,6 +638,8 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         """
         if isinstance(value, BaseEnum):
             return value.to_name_str()
+        elif isinstance(value, AnyUrl):
+            return str(value)
         elif isinstance(value, SecretStr):
             return str(value)
         elif isinstance(value, Path):
@@ -693,6 +695,8 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         """
         if isinstance(value, BaseEnum):
             return value.value
+        elif isinstance(value, AnyUrl):
+            return str(value)
         elif isinstance(value, SecretStr):
             return value.get_secret_value()
         elif isinstance(value, (list, set)):

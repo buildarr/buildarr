@@ -24,7 +24,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
-from pydantic import ConstrainedInt, Field, HttpUrl, NameEmail, SecretStr
+from pydantic import AnyHttpUrl, ConstrainedInt, Field, NameEmail, SecretStr
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
@@ -441,7 +441,7 @@ class DiscordConnection(Connection):
     Type value associated with this kind of connection.
     """
 
-    webhook_url: HttpUrl
+    webhook_url: AnyHttpUrl
     """
     Discord server webhook URL.
     """
@@ -748,7 +748,7 @@ class GotifyConnection(Connection):
     Type value associated with this kind of connection.
     """
 
-    server: HttpUrl
+    server: AnyHttpUrl
     """
     Gotify server URL. (e.g. `http://gotify.example.com:1234`)
     """
@@ -1382,7 +1382,7 @@ class SlackConnection(Connection):
     Type value associated with this kind of connection.
     """
 
-    webhook_url: HttpUrl
+    webhook_url: AnyHttpUrl
     """
     Webhook URL for the Slack channel to send to.
     """
@@ -1621,7 +1621,7 @@ class WebhookConnection(Connection):
     Type value associated with this kind of connection.
     """
 
-    url: HttpUrl
+    url: AnyHttpUrl
     """
     Webhook URL to send notifications to.
     """

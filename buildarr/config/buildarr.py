@@ -25,7 +25,7 @@ from datetime import time
 from pathlib import Path
 from typing import Set
 
-from pydantic import HttpUrl
+from pydantic import AnyHttpUrl
 
 from ..types import DayOfWeek
 from .base import ConfigBase
@@ -122,7 +122,7 @@ class BuildarrConfig(ConfigBase):
     Path to store the Buildarr instance secrets file.
     """
 
-    trash_metadata_download_url: HttpUrl = (
+    trash_metadata_download_url: AnyHttpUrl = (
         "https://github.com/TRaSH-/Guides/archive/refs/heads/master.zip"  # type: ignore[assignment]
     )
     """
