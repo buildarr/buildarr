@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
-from pydantic import Field, HttpUrl, PositiveInt
+from pydantic import AnyHttpUrl, Field, PositiveInt
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
@@ -342,7 +342,7 @@ class NewznabIndexer(UsenetIndexer):
     Type value associated with this kind of indexer.
     """
 
-    url: HttpUrl
+    url: AnyHttpUrl
     """
     URL of the Newznab-compatible indexing site.
     """
@@ -468,7 +468,7 @@ class BroadcasthenetIndexer(TorrentIndexer):
     Type value associated with this kind of indexer.
     """
 
-    api_url: HttpUrl = "https://api.broadcasthe.net"  # type: ignore[assignment]
+    api_url: AnyHttpUrl = "https://api.broadcasthe.net"  # type: ignore[assignment]
     """
     BroadcasTheNet API URL.
     """
@@ -507,7 +507,7 @@ class FilelistIndexer(TorrentIndexer):
     FileList account API key.
     """
 
-    api_url: HttpUrl = "https://filelist.io"  # type: ignore[assignment]
+    api_url: AnyHttpUrl = "https://filelist.io"  # type: ignore[assignment]
     """
     FileList API URL.
 
@@ -591,7 +591,7 @@ class HdbitsIndexer(TorrentIndexer):
     HDBits API key assigned to the account.
     """
 
-    api_url: HttpUrl = "https://hdbits.org"  # type: ignore[assignment]
+    api_url: AnyHttpUrl = "https://hdbits.org"  # type: ignore[assignment]
     """
     HDBits API URL.
 
@@ -652,7 +652,7 @@ class NyaaIndexer(TorrentIndexer):
     Type value associated with this kind of indexer.
     """
 
-    website_url: HttpUrl
+    website_url: AnyHttpUrl
     """
     HTTPS URL for accessing Nyaa.
     """
@@ -688,7 +688,7 @@ class RarbgIndexer(TorrentIndexer):
     Type value associated with this kind of indexer.
     """
 
-    api_url: HttpUrl
+    api_url: AnyHttpUrl
     """
     RARBG API url.
     """
@@ -784,7 +784,7 @@ class TorrentleechIndexer(TorrentIndexer):
     # NOTE: automatic_search and interactive_search are not supported
     # by this indexer, therefore its value is ignored.
 
-    website_url: HttpUrl = "http://rss.torrentleech.org"  # type: ignore[assignment]
+    website_url: AnyHttpUrl = "http://rss.torrentleech.org"  # type: ignore[assignment]
     """
     TorrentLeech feed API URL.
     """
@@ -815,7 +815,7 @@ class TorznabIndexer(TorrentIndexer):
     Type value associated with this kind of indexer.
     """
 
-    url: HttpUrl
+    url: AnyHttpUrl
     """
     URL of the Torznab-compatible indexing site.
     """

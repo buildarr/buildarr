@@ -26,7 +26,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
-from pydantic import ConstrainedStr, Field, HttpUrl, PositiveInt
+from pydantic import AnyHttpUrl, ConstrainedStr, Field, PositiveInt
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
@@ -467,7 +467,7 @@ class SonarrImportList(ProgramImportList):
     #   * Add instance support. Specify the name of the other Sonarr instance
     #     as defined in Buildarr, and have Buildarr fill in the rest of the details.
 
-    full_url: HttpUrl
+    full_url: AnyHttpUrl
     """
     URL that this Sonarr instance will use to connect to the source Sonarr instance.
     """
