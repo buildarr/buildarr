@@ -170,7 +170,8 @@ def _run(use_plugins: Set[str] = set()) -> None:
                     )
                     instance_secrets = state.plugins[plugin_name].secrets.get(instance_config)
                     if instance_secrets.test():
-                        plugin_logger.info("Connection test uccessful using fetched secrets")
+                        plugin_logger.info("Connection test successful using fetched secrets")
+                        plugin_secrets[instance_name] = instance_secrets
                     else:
                         raise RunInstanceConnectionTestFailedError(
                             "Connection test failed using fetched secrets "
