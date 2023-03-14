@@ -227,6 +227,7 @@ class Daemon:
         """
         logger.info("Running scheduled update of remote instances")
         run_apply()
+        state._reset()
         logger.info("Finished running scheduled update of remote instances")
         logger.info(
             "The next run will be at %s",

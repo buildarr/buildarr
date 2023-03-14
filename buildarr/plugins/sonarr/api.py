@@ -205,14 +205,19 @@ def _api_error(res_json: Any) -> str:
     """
 
     try:
-        return (
-            f"{res_json['propertyName']}: "
-            f"{res_json['errorMessage']} (attempted value: {res_json['attemptedValue']})"
-        )
+        try:
+            error_message = f"{res_json['propertyName']}: {res_json['errorMessage']}"
+            try:
+                error_message += f" (attempted value: {res_json['attemptedValue']})"
+            except KeyError:
+                pass
+            return error_message
+        except KeyError:
+            pass
+        try:
+            return f"{res_json['message']}\n{res_json['description']}"
+        except KeyError:
+            pass
+        return res_json["message"]
     except KeyError:
-        pass
-    try:
-        return f"{res_json['message']}\n{res_json['description']}"
-    except KeyError:
-        pass
-    return res_json["message"]
+        return f"(Unsupported error JSON format) {res_json}"

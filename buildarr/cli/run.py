@@ -21,7 +21,7 @@
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Set
+from typing import Dict, List, Mapping, Set
 
 import click
 
@@ -30,9 +30,8 @@ from importlib_metadata import version as package_version
 from ..config import ConfigPlugin, ConfigPluginType, load as load_config
 from ..logging import logger, plugin_logger
 from ..manager import ManagerPlugin
-from ..plugins import plugin_context
 from ..secrets import SecretsPlugin, load as load_secrets
-from ..state import state
+from ..state import PluginInstanceRef, state
 from ..trash import fetch as trash_fetch
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
@@ -76,7 +75,7 @@ def run(config_path: Path, use_plugins: Set[str]) -> None:
 
     Args:
         config_path (Path): Configuration file to load.
-        plugins (Set[str]): Plugins to load. If empty, load all plugins.
+        plugins (Set[str]): Plugins to load. If empty, use all plugins.
     """
 
     logger.info(
@@ -100,7 +99,7 @@ def _run(use_plugins: Set[str] = set()) -> None:
     and push updates as required according to the current local configuration.
 
     Args:
-        plugins (Set[str], optional): Plugins to load. If empty or unset, load all plugins.
+        use_plugins (Set[str], optional): Plugins to use. If empty or unset, load all plugins.
     """
 
     # Dump the currently active Buildarr configuration file to the debug log.
@@ -116,10 +115,11 @@ def _run(use_plugins: Set[str] = set()) -> None:
         ", ".join(sorted(state.plugins.keys())) if state.plugins else "(no plugins found)",
     )
 
-    # Generate instance-specific configs for each plugin, with all
-    # instance-specific and plugin-global fields resolved.
-    # If a config for the plugin is not explicitly defined within
-    # the Buildarr configuration, make sure it is not run.
+    # Fetch fully-qualified configurations for each instance under each plugin.
+    # The above action is done in an instance-specific context, so that
+    # when the instance-specific configuration gets evaluated by the configuration parser,
+    # instance name references are processed and dependencies get added
+    # to `state._instance_dependencies`.
     configs: Dict[str, Dict[str, ConfigPlugin]] = {}
     managers: Dict[str, ManagerPlugin] = {}
     for plugin_name, plugin in state.plugins.items():
@@ -128,20 +128,27 @@ def _run(use_plugins: Set[str] = set()) -> None:
             plugin_manager = plugin.manager()
             plugin_config: ConfigPluginType = getattr(state.config, plugin_name)
             managers[plugin_name] = plugin_manager
-            configs[plugin_name] = {
-                instance_name: plugin_manager.get_instance_config(plugin_config, instance_name)
-                for instance_name in (
-                    plugin_config.instances.keys() if plugin_config.instances else ["default"]
-                )
-            }
+            configs[plugin_name] = {}
+            for instance_name in (
+                plugin_config.instances.keys() if plugin_config.instances else ["default"]
+            ):
+                with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+                    configs[plugin_name][instance_name] = plugin_manager.get_instance_config(
+                        plugin_config,
+                        instance_name,
+                    )
 
     # If no plugins are configured to run, there is nothing more we can do.
-    # Stop hjere.
+    # Stop here.
     if not run_plugins:
         raise RunNoPluginsDefinedError("No loaded plugins configured in Buildarr")
 
     # Log the plugins being executed in this Buildarr run.
     logger.info("Running with plugins: %s", ", ".join(run_plugins))
+
+    # Traverse the instance dependency chain structure to determine
+    # the instance update execution order.
+    execution_order = _get_execution_order(configs)
 
     # Load the secrets file if it exists, and initialise the secrets metadata.
     # If `use_plugins` is undefined, load using all plugins available
@@ -154,7 +161,7 @@ def _run(use_plugins: Set[str] = set()) -> None:
     for plugin_name in run_plugins:
         plugin_secrets: Dict[str, SecretsPlugin] = getattr(state.secrets, plugin_name)
         for instance_name, instance_config in configs[plugin_name].items():
-            with plugin_context(plugin_name, instance_name):
+            with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 plugin_logger.info("Checking secrets")
                 try:
                     instance_secrets = plugin_secrets[instance_name]
@@ -212,62 +219,173 @@ def _run(use_plugins: Set[str] = set()) -> None:
         else:
             logger.debug("TRaSH metadata not required")
 
-        # Update all instances.
-        # TODO: Define execution order of all instances across plugins,
-        # because in the future, some will depend on others to be configured
-        # properly to function. (e.g. Prowlarr depending on Sonarr/Radarr)
-        for plugin_name in run_plugins:
+        # Update all instances in the determined execution order.
+        for plugin_name, instance_name in execution_order:
             manager = managers[plugin_name]
-            for instance_name, instance_config in configs[plugin_name].items():
-                with plugin_context(plugin_name, instance_name):
-                    # Get the instance's secrets object.
-                    instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+            instance_config = configs[plugin_name][instance_name]
+            with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+                # Get the instance's secrets object.
+                instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
 
-                    # Add actual parameters to resource definitions where
-                    # TRaSH IDs are referenced.
-                    if manager.uses_trash_metadata(instance_config):
-                        plugin_logger.info("Rendering TRaSH-Guides metadata")
-                        instance_config = manager.render_trash_metadata(
+                # Add actual parameters to resource definitions where
+                # TRaSH IDs are referenced.
+                if manager.uses_trash_metadata(instance_config):
+                    plugin_logger.info("Rendering TRaSH-Guides metadata")
+                    instance_config = manager.render_trash_metadata(
+                        instance_config,
+                        trash_metadata_dir,
+                    )
+                    plugin_logger.info("Finished rendering TRaSH-Guides metadata")
+
+                # Fetch the current active configuration from the remote instance,
+                # so they can be configured.
+                plugin_logger.info("Getting remote configuration")
+                remote_instance_config = manager.from_remote(instance_config, instance_secrets)
+                plugin_logger.info("Finished getting remote configuration")
+                plugin_logger.debug(
+                    "Remote configuration:\n%s",
+                    remote_instance_config.yaml(exclude_unset=True),
+                )
+
+                # Push the updated state to the instance.
+                plugin_logger.info("Updating remote configuration")
+                plugin_logger.info(
+                    (
+                        "Remote configuration successfully updated"
+                        if manager.update_remote(
+                            plugin_name,
                             instance_config,
-                            trash_metadata_dir,
+                            instance_secrets,
+                            remote_instance_config,
                         )
-                        plugin_logger.info("Finished rendering TRaSH-Guides metadata")
+                        else "Remote configuration is up to date"
+                    ),
+                )
+                plugin_logger.info("Finished updating remote configuration")
 
-                    # Fetch the current active configuration from the remote instance,
-                    # so they can be configured.
-                    plugin_logger.info("Getting remote configuration")
-                    remote_instance_config = manager.from_remote(instance_config, instance_secrets)
-                    plugin_logger.info("Finished getting remote configuration")
-                    plugin_logger.debug(
-                        "Remote configuration:\n%s",
-                        remote_instance_config.yaml(exclude_unset=True),
-                    )
+                # TODO: Re-fetch the remote configuration and test that it
+                #       now matches the local configuration.
+                # print("Re-fetching remote config")
+                # new_active_config = manager.get_active_config(
+                #     instance_config,
+                #     getattr(secrets, manager_name),
+                # )
+                # print(
+                #     "Active configuration for instance name "
+                #     f'{instance_name}' after update:\n"
+                #     f"{pformat(new_active_config.dict(exclude_unset=True))}",
+                # )
 
-                    # Push the updated state to the instance.
-                    plugin_logger.info("Updating remote configuration")
-                    plugin_logger.info(
-                        (
-                            "Remote configuration successfully updated"
-                            if manager.update_remote(
-                                plugin_name,
-                                instance_config,
-                                instance_secrets,
-                                remote_instance_config,
-                            )
-                            else "Remote configuration is up to date"
-                        ),
-                    )
-                    plugin_logger.info("Finished updating remote configuration")
 
-                    # TODO: Re-fetch the remote configuration and test that it
-                    #       now matches the local configuration.
-                    # print("Re-fetching remote config")
-                    # new_active_config = manager.get_active_config(
-                    #     instance_config,
-                    #     getattr(secrets, manager_name),
-                    # )
-                    # print(
-                    #     "Active configuration for instance name "
-                    #     f'{instance_name}' after update:\n"
-                    #     f"{pformat(new_active_config.dict(exclude_unset=True))}",
-                    # )
+def _get_execution_order(
+    configs: Mapping[str, Mapping[str, ConfigPlugin]],
+) -> List[PluginInstanceRef]:
+    """
+    Return a list of plugin-instance references in the order which
+    operations should be performed on them.
+
+    This performs a depth-first search on the dependency tree structure
+    stored in `state._instance_dependencies`, which is generated using
+    instance name references defined within Buildarr instance configurations.
+
+    Args:
+        configs (Mapping[str, Mapping[str, ConfigPlugin]]): Plugin and instance configuration.
+
+    Returns:
+        Execution order of instances specified as a list of (plugin, instance) tuples
+    """
+
+    added_plugin_instances: Set[PluginInstanceRef] = set()
+    execution_order: List[PluginInstanceRef] = []
+
+    logger.info("Resolving instance dependencies")
+    logger.debug("Execution order:")
+
+    for plugin_name, instance_configs in configs.items():
+        for instance_name in instance_configs.keys():
+            instance = (plugin_name, instance_name)
+            if instance in added_plugin_instances:
+                continue
+            __get_execution_order(
+                configs=configs,
+                added_plugin_instances=added_plugin_instances,
+                execution_order=execution_order,
+                plugin_name=plugin_name,
+                instance_name=instance_name,
+            )
+
+    logger.info("Finished resolving instance dependencies")
+
+    return execution_order
+
+
+def __get_execution_order(
+    configs: Mapping[str, Mapping[str, ConfigPlugin]],
+    added_plugin_instances: Set[PluginInstanceRef],
+    execution_order: List[PluginInstanceRef],
+    plugin_name: str,
+    instance_name: str,
+    dependency_tree: List[PluginInstanceRef] = [],
+) -> None:
+    """
+    Recursive depth-first search function for `get_execution_order`.
+
+    Args:
+        configs (Mapping[str, Mapping[str, ConfigPlugin]]): Plugin and instance configuration.
+        added_plugin_instances (Set[PluginInstanceRef]): Structure to avoid re-evaluating branches.
+        execution_order (List[PluginInstanceRef]): Final data structure, appended to in-place.
+        plugin_name (str): Plugin the current instance being evaluated is under.
+        instance_name (str): Name of instance to evaluate dependencies for.
+        dependency_tree (List[PluginInstanceRef], optional): Tree used to find dependency cycles.
+
+    Raises:
+        ValueError: When a plugin used in an instance reference is not installed
+        ValueError: When a plugin used in an instance reference is disabled or not configured
+        ValueError: When a dependency cycle is detected
+    """
+
+    plugin_instance: PluginInstanceRef = (plugin_name, instance_name)
+
+    if plugin_name not in configs:
+        error_message = 'Unable to resolve instance dependency "'
+        try:
+            previous_pi = dependency_tree[-1]
+            error_message += f"{previous_pi[0]}.instances[{repr(previous_pi[1])}] -> "
+        except IndexError:
+            # Shouldn't happen because dependency keys are generated from
+            # instance configuration, but handle it just in case.
+            pass
+        error_message += f'{plugin_name}.instances[{repr(instance_name)}]": '
+        if plugin_name not in state.plugins:
+            error_message += f"Plugin '{plugin_name}' not installed"
+        else:
+            error_message += f"Plugin '{plugin_name}' disabled, or no configuration defined for it"
+        raise ValueError(error_message)
+
+    if plugin_instance in dependency_tree:
+        raise ValueError(
+            (
+                "Detected dependency cycle in configuration for instance references:\n"
+                + "\n".join(
+                    f"  {i}. {pname}.instances[{repr(iname)}]"
+                    for i, (pname, iname) in enumerate(dependency_tree + [plugin_instance], 1)
+                )
+            ),
+        )
+
+    if plugin_instance in state._instance_dependencies:
+        for target_plugin_instance in state._instance_dependencies[plugin_instance]:
+            if target_plugin_instance not in added_plugin_instances:
+                target_plugin, target_instance = target_plugin_instance
+                __get_execution_order(
+                    configs=configs,
+                    added_plugin_instances=added_plugin_instances,
+                    execution_order=execution_order,
+                    plugin_name=target_plugin,
+                    instance_name=target_instance,
+                    dependency_tree=dependency_tree + [plugin_instance],
+                )
+
+    added_plugin_instances.add(plugin_instance)
+    execution_order.append(plugin_instance)
+    logger.debug("%i. %s.instances[%s]", len(execution_order), plugin_name, repr(instance_name))

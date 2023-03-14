@@ -27,7 +27,10 @@ from enum import Enum, IntEnum
 from typing import Any, Callable, Generator
 
 from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, Field, SecretStr
+from pydantic.fields import ModelField
 from typing_extensions import Annotated, Self
+
+from .state import state
 
 Password = Annotated[SecretStr, Field(min_length=1)]
 """
@@ -302,3 +305,103 @@ class DayOfWeek(BaseIntEnum):
     friday = 4
     saturday = 5
     sunday = 6
+
+
+class InstanceName(str):
+    """
+    A type for creating references to an instance in another plugin.
+
+    When loading the instance-specific configurations, Buildarr will dereference
+    defined instance references, and order the execution of updates so that
+    instances used by another instance get updated first.
+
+    This ensures that all instances are in the state expected by the user
+    when the instance gets processed.
+
+    When defining `InstanceName`, a Pydantic `Field` needs to be defined
+    with the special `plugin` argument passed to tell Buildarr what plugin
+    to search for the linked instance under.
+
+    ```python
+    from typing import TYPE_CHECKING, Optional
+    from pydantic import Field
+    from buildarr.config import ConfigBase, RssUrl
+
+    if TYPE_CHECKING:
+        from .secrets import ExampleSecrets
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+            ...
+    else:
+        class ExampleConfigBase(ConfigBase):
+            ...
+
+    class ExampleConfig(ExampleConfigBase):
+        instance_name: Optional[InstanceName] = Field(None, plugin="example")
+    ```
+
+    The user will then be able to specify the name of the target instance in
+    the Buildarr configuration.
+
+    ```yaml
+    example:
+      instances:
+        instance-1:
+          ...
+        instance-2:
+          instance_name: "instance-1"
+          ...
+    ```
+    """
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[str, ModelField], str], None, None]:
+        """
+        Pass the defined validation functions to Pydantic.
+        """
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: str, field: ModelField) -> Self:
+        """
+        Validate the type of the instance name reference,
+        evaluate the reference and add the link to the dependency tree structure.
+
+        _extended_summary_
+
+        Args:
+            value (str): Instance name reference.
+            field (ModelField): Field metadata. Used to get the linked plugin name.
+
+        Raises:
+            ValueError: If the target plugin is not defined as field metadata
+
+        Returns:
+            Instance name object (string-compatible)
+        """
+        NonEmptyStr.validate(value)
+        try:
+            plugin_name: str = field.field_info.extra["plugin"]
+            instance_name = value
+            if plugin_name not in state.plugins:
+                raise ValueError(f"Target plugin '{plugin_name}' not installed")
+            if state.config:
+                if instance_name not in getattr(state.config, plugin_name).instances:
+                    raise ValueError(
+                        f"Target instance '{instance_name}' "
+                        f"not defined in plugin '{plugin_name}' configuration",
+                    )
+                if state._current_plugin and state._current_instance:
+                    state._instance_dependencies[
+                        (state._current_plugin, state._current_instance)
+                    ].add(
+                        (plugin_name, instance_name),
+                    )
+        except KeyError as err:
+            if err.args[0] == "plugin":
+                raise ValueError(
+                    "Target plugin not defined in instance name metadata, "
+                    "make sure the default value is set to `Field(None, plugin='<plugin-name>')`",
+                )
+            else:
+                raise
+        return cls(value)

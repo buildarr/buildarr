@@ -38,6 +38,7 @@ from typing import (
     get_args as get_type_args,
     get_origin as get_type_origin,
 )
+from uuid import UUID
 
 import yaml
 
@@ -526,6 +527,9 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         * `is_field` (`bool`, default: `False`)
             * Denotes whether the remote value is stored in an *Arr API-style field
               for remote value writing purposes
+        * `check_unmanaged` (`bool`, default: (function-supplied value))
+            * Remote map entry-supplied override for the function-supplied
+              `check_unmanaged` parameter
         * `set_unchanged` (`bool`, default: (function-supplied value))
             * Remote map entry-supplied override for the function-supplied
               `set_unchanged` parameter
@@ -555,7 +559,10 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             # Handle the case where the attribute is managed, either
             # by virtue of it being explicitly set in the Buildarr config,
             # or check_unmanaged is set to True.
-            if check_unmanaged or attr_name in self.__fields_set__:
+            if (
+                attr_metadata.get("check_unmanaged", check_unmanaged)
+                or attr_name in self.__fields_set__
+            ):
                 local_value = getattr(self, attr_name)
                 # If the local and remote attributes are set to the same
                 # value, unless set_unchanged is set to True, do nothing.
@@ -644,6 +651,8 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, Path):
             return str(value)
+        elif isinstance(value, UUID):
+            return str(value)
         elif isinstance(value, list):
             return [cls._format_attr(v) for v in value]
         elif isinstance(value, set):
@@ -699,6 +708,8 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, SecretStr):
             return value.get_secret_value()
+        elif isinstance(value, UUID):
+            return str(value)
         elif isinstance(value, (list, set)):
             return [cls._encode_attr(v) for v in value]
         return value
@@ -716,6 +727,36 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         return yaml.safe_dump(json.loads(self.json(*args, **kwargs)))
 
     class Config:
+        """
+        Buildarr base Pydantic model configuration.
+
+        Sets some required configuration parameters for
+        serialisation and parsing to work correctly.
+
+        To set additional parameters in your implementing class, subclass this class:
+
+        ```python
+        from __future__ import annotations
+
+        from typing import TYPE_CHECKING
+        from buildarr.config import ConfigBase
+
+        if TYPE_CHECKING:
+            from .secrets import ExampleSecrets
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+                ...
+        else:
+            class ExampleConfigBase(ConfigBase):
+                ...
+
+        class ExampleConfig(ExampleConfigBase):
+            ...
+
+            class Config(ExampleConfigBase.Config):
+                ...  # Add model configuration attributes here.
+        ```
+        """
+
         # Add default JSON encoders for custom, non-default and otherwise non-specified
         # classes so serialisation can work.
         json_encoders = {

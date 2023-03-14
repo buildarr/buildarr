@@ -24,17 +24,32 @@ from __future__ import annotations
 import re
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
-from pydantic import AnyHttpUrl, ConstrainedStr, Field, PositiveInt
+from pydantic import AnyHttpUrl, ConstrainedStr, Field, PositiveInt, validator
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
 from buildarr.logging import plugin_logger
-from buildarr.types import BaseEnum, NonEmptyStr, Password
+from buildarr.state import state
+from buildarr.types import BaseEnum, InstanceName, NonEmptyStr, Password
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
+from ..types import SonarrApiKey
 from .types import SonarrConfigBase, TraktAuthUser
 from .util import trakt_expires_encoder
 
@@ -131,23 +146,25 @@ class ImportList(SonarrConfigBase):
     * `none` - No episodes will be monitored
     """
 
-    root_folder: Optional[str] = None
+    root_folder: NonEmptyStr
     """
-    Add list items to the specified root folder.
+    The root folder to add list items to.
+
+    This attribute is required.
     """
 
-    quality_profile: Optional[str] = None
+    quality_profile: NonEmptyStr
     """
     The name of the quality profile list items will be added with.
 
-    If unset, blank or set to `None`, use any quality profile.
+    This attribute is required.
     """
 
-    language_profile: Optional[str] = None
+    language_profile: NonEmptyStr
     """
     The name of the language profile list items will be added with.
 
-    If unset, blank or set to `None`, use any language profile.
+    This attribute is required.
     """
 
     series_type: SeriesType = SeriesType.standard
@@ -184,6 +201,17 @@ class ImportList(SonarrConfigBase):
         language_profile_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
     ) -> List[RemoteMapEntry]:
+        """
+        Return the remote map for the base import list attributes.
+
+        Args:
+            quality_profile_ids (Mapping[str, int]): Quality profile ID mapping on the remote.
+            language_profile_ids (Mapping[str, int]): Language profile ID mapping on the remote.
+            tag_ids (Mapping[str, int]): Tag ID mapping on the remote.
+
+        Returns:
+            Remote map (as a list of entries)
+        """
         return [
             ("enable_automatic_add", "enableAutomaticAdd", {}),
             ("monitor", "shouldMonitor", {}),
@@ -198,9 +226,8 @@ class ImportList(SonarrConfigBase):
                 {
                     "decoder": lambda v: next(
                         (ind for ind, ind_id in quality_profile_ids.items() if ind_id == v),
-                        None,
                     ),
-                    "encoder": lambda v: quality_profile_ids[v] if v else 0,
+                    "encoder": lambda v: quality_profile_ids[v],
                 },
             ),
             (
@@ -209,9 +236,8 @@ class ImportList(SonarrConfigBase):
                 {
                     "decoder": lambda v: next(
                         (ind for ind, ind_id in language_profile_ids.items() if ind_id == v),
-                        None,
                     ),
-                    "encoder": lambda v: language_profile_ids[v] if v else 0,
+                    "encoder": lambda v: language_profile_ids[v],
                 },
             ),
             ("series_type", "seriesType", {}),
@@ -236,6 +262,19 @@ class ImportList(SonarrConfigBase):
         tag_ids: Mapping[str, int],
         remote_attrs: Mapping[str, Any],
     ) -> Self:
+        """
+        Parse an import list object from the remote Sonarr instance,
+        and return its internal representation.
+
+        Args:
+            quality_profile_ids (Mapping[str, int]): Quality profile ID mapping on the remote.
+            language_profile_ids (Mapping[str, int]): Language profile ID mapping on the remote.
+            tag_ids (Mapping[str, int]): Tag ID mapping on the remote.
+            remote_attrs (Mapping[str, Any]): Remote instance import list object.
+
+        Returns:
+            Internal import list object
+        """
         return cls(
             **cls.get_local_attrs(
                 (
@@ -246,6 +285,47 @@ class ImportList(SonarrConfigBase):
             ),
         )
 
+    def _resolve(self, name: str, ignore_nonexistent_ids: bool = False) -> Self:
+        """
+        Resolve any instance references on this import list, and
+        return an object with fully qualified attribute values.
+
+        Args:
+            name (str): Name associated with this import list.
+            ignore_nonexistent_ids (bool, optional): Ignore invalid IDs on the target instance.
+
+        Returns:
+            Fully qualified import list object
+        """
+        return self._resolve_from_local(
+            name=name,
+            local=self,
+            ignore_nonexistent_ids=ignore_nonexistent_ids,
+        )
+
+    def _resolve_from_local(
+        self,
+        name: str,
+        local: Self,
+        ignore_nonexistent_ids: bool = False,
+    ) -> Self:
+        """
+        Resolve this import list using instance references from the given object,
+        and return an object with fully qualified attribute values.
+
+        Used to fully qualify import list objects read from a remote Sonarr instance,
+        using its corresponding local configuration.
+
+        Args:
+            name (str): Name associated with this import list.
+            local (Self): Import list object to use for instance referencing.
+            ignore_nonexistent_ids (bool, optional): Ignore invalid IDs on the target instance.
+
+        Returns:
+            Fully qualified import list object
+        """
+        return self
+
     def _create_remote(
         self,
         tree: str,
@@ -255,6 +335,17 @@ class ImportList(SonarrConfigBase):
         tag_ids: Mapping[str, int],
         importlist_name: str,
     ) -> None:
+        """
+        Create this import list on the remote Sonarr instance.
+
+        Args:
+            tree (str): Configuration tree. Used for logging.
+            secrets (SonarrSecrets): Secrets metadata for the remote instance.
+            quality_profile_ids (Mapping[str, int]): Quality profile ID mapping on the remote.
+            language_profile_ids (Mapping[str, int]): Language profile ID mapping on the remote.
+            tag_ids (Mapping[str, int]): Tag ID mapping on the remote.
+            importlist_name (str): Name associated with this import list.
+        """
         api_post(
             secrets,
             "/api/v3/importlist",
@@ -288,12 +379,30 @@ class ImportList(SonarrConfigBase):
         importlist_id: int,
         importlist_name: str,
     ) -> bool:
+        """
+        Compare this import list to the currently active one the remote Sonarr instance,
+        and update it in-place if there are differences.
+
+        Args:
+            tree (str): Configuration tree. Used for logging.
+            secrets (SonarrSecrets): Secrets metadata for the remote instance.
+            remote (Self): Active import list confiuration on the remote instance.
+            quality_profile_ids (Mapping[str, int]): Quality profile ID mapping on the remote.
+            language_profile_ids (Mapping[str, int]): Language profile ID mapping on the remote.
+            tag_ids (Mapping[str, int]): Tag ID mapping on the remote.
+            importlist_id (int): ID associated with this import list on the remote instance.
+            importlist_name (str): Name associated with this import list.
+
+        Returns:
+            `True` if the import list was updated, otherwise `False`
+        """
         updated, remote_attrs = self.get_update_remote_attrs(
             tree,
             remote,
             self._get_base_remote_map(quality_profile_ids, language_profile_ids, tag_ids)
             + self._remote_map,
-            # TODO: check if check_unmanaged and/or set_unchanged are required (probably are)
+            check_unmanaged=True,
+            set_unchanged=True,
         )
         if updated:
             api_put(
@@ -312,6 +421,14 @@ class ImportList(SonarrConfigBase):
         return False
 
     def _delete_remote(self, tree: str, secrets: SonarrSecrets, importlist_id: int) -> None:
+        """
+        Delete this import list from the remote Sonarr instance.
+
+        Args:
+            tree (str): Configuration tree. Used for logging.
+            secrets (SonarrSecrets): Secrets metadata for the remote instance.
+            importlist_id (int): ID associated with this import list on the remote instance.
+        """
         plugin_logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/importlist/{importlist_id}")
 
@@ -453,7 +570,76 @@ class SonarrImportList(ProgramImportList):
     """
     Import items from another Sonarr instance.
 
-    The Sonarr instance preferably should be the same version as this Sonarr instance.
+    The linked Sonarr instance must be the same major version as this defined Sonarr instance.
+    For example, a Sonarr V3 instance cannot connect with a Sonarr V4 instance, and vice versa.
+
+    ```yaml
+    ...
+      import_lists:
+        definitions:
+          Sonarr:
+            type: "sonarr"
+            # Global import list options.
+            root_folder: "/path/to/videos"
+            quality_profile: "HD/SD"
+            language_profile: "English"
+            # Sonarr import list-specific options.
+            full_url: "http://sonarr:8989"
+            api_key: "1a2b3c4d5e1a2b3c4d5e1a2b3c4d5e1a"
+            source_quality_profiles:
+              - 11
+              ...
+            source_language_profiles:
+              - 22
+              ...
+            source_tags:
+              - 33
+              ...
+    ```
+
+    This import list supports instance references to another Buildarr-defined Sonarr instance
+    using `instance_name`.
+
+    In this mode, you can specify `instance_name` in place of `api_key`,
+    and use actual names for the source language profiles, quality profiles and tags,
+    instead of IDs which are subject to change.
+
+    Here is an example of one Sonarr instance (`sonarr-4k`) referencing
+    another instance (`sonarr-hd`), using it as an import list.
+
+    ```yaml
+    sonarr:
+      instances:
+        sonarr-hd:
+          hostname: "localhost"
+          port: 8989
+        sonarr-4k:
+          hostname: "localhost"
+          port: 8990
+          settings:
+            import_lists:
+              definitions:
+                Sonarr (HD):
+                  type: "sonarr"
+                  # Global import list options.
+                  root_folder: "/path/to/videos"
+                  quality_profile: "4K"
+                  language_profile: "English"
+                  # Sonarr import list-specific options.
+                  full_url: "http://sonarr:8989"
+                  instance_name: "sonarr-hd"
+                  source_quality_profiles:
+                    - "HD/SD"
+                  source_language_profiles:
+                    - "English"
+                  source_tags:
+                    - "shows"
+    ```
+
+    An important thing to keep in mind is that unless Buildarr is on the same network
+    as the rest of the *Arr stack, the hostnames and ports may differ to what the
+    Sonarr instances will use to communicate with each other. `full_url` should be
+    set to what the Sonarr instance itself will use to link to the target instance.
     """
 
     type: Literal["sonarr"] = "sonarr"
@@ -461,47 +647,345 @@ class SonarrImportList(ProgramImportList):
     Type value associated with this kind of import list.
     """
 
-    # TODO:
-    #   * Read the peer Sonarr instance for quality profile, language profile and tag metadata,
-    #     so all the user needs to put in is the names of each, instead of IDs.
-    #   * Add instance support. Specify the name of the other Sonarr instance
-    #     as defined in Buildarr, and have Buildarr fill in the rest of the details.
+    instance_name: Optional[InstanceName] = Field(None, plugin="sonarr")
+    """
+    The name of the Sonarr instance within Buildarr, if linking this Sonarr instance
+    with another Buildarr-defined Sonarr instance.
+    """
 
     full_url: AnyHttpUrl
     """
-    URL that this Sonarr instance will use to connect to the source Sonarr instance.
+    The URL that this Sonarr instance will use to connect to the source Sonarr instance.
     """
 
-    api_key: Password
+    api_key: Optional[SonarrApiKey] = None
     """
-    API key used to access the remote instance.
+    API key used to access the source Sonarr instance.
+
+    If a Sonarr instance managed by Buildarr is not referenced using `instance_name`,
+    this attribute is required.
     """
 
-    source_quality_profile_ids: Set[PositiveInt] = set()
+    source_quality_profiles: Set[Union[PositiveInt, NonEmptyStr]] = set()
     """
-    IDs of the Quality Profiles from the source instance to import from.
+    Quality profiles from the source instance to import from.
+
+    Either the name of the profile or the instance-specific ID can be defined.
     """
 
-    source_language_profile_ids: Set[PositiveInt] = set()
+    source_language_profiles: Set[Union[PositiveInt, NonEmptyStr]] = set()
     """
-    IDs of the Language Profiles from the source instance to import from.
+    Language profiles from the source instance to import from.
+
+    Either the name of the profile or the instance-specific ID can be defined.
     """
 
-    source_tag_ids: Set[PositiveInt] = set()
+    source_tags: Set[Union[PositiveInt, NonEmptyStr]] = set()
     """
-    IDs of the tags from the source instance to import from.
+    Tags from the source instance to import from.
+
+    Either the name of the tag or the instance-specific ID an be defined.
     """
 
     _implementation_name: str = "Sonarr"
     _implementation: str = "SonarrImport"
     _config_contract: str = "SonarrSettings"
-    _remote_map: List[RemoteMapEntry] = [
-        ("full_url", "baseUrl", {"is_field": True}),
-        ("api_key", "apiKey", {"is_field": True}),
-        ("source_quality_profile_ids", "profileIds", {"is_field": True}),
-        ("language_profile_ids", "languageProfileIds", {"is_field": True}),
-        ("source_tags", "tagIds", {"is_field": True}),
-    ]
+    _remote_map: List[RemoteMapEntry] = []
+
+    @classmethod
+    def _get_base_remote_map(
+        cls,
+        quality_profile_ids: Mapping[str, int],
+        language_profile_ids: Mapping[str, int],
+        tag_ids: Mapping[str, int],
+    ) -> List[RemoteMapEntry]:
+        return super()._get_base_remote_map(quality_profile_ids, language_profile_ids, tag_ids) + [
+            ("full_url", "baseUrl", {"is_field": True}),
+            ("api_key", "apiKey", {"is_field": True}),
+            (
+                "source_quality_profiles",
+                "profileIds",
+                {
+                    "is_field": True,
+                    "root_encoder": lambda vs: cls._encode_source_resources(
+                        instance_name=vs.instance_name,
+                        resources=vs.source_quality_profiles,
+                        resource_type="qualityprofile",
+                    ),
+                },
+            ),
+            (
+                "source_language_profiles",
+                "languageProfileIds",
+                {
+                    "is_field": True,
+                    "root_encoder": lambda vs: cls._encode_source_resources(
+                        instance_name=vs.instance_name,
+                        resources=vs.source_language_profiles,
+                        resource_type="languageprofile",
+                    ),
+                },
+            ),
+            (
+                "source_tags",
+                "tagIds",
+                {
+                    "is_field": True,
+                    "root_encoder": lambda vs: cls._encode_source_resources(
+                        instance_name=vs.instance_name,
+                        resources=vs.source_tags,
+                        resource_type="tag",
+                        name_key="label",
+                    ),
+                },
+            ),
+        ]
+
+    @classmethod
+    def _get_secrets(cls, instance_name: str) -> SonarrSecrets:
+        """
+        Fetch the secrets metadata for the given Sonarr instance from the Buildarr state.
+
+        Args:
+            instance_name (str): Name of Sonarr instance to get the secrets for.
+
+        Returns:
+            Sonarr instance secrets metadata
+        """
+        return cast(SonarrSecrets, state.secrets.sonarr[instance_name])
+
+    @classmethod
+    def _get_resources(cls, instance_name: str, resource_type: str) -> List[Dict[str, Any]]:
+        """
+        Make an API request to Sonarr to get the list of resources of the requested type.
+
+        Args:
+            instance_name (str): Name of Sonarr instance to get the resources from.
+            profile_type (str): Name of the resource to get in the Sonarr API.
+
+        Returns:
+            List of resource API objects
+        """
+        return api_get(cls._get_secrets(instance_name), f"/api/v3/{resource_type}")
+
+    @validator("api_key", always=True)
+    def validate_api_key(
+        cls,
+        value: Optional[SonarrApiKey],
+        values: Mapping[str, Any],
+    ) -> Optional[SonarrApiKey]:
+        """
+        Validate the `api_key` attribute after parsing.
+
+        Args:
+            value (Optional[str]): `api_key` value.
+            values (Mapping[str, Any]): Currently parsed attributes. `instance_name` is checked.
+
+        Raises:
+            ValueError: If `api_key` is undefined when `instance_name` is also undefined.
+
+        Returns:
+            Validated `api_key` value
+        """
+        if not values.get("instance_name", None) and not value:
+            raise ValueError("required if 'instance_name' is undefined")
+        return value
+
+    @validator(
+        "source_quality_profiles",
+        "source_language_profiles",
+        "source_tags",
+        each_item=True,
+    )
+    def validate_source_resource_ids(
+        cls,
+        value: Union[int, str],
+        values: Dict[str, Any],
+    ) -> Union[int, str]:
+        """
+        Validate that all resource references are IDs (integers) if `instance_name` is undefined.
+
+        Args:
+            value (Union[int, str]): Resource reference (ID or name).
+            values (Mapping[str, Any]): Currently parsed attributes. `instance_name` is checked.
+
+        Raises:
+            ValueError: If the resource reference is a name and `instance_name` is undefined.
+
+        Returns:
+            Validated resource reference
+        """
+        if not values.get("instance_name", None) and not isinstance(value, int):
+            raise ValueError(
+                "values must be IDs (not names) if 'instance_name' is undefined",
+            )
+        return value
+
+    @classmethod
+    def _encode_source_resources(
+        cls,
+        instance_name: Optional[str],
+        resources: Iterable[Union[str, int]],
+        resource_type: str,
+        name_key: str = "name",
+    ) -> List[int]:
+        """
+        Encode a collection of resource IDs/names into a list of resource IDs
+        from the target Sonarr instance.
+
+        Args:
+            instance_name (Optional[str]): Target Sonarr instance to get resource IDs from.
+            resources (Iterable[Union[str, int]]): Resource names/IDs to encode.
+            resource_type (str): Type of resource to encode into IDs.
+            name_key (str, optional): Key for the name of the resource. Defaults to `name`.
+
+        Returns:
+            List of resource IDs for the target Sonarr instance
+        """
+        resource_ids: Set[int] = set()
+        if not instance_name:
+            for resource in resources:
+                assert isinstance(resource, int)
+                resource_ids.add(resource)
+            return sorted(resource_ids)
+        source_resource_ids: Optional[Dict[str, int]] = None
+        for resource in resources:
+            if isinstance(resource, int):
+                resource_ids.add(resource)
+            else:
+                if source_resource_ids is None:
+                    source_resource_ids = {
+                        p[name_key]: p["id"]
+                        for p in cls._get_resources(
+                            instance_name,
+                            resource_type,
+                        )
+                    }
+                resource_ids.add(source_resource_ids[resource])
+        return sorted(resource_ids)
+
+    def _resolve_from_local(
+        self,
+        name: str,
+        local: Self,
+        ignore_nonexistent_ids: bool = False,
+    ) -> Self:
+        instance_name = local.instance_name
+        if not instance_name:
+            return self
+        api_key = self._get_secrets(instance_name).api_key
+        source_quality_profiles = self._resolve_resources(
+            name=name,
+            instance_name=instance_name,
+            source_resources=self.source_quality_profiles,
+            resource_type="qualityprofile",
+            resource_description="quality profile",
+            ignore_nonexistent_ids=ignore_nonexistent_ids,
+        )
+        source_language_profiles = self._resolve_resources(
+            name=name,
+            instance_name=instance_name,
+            source_resources=self.source_language_profiles,
+            resource_type="languageprofile",
+            resource_description="language profile",
+            ignore_nonexistent_ids=ignore_nonexistent_ids,
+        )
+        source_tags = self._resolve_resources(
+            name=name,
+            instance_name=instance_name,
+            source_resources=self.source_tags,
+            resource_type="tag",
+            resource_description="tag",
+            ignore_nonexistent_ids=ignore_nonexistent_ids,
+            name_key="label",
+        )
+        return self.copy(
+            update={
+                "instance_name": instance_name,
+                "api_key": api_key,
+                "source_quality_profiles": source_quality_profiles,
+                "source_language_profiles": source_language_profiles,
+                "source_tags": source_tags,
+            },
+        )
+
+    def _resolve_resources(
+        self,
+        name: str,
+        instance_name: str,
+        source_resources: Iterable[Union[int, str]],
+        resource_type: str,
+        resource_description: str,
+        ignore_nonexistent_ids: bool,
+        name_key: str = "name",
+    ) -> Set[Union[int, str]]:
+        """
+        Resolve target Sonarr instance resource IDs/names into resource names.
+
+        If `ignore_nonexistent_ids` is `True` and a resource ID was not found
+        on the Sonarr instance, it is returned as-is.
+        This will prompt Buildarr to remove the offending ID from Sonarr,
+        so a warning is output to the logs to notify the user.
+
+        Args:
+            name (str): Name associated with this import list.
+            instance_name (str): Target Sonarr instance name in Buildarr.
+            source_resources (Iterable[Union[int, str]]):
+            resource_type (str): Type of resource to resolve IDs for names.
+            resource_description (str): Description of the resource type for logging.
+            ignore_nonexistent_ids (bool): If `True`, remove non-existent IDs from the remote.
+            name_key (str, optional): _description_. Defaults to "name".
+
+        Raises:
+            ValueError: If a non-existent ID was found and `ignore_nonexistent_ids` is `False`.
+            ValueError: If a resource name was not found on the target Sonarr instance.
+
+        Returns:
+            List of resolved source resource names (and invalid IDs)
+        """
+        resolved_source_resources: Set[Union[int, str]] = set()
+        if not source_resources:
+            return resolved_source_resources
+        remote_resources = self._get_resources(instance_name, resource_type)
+        resource_ids = {r[name_key]: r["id"] for r in remote_resources}
+        resource_names = {r["id"]: r[name_key] for r in remote_resources}
+        for resource in source_resources:
+            if isinstance(resource, int):
+                try:
+                    resolved_source_resources.add(resource_names[resource])
+                except KeyError:
+                    if ignore_nonexistent_ids:
+                        plugin_logger.warning(
+                            (
+                                "Source %s ID %i referenced by remote Sonarr instance "
+                                "not found on target instance '%s', removing"
+                            ),
+                            resource_description,
+                            resource,
+                            instance_name,
+                        )
+                        resolved_source_resources.add(resource)
+                    else:
+                        raise ValueError(
+                            f"Source {resource_description} ID {resource} "
+                            f"not found on target instance '{instance_name}",
+                        )
+            elif resource in resource_ids:
+                resolved_source_resources.add(resource)
+            else:
+                raise ValueError(
+                    f"Source %s '{resource}' "
+                    f"not found on target Sonarr instance '{instance_name}' "
+                    f"in import list '{name}' "
+                    "(available language profiles: "
+                    f"{', '.join(repr(p) for p in resource_ids.keys())})",
+                )
+        return resolved_source_resources
+
+    class Config(SonarrConfigBase.Config):
+        # Ensure in-place assignments of attributes are always validated,
+        # since this class performs such modifications in certain cases.
+        validate_assignment = True
 
 
 class PlexWatchlistImportList(PlexImportList):
@@ -729,35 +1213,28 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
         remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
-        #
+        # Flag for whether or not the import list configuration was updated or not.
         changed = False
-        #
+        # Get required resource ID references from the remote Sonarr instance.
         importlist_ids: Dict[str, int] = {
             importlist_json["name"]: importlist_json["id"]
             for importlist_json in api_get(secrets, "/api/v3/importlist")
         }
-        quality_profile_ids: Dict[str, int] = (
-            {pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/qualityprofile")}
-            if any(importlist.quality_profile for importlist in self.definitions.values())
-            or any(importlist.quality_profile for importlist in remote.definitions.values())
-            else {}
-        )
-        language_profile_ids: Dict[str, int] = (
-            {pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/languageprofile")}
-            if any(importlist.language_profile for importlist in self.definitions.values())
-            or any(importlist.language_profile for importlist in remote.definitions.values())
-            else {}
-        )
-        tag_ids: Dict[str, int] = (
-            {tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")}
-            if any(importlist.tags for importlist in self.definitions.values())
-            or any(importlist.tags for importlist in remote.definitions.values())
-            else {}
-        )
-        #
+        quality_profile_ids: Dict[str, int] = {
+            pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/qualityprofile")
+        }
+        language_profile_ids: Dict[str, int] = {
+            pro["name"]: pro["id"] for pro in api_get(secrets, "/api/v3/languageprofile")
+        }
+        tag_ids: Dict[str, int] = {
+            tag["label"]: tag["id"] for tag in api_get(secrets, "/api/v3/tag")
+        }
+        # Evaluate locally defined import lists against the currently active ones
+        # on the remote instance.
         for importlist_name, importlist in self.definitions.items():
+            importlist = importlist._resolve(importlist_name)
             importlist_tree = f"{tree}.definitions[{repr(importlist_name)}]"
-            #
+            # If a locally defined import list does not exist on the remote, create it.
             if importlist_name not in remote.definitions:
                 importlist._create_remote(
                     tree=importlist_tree,
@@ -768,12 +1245,17 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
                     importlist_name=importlist_name,
                 )
                 changed = True
-            #
+            # Since there is an import list with the same name on the remote,
+            # update it in-place.
             else:
                 if importlist._update_remote(
                     tree=importlist_tree,
                     secrets=secrets,
-                    remote=remote.definitions[importlist_name],  # type: ignore[arg-type]
+                    remote=remote.definitions[importlist_name]._resolve_from_local(
+                        name=importlist_name,
+                        local=importlist,  # type: ignore[arg-type]
+                        ignore_nonexistent_ids=True,
+                    ),
                     quality_profile_ids=quality_profile_ids,
                     language_profile_ids=language_profile_ids,
                     tag_ids=tag_ids,
@@ -781,7 +1263,8 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
                     importlist_name=importlist_name,
                 ):
                     changed = True
-        #
+        # Find import list definitions on the remote that aren't configured locally.
+        # If `delete_unmanaged` is `True`, delete them. If not, just log them as unmanaged.
         for importlist_name, importlist in remote.definitions.items():
             if importlist_name not in self.definitions:
                 importlist_tree = f"{tree}.definitions[{repr(importlist_name)}]"
@@ -794,5 +1277,5 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
                     changed = True
                 else:
                     plugin_logger.debug("%s: (...) (unmanaged)", importlist_tree)
-        #
+        # We're done!
         return changed
