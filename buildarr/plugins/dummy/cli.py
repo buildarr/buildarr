@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -19,6 +17,8 @@ Dummy plugin CLI commands.
 """
 
 
+from __future__ import annotations
+
 import functools
 
 from getpass import getpass
@@ -30,6 +30,8 @@ import click_params  # type: ignore[import]
 from .config import DummyInstanceConfig
 from .manager import DummyManager
 from .secrets import DummySecrets
+
+HOSTNAME_PORT_TUPLE_LENGTH = 2
 
 
 @click.group(help="Dummy instance ad-hoc commands.")
@@ -68,7 +70,9 @@ def dump_config(url: str, api_key: str) -> int:
     hostname_port = url_obj.netloc.split(":", 1)
     hostname = hostname_port[0]
     port = (
-        int(hostname_port[1]) if len(hostname_port) == 2 else (443 if protocol == "https" else 80)
+        int(hostname_port[1])
+        if len(hostname_port) == HOSTNAME_PORT_TUPLE_LENGTH
+        else (443 if protocol == "https" else 80)
     )
 
     # Create a default configuration object for the Dummy instance,

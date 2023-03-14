@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -371,15 +369,14 @@ class SonarrDelayProfilesSettingsConfig(SonarrConfigBase):
             # If none of the above conditions checked out, then the current index exists
             # in both the local configuration and the remote.
             # Check and update those delay profiles.
-            else:
-                if self.definitions[local_index]._update_remote(
-                    tree=f"{tree}.definitions[{local_index}]",
-                    secrets=secrets,
-                    remote=remote.definitions[remote_index],
-                    tag_ids=tag_ids,
-                    profile_id=profile_ids[order],
-                    order=order,
-                ):
-                    changed = True
+            elif self.definitions[local_index]._update_remote(
+                tree=f"{tree}.definitions[{local_index}]",
+                secrets=secrets,
+                remote=remote.definitions[remote_index],
+                tag_ids=tag_ids,
+                profile_id=profile_ids[order],
+                order=order,
+            ):
+                changed = True
         #
         return changed

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (C) 2023 Callum Dickinson
 #
@@ -19,6 +18,8 @@
 Buildarr CLI main routine.
 """
 
+
+from __future__ import annotations
 
 from ..plugins import load as load_plugins
 from ..state import state

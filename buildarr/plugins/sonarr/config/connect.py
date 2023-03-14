@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -1781,16 +1779,15 @@ class SonarrConnectSettingsConfig(SonarrConfigBase):
                 )
                 changed = True
             #
-            else:
-                if connection._update_remote(
-                    tree=connection_tree,
-                    secrets=secrets,
-                    remote=remote.definitions[connection_name],  # type: ignore[arg-type]
-                    tag_ids=tag_ids,
-                    connection_id=connection_ids[connection_name],
-                    connection_name=connection_name,
-                ):
-                    changed = True
+            elif connection._update_remote(
+                tree=connection_tree,
+                secrets=secrets,
+                remote=remote.definitions[connection_name],  # type: ignore[arg-type]
+                tag_ids=tag_ids,
+                connection_id=connection_ids[connection_name],
+                connection_name=connection_name,
+            ):
+                changed = True
         #
         for connection_name, connection in remote.definitions.items():
             if connection_name not in self.definitions:

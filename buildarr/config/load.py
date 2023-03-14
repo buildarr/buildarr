@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -42,10 +40,7 @@ if TYPE_CHECKING:
     from .models import ConfigPlugin
 
 
-def load(
-    path: Union[str, PathLike],
-    use_plugins: Set[str] = set(),
-) -> None:
+def load(path: Union[str, PathLike], use_plugins: Optional[Set[str]] = None) -> None:
     """
     Load a configuration file using the given plugins.
 
@@ -105,7 +100,7 @@ def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, Confi
     # First, parse the original configuration file.
     # If None is returned by the YAML parser, it means the file is empty,
     # so treat it as an empty configuration.
-    with open(path, "r") as f:
+    with path.open(mode="r") as f:
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
             config = {}

@@ -142,6 +142,7 @@ Buildarr operates on a principle of "don't touch what is not explicitly defined"
         - update_days
         - update_times
         - secrets_file_path
+        - request_timeout
         - trash_metadata_download_url
         - trash_metadata_dir_prefix
       show_root_heading: false

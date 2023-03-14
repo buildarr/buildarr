@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -132,8 +130,6 @@ def get_settings() -> Tuple[Response, int]:
         Current Dummy server settings
     """
 
-    global _settings
-
     check_api_key()
 
     return (jsonify(_settings), 200)
@@ -168,7 +164,7 @@ def update_settings() -> Tuple[Response, int]:
         Old Dummy server settings
     """
 
-    global _settings
+    global _settings  # noqa: PLW0603 RUF100
 
     check_api_key()
 

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -175,7 +173,9 @@ class LanguageProfile(SonarrConfigBase):
             upgrade_until: str = values["upgrade_until"]
             languages: Sequence[Language] = values["languages"]
         except KeyError as err:
-            raise ValueError(f"required attribute undefined or unable to be parsed: {str(err)}")
+            raise ValueError(
+                f"required attribute undefined or unable to be parsed: {str(err)}",
+            ) from None
         # `upgrade_until` checks.
         if upgrades_allowed:
             if not upgrade_until:
@@ -394,16 +394,15 @@ class SonarrLanguageProfilesSettingsConfig(SonarrConfigBase):
                 )
                 changed = True
             #
-            else:
-                if profile._update_remote(
-                    tree=profile_tree,
-                    secrets=secrets,
-                    remote=remote.definitions[profile_name],
-                    profile_id=profile_ids[profile_name],
-                    profile_name=profile_name,
-                    language_ids=language_ids,
-                ):
-                    changed = True
+            elif profile._update_remote(
+                tree=profile_tree,
+                secrets=secrets,
+                remote=remote.definitions[profile_name],
+                profile_id=profile_ids[profile_name],
+                profile_name=profile_name,
+                language_ids=language_ids,
+            ):
+                changed = True
         #
         for profile_name, profile in remote.definitions.items():
             if profile_name not in self.definitions:

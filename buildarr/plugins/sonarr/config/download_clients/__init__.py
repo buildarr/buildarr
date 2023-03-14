@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -237,16 +235,15 @@ class SonarrDownloadClientsSettingsConfig(SonarrConfigBase):
                     downloadclient_name=downloadclient_name,
                 )
                 changed = True
-            else:
-                if downloadclient._update_remote(
-                    tree=downloadclient_tree,
-                    secrets=secrets,
-                    remote=remote[downloadclient_name],  # type: ignore[arg-type]
-                    tag_ids=tag_ids,
-                    downloadclient_id=downloadclient_ids[downloadclient_name],
-                    downloadclient_name=downloadclient_name,
-                ):
-                    changed = True
+            elif downloadclient._update_remote(
+                tree=downloadclient_tree,
+                secrets=secrets,
+                remote=remote[downloadclient_name],  # type: ignore[arg-type]
+                tag_ids=tag_ids,
+                downloadclient_id=downloadclient_ids[downloadclient_name],
+                downloadclient_name=downloadclient_name,
+            ):
+                changed = True
         # If `delete_unmanaged` is `True`, remove any download clients on the remote
         # that aren't managed by Buildarr.
         # Otherwise, just log them.

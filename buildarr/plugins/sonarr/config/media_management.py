@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -110,7 +108,7 @@ class ChmodFolder(BaseEnum):
             try:
                 return cls[v.replace("-", "_")]
             except (TypeError, KeyError):
-                raise ValueError(f"Invalid {cls.__name__} name or value: {v}")
+                raise ValueError(f"Invalid {cls.__name__} name or value: {v}") from None
 
 
 class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
