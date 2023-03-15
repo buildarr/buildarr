@@ -1,5 +1,71 @@
 # Release Notes
 
+## [v0.3.0](https://github.com/buildarr/buildarr/releases/tag/v0.3.0) - 2023-03-15
+
+This is a feature and bugfix release that extends the groundwork laid in the previous version for making Buildarr more usable, and future-proof for the planned new plugins.
+
+A major bug where running Buildarr when `secrets.json` does not exist would result in an error, even if valid instance credentials were found, has been fixed. This would have prevented many people from trying out Buildarr, and for this I would like to apologise.
+
+In the future automated unit tests are planned, and major refactors of the Buildarr codebase are now less likely to happen as a result of development, so bugs like this should not happen as often in the future.
+
+The major new feature this release introduces is instance linking: the ability to define relationships between two instances.
+
+Most of the work went into the internal implementation to make it possible to use in plugins, but one use case within the Sonarr plugin itself is now supported: [Sonarr instances using another Sonarr instance](plugins/sonarr/configuration/import-lists.md#sonarr) as an import list, via the new [`instance_name`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.instance_name) attribute.
+
+When using this attribute, Buildarr will automatically fill in the API key attribute so you don't have to, and instead of using IDs to reference quality profiles/language profiles/tags in the source instance, names can now be used:
+
+```yaml
+sonarr:
+  instances:
+    sonarr-hd:
+      hostname: "localhost"
+      port: 8989
+    sonarr-4k:
+      hostname: "localhost"
+      port: 8990
+      settings:
+        import_lists:
+          definitions:
+            Sonarr (HD):
+              type: "sonarr"
+              # Global import list options.
+              root_folder: "/path/to/videos"
+              quality_profile: "4K"
+              language_profile: "English"
+              # Sonarr import list-specific options.
+              full_url: "http://sonarr:8989"
+              instance_name: "sonarr-hd"
+              source_quality_profiles:
+                - "HD/SD"
+              source_language_profiles:
+                - "English"
+              source_tags:
+                - "shows"
+```
+
+When instance links are made, Buildarr automatically adjusts the order of execution such that the target instance is always processed before the instance linking to the target. This ensures the state of the target instance is consistent when they are both updated to establish the link.
+
+A number of other improvements and bugfixes were made, such as:
+
+* Fix configuration validation to allow local and non-qualified domains on all URL-type attributes (fixes `localhost` API URL references)
+* Rename the following Sonarr import list attributes (and retain the old names as aliases to ensure backwards compatibility):
+    * `source_quality_profile_ids` renamed to [`source_quality_profiles`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.source_quality_profiles)
+    * `source_language_profile_ids` renamed to [`source_language_profiles`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.source_language_profiles)
+    * `source_tag_ids` renamed to [`source_tags`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.source_tags)
+* Fix reading the `$BUILDARR_LOG_LEVEL` environment variable to be case-insensitive
+* Clean up runtime state after individual update runs in daemon mode, to ensure no state leakage into subsequent runs
+* Add a new [`buildarr.request_timeout`](configuration.md#buildarr.config.buildarr.BuildarrConfig.request_timeout) configuration attribute for adjusting API request timeouts (the default is 30 seconds)
+* Improve Sonarr quality definition [`min` and `max`](plugins/sonarr/configuration/quality.md#buildarr.plugins.sonarr.config.quality.QualityDefinition.min) validation so that `400` is also a valid value for `max`, and enforce `min`-`max` value difference constraints
+* Major internal code refactor through the introduction of [Ruff](https://beta.ruff.rs/docs) to the development pipeline, fixing a large number of minor code quality issues
+
+### Changed
+
+* Fix fetching new instance secrets ([#44](https://github.com/buildarr/buildarr/pull/44))
+* Accept local and non-qualified domain names in URLs ([#46](https://github.com/buildarr/buildarr/pull/46))
+* Add instance referencing and dependency resolution ([#47](https://github.com/buildarr/buildarr/pull/47))
+* Replace isort and Flake8 with Ruff and reformat source files ([#49](https://github.com/buildarr/buildarr/pull/49))
+
+
 ## [v0.2.0](https://github.com/buildarr/buildarr/releases/tag/v0.2.0) - 2023-02-23
 
 This is a feature release that comprehensively refactors the internal structure of Buildarr and the plugin API, and introduces a new, formally defined global state architecture that Buildarr and plugins can utilise.
