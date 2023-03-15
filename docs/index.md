@@ -184,7 +184,7 @@ For more information on how to interfact with Buildarr, check the [usage documen
     * Tdarr (maybe)
     * Unpackerr
     * Lidarr
-* Instance linking (e.g. Prowlarr-to-Sonarr/Radarr) and dependency resolution
+* Instance linking (e.g. Prowlarr-to-Sonarr/Radarr) and dependency resolution (added in [version 0.3.0](release-notes.md#v030-2023-03-15))
 * Stable plugin API between major versions
 * Auto-generation of Docker Compose environment files reflecting the Buildarr configuration
 
