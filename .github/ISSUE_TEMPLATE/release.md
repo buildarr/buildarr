@@ -12,7 +12,7 @@ Checklist:
 1. [ ] Set milestone to `v<new version>`
 1. [ ] Get the raw changelog using the following command:
    ```bash
-   $ git log --oneline --decorate v<new version>..HEAD
+   $ git log --oneline --decorate v<old version>..HEAD
    ```
 1. [ ] Update the `tool.poetry.version` field in `pyproject.toml`
 1. [ ] Add release notes to `docs/release-notes.md`
