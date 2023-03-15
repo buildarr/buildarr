@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -50,6 +48,8 @@ from ..logging import plugin_logger
 from ..plugins import Secrets
 from ..types import BaseEnum, BaseIntEnum
 from .types import RemoteMapEntry
+
+OPTIONAL_TYPE_UNION_SIZE = 2
 
 
 class ConfigBase(BaseModel, Generic[Secrets]):
@@ -212,7 +212,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                                         "'value' attribute not included "
                                         f"for remote field '{remote_attr_name}'"
                                         "and 'field_default' not defined in local attribute",
-                                    )
+                                    ) from None
                             break
                     else:
                         if attr_metadata.get("optional", False):
@@ -385,9 +385,10 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         already_logged: Set[str] = set()
         for attr_name, remote_attr_name, attr_metadata in remote_map:
             # Determine the correct attribute formatter function used in logging.
-            formatter: Callable[[Any], str] = lambda v: repr(
-                attr_metadata.get("formatter", self._format_attr)(v),
-            )
+            def formatter(v: Any) -> str:
+                nonlocal attr_metadata
+                return repr(attr_metadata.get("formatter", self._format_attr)(v))
+
             # Determine whether or not the attribute should be set in
             # the remote attribute dictonary.
             if (
@@ -550,10 +551,11 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         for attr_name, remote_attr_name, attr_metadata in remote_map:
             #
             set_value = False
+
             #
-            formatter: Callable[[Any], str] = lambda v: repr(
-                attr_metadata.get("formatter", self._format_attr)(v),
-            )
+            def formatter(v: Any) -> str:
+                return repr(attr_metadata.get("formatter", self._format_attr)(v))
+
             #
             remote_value = getattr(remote, attr_name)
             # Handle the case where the attribute is managed, either
@@ -682,9 +684,13 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         elif get_type_origin(attr_type) is Union:
             attr_union_types = get_type_args(attr_type)
             #
-            if len(attr_union_types) == 2 and type(None) in attr_union_types and value is not None:
+            if (
+                len(attr_union_types) == OPTIONAL_TYPE_UNION_SIZE
+                and type(None) in attr_union_types
+                and value is not None
+            ):
                 return cls._decode_attr(
-                    [t for t in attr_union_types if t is not type(None)][0],  # noqa: E721
+                    [t for t in attr_union_types if t is not type(None)][0],
                     value,
                 )
         elif issubclass(attr_type, BaseEnum):
@@ -765,9 +771,14 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             PurePosixPath: str,
             SecretStr: lambda v: v.get_secret_value(),
         }
+
         # Required to avoid coersion with same-name but different-typed fields
         # in objects for which there are multiple types that can be defined.
         smart_union = True
+
+        # When aliases are defined, allow attributes to be referenced by their
+        # internal name, as well as the alias.
+        allow_population_by_field_name = True
 
 
 def _validate_pure_posix_path(v: Any) -> PurePosixPath:

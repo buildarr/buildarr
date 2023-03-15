@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -210,7 +208,7 @@ class BaseEnum(Enum):
                 except ValueError:
                     return cls.from_name_str(value)
             except (TypeError, KeyError):
-                raise ValueError(f"Invalid {cls.__name__} name or value: {value}")
+                raise ValueError(f"Invalid {cls.__name__} name or value: {value}") from None
 
 
 class BaseIntEnum(IntEnum):
@@ -280,7 +278,7 @@ class BaseIntEnum(IntEnum):
             try:
                 return cls.from_name_str(value)
             except (TypeError, KeyError):
-                raise ValueError(f"Invalid {cls.__name__} name or value: {value}")
+                raise ValueError(f"Invalid {cls.__name__} name or value: {value}") from None
 
 
 class DayOfWeek(BaseIntEnum):
@@ -401,7 +399,7 @@ class InstanceName(str):
                 raise ValueError(
                     "Target plugin not defined in instance name metadata, "
                     "make sure the default value is set to `Field(None, plugin='<plugin-name>')`",
-                )
+                ) from None
             else:
                 raise
         return cls(value)

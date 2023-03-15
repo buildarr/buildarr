@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -227,17 +225,16 @@ class SonarrRemotePathMappingsSettingsConfig(SonarrConfigBase):
                     changed = True
             # If the remote path mapping should not exist, check that it does not
             # exist in the remote, and if it does, delete it.
+            elif rpm_tuple in remote_rpms:
+                plugin_logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
+                rpm._delete_remote(
+                    tree=rpm_tree,
+                    secrets=secrets,
+                    remotepathmapping_id=remote_rpm_ids[rpm_tuple],
+                )
+                changed = True
             else:
-                if rpm_tuple in remote_rpms:
-                    plugin_logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
-                    rpm._delete_remote(
-                        tree=rpm_tree,
-                        secrets=secrets,
-                        remotepathmapping_id=remote_rpm_ids[rpm_tuple],
-                    )
-                    changed = True
-                else:
-                    plugin_logger.debug("%s: %s (does not exist)", rpm_tree, repr(rpm))
+                plugin_logger.debug("%s: %s (does not exist)", rpm_tree, repr(rpm))
         # Handle unmanaged remote path mappings.
         # If `delete_unmanaged` is `True`, automatically delete them.
         j = -1

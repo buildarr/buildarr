@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -18,6 +16,8 @@
 Sonarr plugin interface.
 """
 
+
+from __future__ import annotations
 
 from buildarr.plugins import Plugin
 

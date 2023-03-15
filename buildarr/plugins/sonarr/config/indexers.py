@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -301,7 +299,8 @@ class TorrentIndexer(Indexer):
         download_client_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
     ) -> List[RemoteMapEntry]:
-        return super()._get_base_remote_map(download_client_ids, tag_ids) + [
+        return [
+            *super()._get_base_remote_map(download_client_ids, tag_ids),
             ("minimum_seeders", "minimumSeeders", {"is_field": True}),
             ("seed_ratio", "seedRatio", {}),
             ("seed_time", "seedTime", {}),
@@ -1100,17 +1099,16 @@ class SonarrIndexersSettingsConfig(SonarrConfigBase):
                 )
                 changed = True
             #
-            else:
-                if indexer._update_remote(
-                    tree=indexer_tree,
-                    secrets=secrets,
-                    remote=remote.definitions[indexer_name],  # type: ignore[arg-type]
-                    download_client_ids=download_client_ids,
-                    tag_ids=tag_ids,
-                    indexer_id=indexer_ids[indexer_name],
-                    indexer_name=indexer_name,
-                ):
-                    changed = True
+            elif indexer._update_remote(
+                tree=indexer_tree,
+                secrets=secrets,
+                remote=remote.definitions[indexer_name],  # type: ignore[arg-type]
+                download_client_ids=download_client_ids,
+                tag_ids=tag_ids,
+                indexer_id=indexer_ids[indexer_name],
+                indexer_name=indexer_name,
+            ):
+                changed = True
         #
         for indexer_name, indexer in remote.definitions.items():
             if indexer_name not in self.definitions:

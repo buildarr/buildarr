@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -19,9 +17,11 @@
 """
 
 
+from __future__ import annotations
+
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Mapping, Set
+from typing import Dict, List, Mapping, Optional, Set
 
 import click
 
@@ -91,7 +91,7 @@ def run(config_path: Path, use_plugins: Set[str]) -> None:
     _run(use_plugins)
 
 
-def _run(use_plugins: Set[str] = set()) -> None:
+def _run(use_plugins: Optional[Set[str]] = None) -> None:
     """
     Buildarr instance update routine.
 
@@ -101,6 +101,9 @@ def _run(use_plugins: Set[str] = set()) -> None:
     Args:
         use_plugins (Set[str], optional): Plugins to use. If empty or unset, load all plugins.
     """
+
+    if not use_plugins:
+        use_plugins = set()
 
     # Dump the currently active Buildarr configuration file to the debug log.
     logger.debug("Buildarr configuration:\n%s", state.config.yaml(exclude_unset=True))
@@ -115,7 +118,8 @@ def _run(use_plugins: Set[str] = set()) -> None:
         ", ".join(sorted(state.plugins.keys())) if state.plugins else "(no plugins found)",
     )
 
-    # Fetch fully-qualified configurations for each instance under each plugin.
+    # Fetch fully-qualified configurations for each instance under each selected plugin
+    # (or all plugins if `use_plugins` is empty).
     # The above action is done in an instance-specific context, so that
     # when the instance-specific configuration gets evaluated by the configuration parser,
     # instance name references are processed and dependencies get added
@@ -123,6 +127,8 @@ def _run(use_plugins: Set[str] = set()) -> None:
     configs: Dict[str, Dict[str, ConfigPlugin]] = {}
     managers: Dict[str, ManagerPlugin] = {}
     for plugin_name, plugin in state.plugins.items():
+        if use_plugins and plugin_name not in use_plugins:
+            continue
         if plugin_name in state.config.__fields_set__:
             run_plugins.append(plugin_name)
             plugin_manager = plugin.manager()
@@ -325,7 +331,7 @@ def __get_execution_order(
     execution_order: List[PluginInstanceRef],
     plugin_name: str,
     instance_name: str,
-    dependency_tree: List[PluginInstanceRef] = [],
+    dependency_tree: Optional[List[PluginInstanceRef]] = None,
 ) -> None:
     """
     Recursive depth-first search function for `get_execution_order`.
@@ -343,6 +349,9 @@ def __get_execution_order(
         ValueError: When a plugin used in an instance reference is disabled or not configured
         ValueError: When a dependency cycle is detected
     """
+
+    if not dependency_tree:
+        dependency_tree = []
 
     plugin_instance: PluginInstanceRef = (plugin_name, instance_name)
 
@@ -368,7 +377,7 @@ def __get_execution_order(
                 "Detected dependency cycle in configuration for instance references:\n"
                 + "\n".join(
                     f"  {i}. {pname}.instances[{repr(iname)}]"
-                    for i, (pname, iname) in enumerate(dependency_tree + [plugin_instance], 1)
+                    for i, (pname, iname) in enumerate([*dependency_tree, plugin_instance], 1)
                 )
             ),
         )
@@ -383,7 +392,7 @@ def __get_execution_order(
                     execution_order=execution_order,
                     plugin_name=target_plugin,
                     instance_name=target_instance,
-                    dependency_tree=dependency_tree + [plugin_instance],
+                    dependency_tree=[*dependency_tree, plugin_instance],
                 )
 
     added_plugin_instances.add(plugin_instance)

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -153,7 +151,9 @@ class QualityProfile(SonarrConfigBase):
             upgrade_until: str = values["upgrade_until"]
             qualities: Sequence[Union[str, QualityGroup]] = values["qualities"]
         except KeyError as err:
-            raise ValueError(f"required attribute undefined or unable to be parsed: {str(err)}")
+            raise ValueError(
+                f"required attribute undefined or unable to be parsed: {str(err)}",
+            ) from None
         # `upgrade_until` checks.
         if upgrades_allowed:
             if not upgrade_until:
@@ -228,11 +228,10 @@ class QualityProfile(SonarrConfigBase):
             )
             if quality["id"] == cutoff:
                 return quality["name"]
-        else:
-            raise RuntimeError(
-                "Inconsistent Sonarr instance state: "
-                f"'cutoff' quality ID {cutoff} not found in 'items': {items}",
-            )
+        raise RuntimeError(
+            "Inconsistent Sonarr instance state: "
+            f"'cutoff' quality ID {cutoff} not found in 'items': {items}",
+        )
 
     @classmethod
     def _upgrade_until_encoder(
@@ -350,7 +349,7 @@ class SonarrQualityProfilesSettingsConfig(SonarrConfigBase):
             definitions={
                 profile["name"]: QualityProfile._from_remote(profile)
                 for profile in api_get(secrets, "/api/v3/qualityprofile")
-            }
+            },
         )
 
     def update_remote(
@@ -388,16 +387,15 @@ class SonarrQualityProfilesSettingsConfig(SonarrConfigBase):
                 )
                 changed = True
             #
-            else:
-                if profile._update_remote(
-                    tree=profile_tree,
-                    secrets=secrets,
-                    remote=remote.definitions[profile_name],
-                    profile_id=profile_ids[profile_name],
-                    profile_name=profile_name,
-                    quality_definitions=quality_definitions,
-                ):
-                    changed = True
+            elif profile._update_remote(
+                tree=profile_tree,
+                secrets=secrets,
+                remote=remote.definitions[profile_name],
+                profile_id=profile_ids[profile_name],
+                profile_name=profile_name,
+                quality_definitions=quality_definitions,
+            ):
+                changed = True
         #
         for profile_name, profile in remote.definitions.items():
             if profile_name not in self.definitions:

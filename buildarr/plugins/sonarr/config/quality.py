@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -24,10 +22,10 @@ from __future__ import annotations
 import json
 
 from pathlib import Path
-from typing import Dict, Optional, cast
+from typing import Any, Dict, Mapping, Optional, cast
 
-from pydantic import Field
-from typing_extensions import Annotated, Self
+from pydantic import Field, validator
+from typing_extensions import Self
 
 from buildarr.config import ConfigBase
 from buildarr.config.exceptions import ConfigTrashIDNotFoundError
@@ -36,6 +34,11 @@ from buildarr.types import TrashID
 from ..api import api_get, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
+
+QUALITYDEFINITION_MAX = 400
+"""
+The upper bound for the maximum quality allowed in a quality definition.
+"""
 
 
 class QualityDefinition(SonarrConfigBase):
@@ -52,23 +55,52 @@ class QualityDefinition(SonarrConfigBase):
     will also be `Bluray-480p`)
     """
 
-    # max: None -> no limit
-    # TODO: min must be at least 1 less than max
-    min: float = Field(..., ge=0, le=399)
+    min: float = Field(..., ge=0, le=QUALITYDEFINITION_MAX - 1)
     """
     The minimum Megabytes per Minute (MB/min) a quality can have.
     Must be set at least 1MB/min lower than `max`.
+
+    The minimum value is `0`, and the maximum value is `399`.
     """
 
     # Note: No 'pref' field like in Radarr until V4
 
-    max: Optional[Annotated[float, Field(ge=1, lt=400)]]
+    max: Optional[float] = Field(..., ge=1, le=QUALITYDEFINITION_MAX)
     """
     The maximum Megabytes per Minute (MB/min) a quality can have.
     Must be set at least 1MB/min higher than `min`.
 
-    If set to `None`, the maximum bit rate will be unlimited.
+    If set to `None` or `400`, the maximum bit rate will be unlimited.
+
+    If not set to `None`, the minimum value is `1`, and the maximum value is `400`.
     """
+
+    @validator("max")
+    def validate_min_max(
+        cls,
+        value: Optional[float],
+        values: Mapping[str, Any],
+    ) -> Optional[float]:
+        quality_max = value
+        quality_max_val = (
+            min(quality_max, QUALITYDEFINITION_MAX)
+            if quality_max is not None
+            else QUALITYDEFINITION_MAX
+        )
+        try:
+            quality_min: float = values["min"]
+            if quality_max_val - quality_min < 1:
+                raise ValueError(
+                    f"'max' ({quality_max_val}) is not "
+                    f"at least 1 greater than 'min' ({quality_min})",
+                )
+        except KeyError:
+            # `min` only doesn't exist when it failed type validation.
+            # If it doesn't exist, skip validation that uses it.
+            pass
+        if quality_max_val >= QUALITYDEFINITION_MAX:
+            return None
+        return quality_max
 
 
 class SonarrQualitySettingsConfig(ConfigBase):
@@ -152,11 +184,7 @@ class SonarrQualitySettingsConfig(ConfigBase):
                             self.definitions[definition_name] = QualityDefinition(
                                 title=None,
                                 min=definition_json["min"],
-                                max=(
-                                    None
-                                    if definition_json["max"] >= 400
-                                    else definition_json["max"]
-                                ),
+                                max=definition_json["max"],
                             )
                     return
         raise ConfigTrashIDNotFoundError(
@@ -177,7 +205,7 @@ class SonarrQualitySettingsConfig(ConfigBase):
                     max=definition_json.get("maxSize", None),
                 )
                 for definition_json in api_get(secrets, "/api/v3/qualitydefinition")
-            }
+            },
         )
 
     def update_remote(

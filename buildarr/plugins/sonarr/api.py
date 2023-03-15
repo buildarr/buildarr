@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -23,12 +21,14 @@ from __future__ import annotations
 
 import re
 
+from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 import json5  # type: ignore[import]
 import requests
 
 from buildarr.logging import plugin_logger
+from buildarr.state import state
 
 from .exceptions import SonarrAPIError
 
@@ -58,9 +58,11 @@ def get_initialize_js(host_url: str, api_key: Optional[str] = None) -> Dict[str,
     res = requests.get(
         url,
         headers={"X-Api-Key": api_key} if api_key else None,
+        timeout=state.config.buildarr.request_timeout,
     )
     res_match = re.match(INITIALIZE_JS_RES_PATTERN, res.text)
-    assert res_match
+    if not res_match:
+        raise RuntimeError(f"No matches for initialize.js parsing: {res.text}")
     res_json = json5.loads(res_match.group(1))
     plugin_logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     return res_json
@@ -80,10 +82,14 @@ def api_get(sonarr_secrets: SonarrSecrets, api_url: str) -> Any:
 
     url = f"{sonarr_secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("GET %s", url)
-    res = requests.get(url, headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()})
+    res = requests.get(
+        url,
+        headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
+        timeout=state.config.buildarr.request_timeout,
+    )
     res_json = res.json()
     plugin_logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
-    if res.status_code != 200:
+    if res.status_code != HTTPStatus.OK:
         api_error(method="GET", url=url, response=res)
     return res_json
 
@@ -107,10 +113,11 @@ def api_post(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
         url,
         headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
         json=req,
+        timeout=state.config.buildarr.request_timeout,
     )
     res_json = res.json()
     plugin_logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
-    if res.status_code != 201:
+    if res.status_code != HTTPStatus.CREATED:
         api_error(method="POST", url=url, response=res)
     return res_json
 
@@ -134,10 +141,11 @@ def api_put(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
         url,
         headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
         json=req,
+        timeout=state.config.buildarr.request_timeout,
     )
     res_json = res.json()
     plugin_logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
-    if res.status_code != 202:
+    if res.status_code != HTTPStatus.ACCEPTED:
         api_error(method="PUT", url=url, response=res)
     return res_json
 
@@ -153,9 +161,13 @@ def api_delete(sonarr_secrets: SonarrSecrets, api_url: str) -> None:
 
     url = f"{sonarr_secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("DELETE %s", url)
-    res = requests.delete(url, headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()})
+    res = requests.delete(
+        url,
+        headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
+        timeout=state.config.buildarr.request_timeout,
+    )
     plugin_logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
-    if res.status_code != 200:
+    if res.status_code != HTTPStatus.OK:
         api_error(method="DELETE", url=url, response=res, parse_response=False)
 
 

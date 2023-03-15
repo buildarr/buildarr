@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -466,17 +464,16 @@ class SonarrReleaseProfilesSettingsConfig(SonarrConfigBase):
                 )
                 changed = True
             #
-            else:
-                if profile._update_remote(
-                    tree=profile_tree,
-                    secrets=secrets,
-                    remote=remote.definitions[profile_name],
-                    profile_id=profile_ids[profile_name],
-                    profile_name=profile_name,
-                    indexer_ids=indexer_ids,
-                    tag_ids=tag_ids,
-                ):
-                    changed = True
+            elif profile._update_remote(
+                tree=profile_tree,
+                secrets=secrets,
+                remote=remote.definitions[profile_name],
+                profile_id=profile_ids[profile_name],
+                profile_name=profile_name,
+                indexer_ids=indexer_ids,
+                tag_ids=tag_ids,
+            ):
+                changed = True
         #
         for profile_name, profile in remote.definitions.items():
             if profile_name not in self.definitions:

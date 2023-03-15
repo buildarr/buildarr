@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -287,12 +285,10 @@ class SecurityGeneralSettings(GeneralSettings):
         if values["authentication"] == AuthenticationMethod.none:
             values["username"] = None
             values["password"] = None
-        else:
-            if not values["username"] or not values["password"]:
-                raise ValueError(
-                    "'username' and 'password' attributes required "
-                    "when authentication is enabled",
-                )
+        elif not values["username"] or not values["password"]:
+            raise ValueError(
+                "'username' and 'password' attributes required when authentication is enabled",
+            )
         return values
 
 

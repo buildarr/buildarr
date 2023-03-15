@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -20,6 +18,8 @@ Buildarr command line interface (CLI) global group.
 """
 
 
+from __future__ import annotations
+
 import os
 
 import click
@@ -39,7 +39,7 @@ from ..logging import setup_logger
     "--log-level",
     "log_level",
     type=click.Choice(["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]),
-    default=os.environ.get("BUILDARR_LOG_LEVEL", "INFO"),
+    default=os.environ.get("BUILDARR_LOG_LEVEL", "INFO").upper(),
     help=(
         "Buildarr logging system log level. "
         "Can also be set using the `$BUILDARR_LOG_LEVEL' environment variable."

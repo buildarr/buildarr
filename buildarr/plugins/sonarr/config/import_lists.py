@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -536,7 +534,8 @@ class TraktImportList(ImportList):
         language_profile_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
     ) -> List[RemoteMapEntry]:
-        return super()._get_base_remote_map(quality_profile_ids, language_profile_ids, tag_ids) + [
+        return [
+            *super()._get_base_remote_map(quality_profile_ids, language_profile_ids, tag_ids),
             ("access_token", "accessToken", {"is_field": True}),
             ("refresh_token", "refreshToken", {"is_field": True}),
             ("expires", "expires", {"is_field": True, "encoder": trakt_expires_encoder}),
@@ -651,6 +650,8 @@ class SonarrImportList(ProgramImportList):
     """
     The name of the Sonarr instance within Buildarr, if linking this Sonarr instance
     with another Buildarr-defined Sonarr instance.
+
+    *Added in version 0.3.0.*
     """
 
     full_url: AnyHttpUrl
@@ -666,25 +667,46 @@ class SonarrImportList(ProgramImportList):
     this attribute is required.
     """
 
-    source_quality_profiles: Set[Union[PositiveInt, NonEmptyStr]] = set()
+    source_quality_profiles: Set[Union[PositiveInt, NonEmptyStr]] = Field(
+        set(),
+        alias="source_quality_profile_ids",
+    )
     """
-    Quality profiles from the source instance to import from.
+    List of IDs (or names) of the quality profiles on the source instance to import from.
 
-    Either the name of the profile or the instance-specific ID can be defined.
+    Quality profile names can only be used if `instance_name` is used to
+    link to a Buildarr-defined Sonarr instance.
+    If linking to a Sonarr instance outside Buildarr, IDs must be used.
+
+    *Changed in version 0.3.0: Renamed from `source_quality_profile_ids`
+    (which is still valid as an alias), and add support for quality profile names.*
     """
 
-    source_language_profiles: Set[Union[PositiveInt, NonEmptyStr]] = set()
+    source_language_profiles: Set[Union[PositiveInt, NonEmptyStr]] = Field(
+        set(),
+        alias="source_language_profile_ids",
+    )
     """
-    Language profiles from the source instance to import from.
+    List of IDs (or names) of the language profiles on the source instance to import from.
 
-    Either the name of the profile or the instance-specific ID can be defined.
+    Language profile names can only be used if `instance_name` is used to
+    link to a Buildarr-defined Sonarr instance.
+    If linking to a Sonarr instance outside Buildarr, IDs must be used.
+
+    *Changed in version 0.3.0: Renamed from `source_language_profile_ids`
+    (which is still valid as an alias), and add support for language profile names.*
     """
 
-    source_tags: Set[Union[PositiveInt, NonEmptyStr]] = set()
+    source_tags: Set[Union[PositiveInt, NonEmptyStr]] = Field(set(), alias="source_tag_ids")
     """
-    Tags from the source instance to import from.
+    List of IDs (or names) of the tags on the source instance to import from.
 
-    Either the name of the tag or the instance-specific ID an be defined.
+    Tag names can only be used if `instance_name` is used to
+    link to a Buildarr-defined Sonarr instance.
+    If linking to a Sonarr instance outside Buildarr, IDs must be used.
+
+    *Changed in version 0.3.0: Renamed from `source_tag_ids`
+    (which is still valid as an alias), and add support for tag names.*
     """
 
     _implementation_name: str = "Sonarr"
@@ -699,7 +721,8 @@ class SonarrImportList(ProgramImportList):
         language_profile_ids: Mapping[str, int],
         tag_ids: Mapping[str, int],
     ) -> List[RemoteMapEntry]:
-        return super()._get_base_remote_map(quality_profile_ids, language_profile_ids, tag_ids) + [
+        return [
+            *super()._get_base_remote_map(quality_profile_ids, language_profile_ids, tag_ids),
             ("full_url", "baseUrl", {"is_field": True}),
             ("api_key", "apiKey", {"is_field": True}),
             (
@@ -845,7 +868,10 @@ class SonarrImportList(ProgramImportList):
         resource_ids: Set[int] = set()
         if not instance_name:
             for resource in resources:
-                assert isinstance(resource, int)
+                if not isinstance(resource, int):
+                    raise RuntimeError(
+                        f"{resource_type} reference should be of type int here: {resource}",
+                    )
                 resource_ids.add(resource)
             return sorted(resource_ids)
         source_resource_ids: Optional[Dict[str, int]] = None
@@ -969,7 +995,7 @@ class SonarrImportList(ProgramImportList):
                         raise ValueError(
                             f"Source {resource_description} ID {resource} "
                             f"not found on target instance '{instance_name}",
-                        )
+                        ) from None
             elif resource in resource_ids:
                 resolved_source_resources.add(resource)
             else:
@@ -1232,7 +1258,7 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
         # Evaluate locally defined import lists against the currently active ones
         # on the remote instance.
         for importlist_name, importlist in self.definitions.items():
-            importlist = importlist._resolve(importlist_name)
+            importlist = importlist._resolve(importlist_name)  # noqa: PLW2901
             importlist_tree = f"{tree}.definitions[{repr(importlist_name)}]"
             # If a locally defined import list does not exist on the remote, create it.
             if importlist_name not in remote.definitions:
@@ -1247,22 +1273,21 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
                 changed = True
             # Since there is an import list with the same name on the remote,
             # update it in-place.
-            else:
-                if importlist._update_remote(
-                    tree=importlist_tree,
-                    secrets=secrets,
-                    remote=remote.definitions[importlist_name]._resolve_from_local(
-                        name=importlist_name,
-                        local=importlist,  # type: ignore[arg-type]
-                        ignore_nonexistent_ids=True,
-                    ),
-                    quality_profile_ids=quality_profile_ids,
-                    language_profile_ids=language_profile_ids,
-                    tag_ids=tag_ids,
-                    importlist_id=importlist_ids[importlist_name],
-                    importlist_name=importlist_name,
-                ):
-                    changed = True
+            elif importlist._update_remote(
+                tree=importlist_tree,
+                secrets=secrets,
+                remote=remote.definitions[importlist_name]._resolve_from_local(
+                    name=importlist_name,
+                    local=importlist,  # type: ignore[arg-type]
+                    ignore_nonexistent_ids=True,
+                ),
+                quality_profile_ids=quality_profile_ids,
+                language_profile_ids=language_profile_ids,
+                tag_ids=tag_ids,
+                importlist_id=importlist_ids[importlist_name],
+                importlist_name=importlist_name,
+            ):
+                changed = True
         # Find import list definitions on the remote that aren't configured locally.
         # If `delete_unmanaged` is `True`, delete them. If not, just log them as unmanaged.
         for importlist_name, importlist in remote.definitions.items():

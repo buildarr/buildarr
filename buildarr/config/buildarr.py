@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -25,7 +23,7 @@ from datetime import time
 from pathlib import Path
 from typing import Set
 
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, PositiveFloat
 
 from ..types import DayOfWeek
 from .base import ConfigBase
@@ -120,6 +118,15 @@ class BuildarrConfig(ConfigBase):
     secrets_file_path: Path = Path("secrets.json")
     """
     Path to store the Buildarr instance secrets file.
+    """
+
+    request_timeout: PositiveFloat = 30  # seconds
+    """
+    The timeout for any API requests Buildarr makes (in seconds).
+
+    If the timeout is reached, an error will occur and Buildarr will stop the update process.
+
+    *Added in version 0.3.0.*
     """
 
     trash_metadata_download_url: AnyHttpUrl = (

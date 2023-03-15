@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -21,6 +19,7 @@ Sonarr plugin secrets file model.
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -88,7 +87,7 @@ class SonarrSecrets(_SonarrSecrets):
             api_get(self, "/api/v3/system/status")
             return True
         except SonarrAPIError as err:
-            if err.response.status_code == 401:
+            if err.response.status_code == HTTPStatus.UNAUTHORIZED:
                 return False
             else:
                 raise

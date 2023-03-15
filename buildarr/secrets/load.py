@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (C) 2023 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
@@ -33,10 +31,10 @@ from .base import SecretsBase
 
 if TYPE_CHECKING:
     from os import PathLike
-    from typing import Set, Union
+    from typing import Optional, Set, Union
 
 
-def load(path: Union[str, PathLike], use_plugins: Set[str] = set()) -> None:
+def load(path: Union[str, PathLike], use_plugins: Optional[Set[str]] = None) -> None:
     """
     Create the secrets file model using the specified plugins.
 
