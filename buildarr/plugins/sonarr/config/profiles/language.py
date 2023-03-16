@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set
 
-from pydantic import Field, root_validator
+from pydantic import Field, validator
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
@@ -127,14 +127,6 @@ class LanguageProfile(SonarrConfigBase):
     If disabled, languages will not be upgraded.
     """
 
-    upgrade_until: Optional[Language] = None
-    """
-    The highest priority language to upgrade an episode to.
-    Usually this would be set to the highest priority language in the profile.
-
-    This attribute is required if `upgrades_allowed` is set to `True`.
-    """
-
     languages: Annotated[List[Language], Field(min_items=1)]
     """
     The languages episodes are allowed to be in.
@@ -152,53 +144,50 @@ class LanguageProfile(SonarrConfigBase):
     At least one language must be specified.
     """
 
-    @root_validator
-    def validate_languageprofile(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate the language profile against required constraints.
+    upgrade_until: Optional[Language] = None
+    """
+    The highest priority language to upgrade an episode to.
+    Usually this would be set to the highest priority language in the profile.
 
-        Args:
-            values (Dict[str, Any]): Parsed values
+    This attribute is required if `upgrades_allowed` is set to `True`.
+    """
 
-        Raises:
-            ValueError: If `upgrade_until` is not defined when `upgrades_allowed` is `True`
-            ValueError: If duplicate allowed languages are defined
-            ValueError: If `upgrade_until` is set to a disabled language
-
-        Returns:
-            Validated/modified values
-        """
-        try:
-            upgrades_allowed: bool = values["upgrades_allowed"]
-            upgrade_until: str = values["upgrade_until"]
-            languages: Sequence[Language] = values["languages"]
-        except KeyError as err:
-            raise ValueError(
-                f"required attribute undefined or unable to be parsed: {str(err)}",
-            ) from None
-        # `upgrade_until` checks.
-        if upgrades_allowed:
-            if not upgrade_until:
-                raise ValueError("'upgrade_until' is required if 'upgrades_allowed' is True")
-            for language in languages:
-                if upgrade_until == language:
-                    break
-            else:
-                raise ValueError("'upgrade_until' must be set to an allowed quality name")
-        else:
-            # If `upgrades_allowed` is `False`, set `upgrade_until` to `None`
-            # to make sure Buildarr ignores whatever it is currently set to
-            # on the remote instance.
-            values["upgrade_until"] = None
-        # `languages` checks.
+    @validator("languages")
+    def validate_languages(cls, value: List[Language]) -> List[Language]:
         language_set: Set[Language] = set()
-        for language in languages:
+        for language in value:
             if language in language_set:
-                raise ValueError(f"Duplicate entries of language '{language.name}' exist")
+                raise ValueError(f"duplicate entries of language '{language.value}' exist")
             else:
                 language_set.add(language)
-        # Return validated/modified values.
-        return values
+        return value
+
+    @validator("upgrade_until")
+    def validate_upgrade_until(
+        cls,
+        value: Optional[Language],
+        values: Dict[str, Any],
+    ) -> Optional[Language]:
+        try:
+            upgrades_allowed: bool = values["upgrades_allowed"]
+            languages: Sequence[Language] = values["languages"]
+        except KeyError:
+            return value
+        # If `upgrades_allowed` is `False`, set `upgrade_until` to `None`
+        # to make sure Buildarr ignores whatever it is currently set to
+        # on the remote instance.
+        if not upgrades_allowed:
+            return None
+        # Subsequent checks now assume that `upgrades_allowed` is `True`,
+        # this parameter is required and defined to a valid value.
+        if not value:
+            raise ValueError("required if 'upgrades_allowed' is True")
+        for language in languages:
+            if value == language:
+                break
+        else:
+            raise ValueError("must be set to a value enabled in 'languages'")
+        return value
 
     @classmethod
     def _get_remote_map(

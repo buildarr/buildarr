@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union
 
-from pydantic import Field, root_validator
+from pydantic import Field, validator
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
@@ -41,7 +41,7 @@ class QualityGroup(SonarrConfigBase):
     """
 
     name: NonEmptyStr
-    members: List[NonEmptyStr] = Field(..., min_items=1)
+    members: Set[NonEmptyStr] = Field(..., min_items=1)
 
     def encode(self, group_id: int, quality_definitions: Mapping[str, Any]) -> Dict[str, Any]:
         return {
@@ -96,16 +96,6 @@ class QualityProfile(SonarrConfigBase):
     If disabled, media files will not be upgraded after they have been downloaded.
     """
 
-    upgrade_until: Optional[NonEmptyStr] = None
-    """
-    The maximum quality level to upgrade an episode to.
-    For a quality group, specify the group name.
-
-    Once this quality is reached Sonarr will no longer download episodes.
-
-    This attribute is required if `upgrades_allowed` is set to `True`.
-    """
-
     qualities: Annotated[List[Union[NonEmptyStr, QualityGroup]], Field(min_items=1)]
     """
     The qualities to enable downloading episodes for. The order determines the priority
@@ -130,55 +120,72 @@ class QualityProfile(SonarrConfigBase):
     At least one quality must be specified.
     """
 
-    @root_validator
-    def validate_qualityprofile(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate the quality profile against required constraints.
+    upgrade_until: Optional[NonEmptyStr] = None
+    """
+    The maximum quality level to upgrade an episode to.
+    For a quality group, specify the group name.
 
-        Args:
-            values (Dict[str, Any]): Parsed values
+    Once this quality is reached Sonarr will no longer download episodes.
 
-        Raises:
-            ValueError: If `upgrade_until` is not defined when `upgrades_allowed` is `True`
-            ValueError: If duplicate allowed quality entries are defined
-            ValueError: If `upgrade_until` is set to a disabled quality name
+    This attribute is required if `upgrades_allowed` is set to `True`.
+    """
 
-        Returns:
-            Validated/modified values
-        """
+    @validator("qualities")
+    def validate_qualities(
+        cls,
+        value: List[Union[str, QualityGroup]],
+    ) -> List[Union[str, QualityGroup]]:
+        quality_name_map: Dict[str, Union[str, QualityGroup]] = {}
+        for quality in value:
+            for name in quality.members if isinstance(quality, QualityGroup) else [quality]:
+                if name in quality_name_map:
+                    error_message = f"duplicate entries of quality value '{name}' exist ("
+                    other = quality_name_map[name]
+                    if isinstance(quality, str) and isinstance(quality, str):
+                        error_message += "both are non-grouped quality values"
+                    else:
+                        error_message += (
+                            f"one as part of quality group '{quality.name}', "
+                            if isinstance(quality, QualityGroup)
+                            else "one as a non-grouped quality value, "
+                        )
+                        error_message += (
+                            f"another as part of quality group '{other.name}'"
+                            if isinstance(other, QualityGroup)
+                            else "another as a non-grouped quality value"
+                        )
+                    error_message += ")"
+                    raise ValueError(error_message)
+                quality_name_map[name] = quality
+        return value
+
+    @validator("upgrade_until")
+    def validate_upgrade_until(
+        cls,
+        value: Optional[str],
+        values: Dict[str, Any],
+    ) -> Optional[str]:
         try:
             upgrades_allowed: bool = values["upgrades_allowed"]
-            upgrade_until: str = values["upgrade_until"]
             qualities: Sequence[Union[str, QualityGroup]] = values["qualities"]
-        except KeyError as err:
-            raise ValueError(
-                f"required attribute undefined or unable to be parsed: {str(err)}",
-            ) from None
-        # `upgrade_until` checks.
-        if upgrades_allowed:
-            if not upgrade_until:
-                raise ValueError("'upgrade_until' is required if 'upgrades_allowed' is True")
-            for quality in qualities:
-                quality_name = quality.name if isinstance(quality, QualityGroup) else quality
-                if upgrade_until == quality_name:
-                    break
-            else:
-                raise ValueError("'upgrade_until' must be set to an allowed quality name")
-        else:
-            # If `upgrades_allowed` is `False`, set `upgrade_until` to `None`
-            # to make sure Buildarr ignores whatever it is currently set to
-            # on the remote instance.
-            values["upgrade_until"] = None
-        # `qualities` checks.
-        quality_names: Set[str] = set()
+        except KeyError:
+            return value
+        # If `upgrades_allowed` is `False`, set `upgrade_until` to `None`
+        # to make sure Buildarr ignores whatever it is currently set to
+        # on the remote instance.
+        if not upgrades_allowed:
+            return None
+        # Subsequent checks now assume that `upgrades_allowed` is `True`,
+        # this parameter is required and defined to a valid value.
+        if not value:
+            raise ValueError("required if 'upgrades_allowed' is True")
         for quality in qualities:
             quality_name = quality.name if isinstance(quality, QualityGroup) else quality
-            if quality_name in quality_names:
-                raise ValueError(f"Duplicate entries of quality name '{quality_name}' exist")
-            else:
-                quality_names.add(quality_name)
-        # Return validated/modified values.
-        return values
+            if value == quality_name:
+                break
+        else:
+            raise ValueError("must be set to a value enabled in 'qualities'")
+        return value
 
     @classmethod
     def _get_remote_map(
