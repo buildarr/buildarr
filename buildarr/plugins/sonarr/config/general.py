@@ -22,7 +22,7 @@ from __future__ import annotations
 from ipaddress import IPv4Address
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Union
 
-from pydantic import Field, root_validator
+from pydantic import Field, validator
 from typing_extensions import Self
 
 from buildarr.config import RemoteMapEntry
@@ -261,35 +261,37 @@ class SecurityGeneralSettings(GeneralSettings):
         ("certificate_validation", "certificateValidation", {}),
     ]
 
-    @root_validator
-    def username_password_constraints(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @validator("username", "password")
+    def required_when_auth_enabled(
+        cls,
+        value: Optional[str],
+        values: Dict[str, Any],
+    ) -> Optional[str]:
         """
-        Enforce the following constraints on the `username` and `password` attributes:
+        Enforce the following constraints on the validated attributes:
 
-        * If `authentication` is `none`, set `username` and `password` to `None`.
+        * If `authentication` is `none`, set the attribute value to `None`.
         * If `authentication` is a value other than `none` (i.e. require authentication),
-          ensure that `username` and `password` are set to a value other than `None`.
+          ensure that the attribute set to a value other than `None`.
 
         This will apply to both the local Buildarr configuration and
         the remote Sonarr instance configuration.
 
         Args:
+            value (Optional[str]): Value to validate
             values (Dict[str, Any]): Configuration attributes
 
         Raises:
-            ValueError: If `username` or `password` are required but empty
+            ValueError: If the attribute is required but empty
 
         Returns:
-            Validated configuration attributes
+            Validated attribute value
         """
         if values["authentication"] == AuthenticationMethod.none:
-            values["username"] = None
-            values["password"] = None
-        elif not values["username"] or not values["password"]:
-            raise ValueError(
-                "'username' and 'password' attributes required when authentication is enabled",
-            )
-        return values
+            return None
+        elif not value:
+            raise ValueError("required when 'authentication' is not set to 'none'")
+        return value
 
 
 class ProxyGeneralSettings(GeneralSettings):
