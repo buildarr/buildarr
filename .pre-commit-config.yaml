@@ -35,7 +35,7 @@ repos:
     rev: "1.4.0"
     hooks:
       - id: poetry-check
-      # Disabled 2023-06-16: Do not always update dependencies on commit.
-      # - id: poetry-lock
+      - id: poetry-lock
+        args: ["--no-update"]
       - id: poetry-export
         args: ["-f", "requirements.txt", "-o", "requirements.txt"]
