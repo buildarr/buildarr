@@ -19,8 +19,10 @@ Sonarr plugin API functions.
 
 from __future__ import annotations
 
+import json
 import re
 
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
@@ -33,7 +35,7 @@ from buildarr.state import state
 from .exceptions import SonarrAPIError
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional
+    from typing import Any, Dict, Mapping, Optional
 
     from .secrets import SonarrSecrets
 
@@ -68,23 +70,23 @@ def get_initialize_js(host_url: str, api_key: Optional[str] = None) -> Dict[str,
     return res_json
 
 
-def api_get(sonarr_secrets: SonarrSecrets, api_url: str) -> Any:
+def api_get(secrets: SonarrSecrets, api_url: str) -> Any:
     """
     Send a `GET` request to a Sonarr instance.
 
     Args:
-        sonarr_secrets (SonarrSecrets): Sonarr secrets metadata
+        secrets (SonarrSecrets): Sonarr secrets metadata
         api_url (str): Sonarr API command
 
     Returns:
         Response object
     """
 
-    url = f"{sonarr_secrets.host_url}/{api_url.lstrip('/')}"
+    url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("GET %s", url)
     res = requests.get(
         url,
-        headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
+        headers={"X-Api-Key": secrets.api_key.get_secret_value()},
         timeout=state.config.buildarr.request_timeout,
     )
     res_json = res.json()
@@ -94,12 +96,12 @@ def api_get(sonarr_secrets: SonarrSecrets, api_url: str) -> Any:
     return res_json
 
 
-def api_post(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
+def api_post(secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
     """
     Send a `POST` request to a Sonarr instance.
 
     Args:
-        sonarr_secrets (SonarrSecrets): Sonarr secrets metadata
+        secrets (SonarrSecrets): Sonarr secrets metadata
         api_url (str): Sonarr API command
         req (Any): Request (JSON-serialisable)
 
@@ -107,14 +109,18 @@ def api_post(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
         Response object
     """
 
-    url = f"{sonarr_secrets.host_url}/{api_url.lstrip('/')}"
+    url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("POST %s <- req=%s", url, repr(req))
-    res = requests.post(
-        url,
-        headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
-        json=req,
-        timeout=state.config.buildarr.request_timeout,
-    )
+    headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
+    if not state.dry_run:
+        res = requests.post(
+            url,
+            headers=headers,
+            json=req,
+            timeout=state.config.buildarr.request_timeout,
+        )
+    else:
+        res = _create_dryrun_response("POST", url, content=json.dumps(req))
     res_json = res.json()
     plugin_logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.CREATED:
@@ -122,12 +128,12 @@ def api_post(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
     return res_json
 
 
-def api_put(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
+def api_put(secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
     """
     Send a `PUT` request to a Sonarr instance.
 
     Args:
-        sonarr_secrets (SonarrSecrets): Sonarr secrets metadata
+        secrets (SonarrSecrets): Sonarr secrets metadata
         api_url (str): Sonarr API command
         req (Any): Request (JSON-serialisable)
 
@@ -135,14 +141,18 @@ def api_put(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
         Response object
     """
 
-    url = f"{sonarr_secrets.host_url}/{api_url.lstrip('/')}"
+    url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("PUT %s <- req=%s", url, repr(req))
-    res = requests.put(
-        url,
-        headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
-        json=req,
-        timeout=state.config.buildarr.request_timeout,
-    )
+    headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
+    if not state.dry_run:
+        res = requests.put(
+            url,
+            headers=headers,
+            json=req,
+            timeout=state.config.buildarr.request_timeout,
+        )
+    else:
+        res = _create_dryrun_response("PUT", url, content=json.dumps(req))
     res_json = res.json()
     plugin_logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.ACCEPTED:
@@ -150,21 +160,26 @@ def api_put(sonarr_secrets: SonarrSecrets, api_url: str, req: Any) -> Any:
     return res_json
 
 
-def api_delete(sonarr_secrets: SonarrSecrets, api_url: str) -> None:
+def api_delete(secrets: SonarrSecrets, api_url: str) -> None:
     """
     Send a `DELETE` request to a Sonarr instance.
 
     Args:
-        sonarr_secrets (SonarrSecrets): Sonarr secrets metadata
+        secrets (SonarrSecrets): Sonarr secrets metadata
         api_url (str): Sonarr API command
     """
 
-    url = f"{sonarr_secrets.host_url}/{api_url.lstrip('/')}"
+    url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("DELETE %s", url)
-    res = requests.delete(
-        url,
-        headers={"X-Api-Key": sonarr_secrets.api_key.get_secret_value()},
-        timeout=state.config.buildarr.request_timeout,
+    headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
+    res = (
+        requests.delete(
+            url,
+            headers=headers,
+            timeout=state.config.buildarr.request_timeout,
+        )
+        if not state.dry_run
+        else _create_dryrun_response("DELETE", url)
     )
     plugin_logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
     if res.status_code != HTTPStatus.OK:
@@ -233,3 +248,64 @@ def _api_error(res_json: Any) -> str:
         return res_json["message"]
     except KeyError:
         return f"(Unsupported error JSON format) {res_json}"
+
+
+def _create_dryrun_response(
+    method: str,
+    url: str,
+    headers: Optional[Mapping[str, str]] = None,
+    status_code: Optional[int] = None,
+    content_type: str = "application/json",
+    charset: str = "utf-8",
+    content: str = "{}",
+) -> requests.Response:
+    """
+    A utility function for generating `requests.Response` objects in dry-run mode.
+
+    Args:
+        method (str): HTTP method of the response to simulate.
+        url (str): URL of the request.
+        status_code (Optional[int], optional): Status code for the response. Default: auto-detect
+        content_type (str, optional): MIME type of response content. Default: `application/json`
+        charset (str, optional): Encoding of response content. Default: `utf-8`
+        content (str, optional): Response content. Default: `{}`
+
+    Raises:
+        ValueError: When an unsupported HTTP method is used
+
+    Returns:
+        Generated `requests.Response` object
+    """
+
+    method = method.upper()
+
+    response = requests.Response()
+    response.url = url
+    response.headers["Vary"] = "Accept"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Content-Type"] = f"{content_type}; charset={charset}"
+    response.headers["Server"] = "Mono-HTTPAPI/1.0"
+    response.headers["Date"] = datetime.now(tz=timezone.utc).strftime("%a, %d %b %Y %H:%M:%S %Z")
+    response.headers["Transfer-Encoding"] = "chunked"
+    if headers:
+        response.headers.update(headers)
+    if status_code is not None:
+        response.status_code = status_code
+    elif method == "POST":
+        response.status_code = int(HTTPStatus.CREATED)
+    elif method == "PUT":
+        response.status_code = int(HTTPStatus.ACCEPTED)
+    elif method == "DELETE":
+        response.status_code = int(HTTPStatus.OK)
+    else:
+        raise ValueError(
+            f"Unsupported HTTP method for creating dry-run response: {str(method)}",
+        )
+    response.encoding = charset
+    if content is not None:
+        response._content = content.encode("UTF-8")
+
+    return response

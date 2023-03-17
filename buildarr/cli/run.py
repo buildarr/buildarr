@@ -57,6 +57,14 @@ from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefine
     default=Path.cwd() / "buildarr.yml",
 )
 @click.option(
+    "-D",
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    default=False,
+    help="Enable dry-run mode. Update runs are executed, but instances are not modified.",
+)
+@click.option(
     "-p",
     "--plugin",
     "use_plugins",
@@ -69,7 +77,7 @@ from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefine
         "(can be defined multiple times)"
     ),
 )
-def run(config_path: Path, use_plugins: Set[str]) -> None:
+def run(config_path: Path, dry_run: bool, use_plugins: Set[str]) -> None:
     """
     'buildarr run' main routine.
 
@@ -83,6 +91,12 @@ def run(config_path: Path, use_plugins: Set[str]) -> None:
         package_version("buildarr"),
         logger.log_level,
     )
+
+    if dry_run:
+        logger.info(
+            "Dry-run mode enabled: executing update runs, but will not modify instances",
+        )
+        state.dry_run = True
 
     # Load and validate the Buildarr configuration.
     load_config(path=config_path, use_plugins=use_plugins)

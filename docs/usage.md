@@ -54,6 +54,7 @@ $ buildarr run [/path/to/config.yml]
 ```
 
 If using Docker, the command would look something like this:
+
 ```bash
 $ docker run --rm -v /path/to/config:/config -e PUID=<PUID> -e PGID=<PGID> callum027/buildarr:latest run [/config/buildarr.yml]
 ```
@@ -90,7 +91,15 @@ Of note in particular is the following line:
 
 When Buildarr detects that the remote configuration differents from the locally defined configuration, the remote configuration will be updated. In this case, Buildarr detected that on the `default` instance configured in the Sonarr plugin, the configured GUI instance name is different from the locally defined value, so it updated the Sonarr instance to reflect the change.
 
-If the run fails for one reason or another, an error message (or exception traceback, depending on the error) will be logged and Buildarr with exit with a non-zero status.
+If the run fails for one reason or another, an error message will be logged and Buildarr with exit with a non-zero status.
+
+Buildarr supports a dry-run mode, so you can check what *would* change on configured instances, before actually applying them. Under this mode, the output of Buildarr itself is almost exactly the same, but any actions logged in the output are not actually performed.
+
+```bash
+$ buildarr run --dry-run
+```
+
+This allows you to test changes in the configuration, or check the current state of remote instances against the configuration before actually committing changes.
 
 ## As a service (daemon mode)
 

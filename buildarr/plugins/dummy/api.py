@@ -19,8 +19,10 @@ Dummy plugin API functions.
 
 from __future__ import annotations
 
+import json
 import re
 
+from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import TYPE_CHECKING
 
@@ -33,7 +35,7 @@ from buildarr.state import state
 from .exceptions import DummyAPIError
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional
+    from typing import Any, Dict, Mapping, Optional
 
     from .secrets import DummySecrets
 
@@ -109,12 +111,16 @@ def api_post(secrets: DummySecrets, api_url: str, req: Any) -> Any:
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("POST %s <- req=%s", url, repr(req))
-    res = requests.post(
-        url,
-        headers={"X-Api-Key": secrets.api_key.get_secret_value()},
-        json=req,
-        timeout=state.config.buildarr.request_timeout,
-    )
+    headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
+    if not state.dry_run:
+        res = requests.post(
+            url,
+            headers=headers,
+            json=req,
+            timeout=state.config.buildarr.request_timeout,
+        )
+    else:
+        res = _create_dryrun_response("POST", url, content=json.dumps(req))
     res_json = res.json()
     plugin_logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.CREATED:
@@ -137,12 +143,16 @@ def api_put(secrets: DummySecrets, api_url: str, req: Any) -> Any:
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("PUT %s <- req=%s", url, repr(req))
-    res = requests.put(
-        url,
-        headers={"X-Api-Key": secrets.api_key.get_secret_value()},
-        json=req,
-        timeout=state.config.buildarr.request_timeout,
-    )
+    headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
+    if not state.dry_run:
+        res = requests.put(
+            url,
+            headers=headers,
+            json=req,
+            timeout=state.config.buildarr.request_timeout,
+        )
+    else:
+        res = _create_dryrun_response("PUT", url, content=json.dumps(req))
     res_json = res.json()
     plugin_logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.ACCEPTED:
@@ -161,10 +171,15 @@ def api_delete(secrets: DummySecrets, api_url: str) -> None:
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
     plugin_logger.debug("DELETE %s", url)
-    res = requests.delete(
-        url,
-        headers={"X-Api-Key": secrets.api_key.get_secret_value()},
-        timeout=state.config.buildarr.request_timeout,
+    headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
+    res = (
+        requests.delete(
+            url,
+            headers=headers,
+            timeout=state.config.buildarr.request_timeout,
+        )
+        if not state.dry_run
+        else _create_dryrun_response("DELETE", url)
     )
     plugin_logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
     if res.status_code != HTTPStatus.OK:
@@ -200,3 +215,64 @@ def api_error(
         except KeyError:
             error_message += f": {res_json}"
     raise DummyAPIError(error_message, response=response)
+
+
+def _create_dryrun_response(
+    method: str,
+    url: str,
+    headers: Optional[Mapping[str, str]] = None,
+    status_code: Optional[int] = None,
+    content_type: str = "application/json",
+    charset: str = "utf-8",
+    content: str = "{}",
+) -> requests.Response:
+    """
+    A utility function for generating `requests.Response` objects in dry-run mode.
+
+    Args:
+        method (str): HTTP method of the response to simulate.
+        url (str): URL of the request.
+        status_code (Optional[int], optional): Status code for the response. Default: auto-detect
+        content_type (str, optional): MIME type of response content. Default: `application/json`
+        charset (str, optional): Encoding of response content. Default: `utf-8`
+        content (str, optional): Response content. Default: `{}`
+
+    Raises:
+        ValueError: When an unsupported HTTP method is used
+
+    Returns:
+        Generated `requests.Response` object
+    """
+
+    method = method.upper()
+
+    response = requests.Response()
+    response.url = url
+    response.headers["Vary"] = "Accept"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Content-Type"] = f"{content_type}; charset={charset}"
+    response.headers["Server"] = "Mono-HTTPAPI/1.0"
+    response.headers["Date"] = datetime.now(tz=timezone.utc).strftime("%a, %d %b %Y %H:%M:%S %Z")
+    response.headers["Transfer-Encoding"] = "chunked"
+    if headers:
+        response.headers.update(headers)
+    if status_code is not None:
+        response.status_code = status_code
+    elif method == "POST":
+        response.status_code = int(HTTPStatus.CREATED)
+    elif method == "PUT":
+        response.status_code = int(HTTPStatus.ACCEPTED)
+    elif method == "DELETE":
+        response.status_code = int(HTTPStatus.OK)
+    else:
+        raise ValueError(
+            f"Unsupported HTTP method for creating dry-run response: {str(method)}",
+        )
+    response.encoding = charset
+    if content is not None:
+        response._content = content.encode("UTF-8")
+
+    return response

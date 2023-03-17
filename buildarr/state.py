@@ -58,6 +58,16 @@ class State:
     Whether Buildarr is in testing mode or not.
     """
 
+    dry_run: bool = False
+    """
+    Whether Buildarr is in dry run mode or not.
+
+    When set to `True` under a CLI command that supports it, the command should not
+    perform any action that would change the state of any external instances.
+
+    Custom CLI commands can set this attribute to `True` if they support a dry-run mode.
+    """
+
     plugins: Mapping[str, Plugin] = {}
     """
     The loaded Buildarr plugins, mapped to the plugin's unique name.
