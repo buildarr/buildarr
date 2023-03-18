@@ -165,8 +165,8 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         if uses_trash_metadata:
             break
 
-    # Skip this test if TRaSH-Guides metadata if no configuration uses it,
-    # but if any do, create a temporary directory, download the TRaSH-Guides metadata,
+    # Skip this test if no configuration uses TRaSH-Guides metadata,
+    # but otherwise, create a temporary directory, download the TRaSH-Guides metadata,
     # and render the metadata into the instance-specific configurations.
     if not uses_trash_metadata:
         logger.info("Rendering TRaSH-Guides metadata: SKIPPED (not required)")
