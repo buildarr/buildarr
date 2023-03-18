@@ -80,7 +80,7 @@ if TYPE_CHECKING:
 )
 def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     """
-    'buildarr test-config' main routine.
+    `buildarr test-config` main routine.
 
     Args:
         config_path (Path): Configuration file to load.

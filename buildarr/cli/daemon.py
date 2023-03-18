@@ -414,7 +414,7 @@ def daemon(
     update_times: Tuple[time, ...],
 ) -> None:
     """
-    'buildarr daemon' command main routine.
+    `buildarr daemon` command main routine.
 
     Args:
         config_path (Path): Buildarr configuration file to load

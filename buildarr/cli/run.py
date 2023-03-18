@@ -81,10 +81,11 @@ from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefine
 )
 def run(config_path: Path, dry_run: bool, use_plugins: Set[str]) -> None:
     """
-    'buildarr run' main routine.
+    `buildarr run` main routine.
 
     Args:
         config_path (Path): Configuration file to load.
+        dry_run (bool): If set to `True`, run in dry-run mode.
         plugins (Set[str]): Plugins to load. If empty, use all plugins.
     """
 
