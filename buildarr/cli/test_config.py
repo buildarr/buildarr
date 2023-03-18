@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from textwrap import indent
 from typing import TYPE_CHECKING
 
 import click
@@ -30,7 +31,7 @@ from ..config import load_config, load_instance_configs, resolve_instance_depend
 from ..logging import logger, plugin_logger
 from ..manager import load_managers
 from ..state import state
-from ..trash import fetch as trash_fetch
+from ..trash import fetch_trash_metadata, render_trash_metadata
 from ..util import create_temp_dir, get_absolute_path
 from . import cli
 from .exceptions import TestConfigNoPluginsDefinedError
@@ -104,7 +105,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         logger.error("Loading configuration: FAILED")
         raise
     else:
-        logger.debug("Buildarr configuration:\n%s", state.config.yaml(exclude_unset=True))
+        logger.debug("Buildarr configuration:")
+        for config_line in state.config.yaml(exclude_unset=True).splitlines():
+            logger.debug(indent(config_line, "  "))
         logger.info("Loading configuration: PASSED")
 
     # Load the manager objects for the selected plugins.
@@ -129,10 +132,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         for plugin_name, instance_configs in state.instance_configs.items():
             for instance_name, instance_config in instance_configs.items():
                 with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-                    plugin_logger.debug(
-                        "Instance configuration:\n%s",
-                        instance_config.yaml(exclude_unset=True),
-                    )
+                    logger.debug("Instance configuration:")
+                    for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                        logger.debug(indent(config_line, "  "))
         logger.info("Loading instance configurations: PASSED")
 
     # Check if configuration was found for any selected plugins.
@@ -152,7 +154,7 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     else:
         logger.debug("Execution order:")
         for i, (plugin_name, instance_name) in enumerate(state._execution_order, 1):
-            logger.debug("%i. %s.instances[%s]", i, plugin_name, repr(instance_name))
+            logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
         logger.info("Resolving instance dependencies: PASSED")
 
     # Check if any instances are configured to get metadata from TRaSH-Guides.
@@ -169,33 +171,40 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     # but otherwise, create a temporary directory, download the TRaSH-Guides metadata,
     # and render the metadata into the instance-specific configurations.
     if not uses_trash_metadata:
-        logger.info("Rendering TRaSH-Guides metadata: SKIPPED (not required)")
+        logger.info("Fetching and rendering TRaSH-Guides metadata: SKIPPED (not required)")
     else:
-        logger.debug("Creating runtime directory")
-        with create_temp_dir() as temp_dir:
-            logger.debug("Finished creating runtime directory")
-            logger.debug("Creating TRaSH metadata directory")
-            trash_metadata_dir = temp_dir / "trash"
-            trash_metadata_dir.mkdir()
+        logger.debug("Creating TRaSH metadata directory")
+        with create_temp_dir() as trash_metadata_dir:
             logger.debug("Finished creating TRaSH metadata directory")
-            logger.debug("Fetching TRaSH metadata")
-            trash_fetch(trash_metadata_dir)
-            logger.debug("Finished fetching TRaSH metadata")
             try:
-                for plugin_name, instance_name in state._execution_order:
-                    manager = state.managers[plugin_name]
-                    with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-                        if manager.uses_trash_metadata(instance_config):
-                            plugin_logger.debug("Rendering TRaSH-Guides metadata")
-                            state.managers[plugin_name].render_trash_metadata(
-                                state.instance_configs[plugin_name][instance_name],
-                                trash_metadata_dir,
-                            )
-                            plugin_logger.debug("Finished rendering TRaSH-Guides metadata")
+                logger.debug("Fetching TRaSH metadata")
+                fetch_trash_metadata(trash_metadata_dir)
+                logger.debug("Finished fetching TRaSH metadata")
+            except Exception:
+                logger.error("Fetching TRaSH-Guides metadata: FAILED")
+                raise
+            else:
+                logger.info("Fetching TRaSH-Guides metadata: PASSED")
+            try:
+                logger.debug("Rendering TRaSH metadata")
+                render_trash_metadata(trash_metadata_dir)
+                logger.debug("Finished rendering TRaSH metadata")
             except Exception:
                 logger.error("Rendering TRaSH-Guides metadata: FAILED")
                 raise
             else:
+                for plugin_name, instance_configs in state.instance_configs.items():
+                    for instance_name, instance_config in instance_configs.items():
+                        with state._with_context(
+                            plugin_name=plugin_name,
+                            instance_name=instance_name,
+                        ):
+                            if state.managers[plugin_name].uses_trash_metadata(instance_config):
+                                plugin_logger.debug("Rendered instance configuration:")
+                                for config_line in instance_config.yaml(
+                                    exclude_unset=True,
+                                ).splitlines():
+                                    plugin_logger.debug(indent(config_line, "  "))
                 logger.info("Rendering TRaSH-Guides metadata: PASSED")
 
     # If we get to this point, this configuration is pretty much guaranteed to be valid.

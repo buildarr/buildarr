@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from textwrap import indent
 from typing import Dict, Optional, Set
 
 import click
@@ -31,7 +32,7 @@ from ..logging import logger, plugin_logger
 from ..manager import load_managers
 from ..secrets import SecretsPlugin, load_secrets
 from ..state import state
-from ..trash import fetch as trash_fetch
+from ..trash import fetch_trash_metadata, render_trash_metadata, trash_metadata_used
 from ..util import create_temp_dir, get_absolute_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
@@ -122,7 +123,9 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
         use_plugins = set()
 
     # Dump the currently active Buildarr configuration file to the debug log.
-    logger.debug("Buildarr configuration:\n%s", state.config.yaml(exclude_unset=True))
+    logger.debug("Buildarr configuration:")
+    for config_line in state.config.yaml(exclude_unset=True).splitlines():
+        logger.debug(indent(config_line, "  "))
 
     # Output the currently loaded plugins to the logs.
     logger.info(
@@ -155,7 +158,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
     resolve_instance_dependencies()
     logger.debug("Execution order:")
     for i, (plugin_name, instance_name) in enumerate(state._execution_order, 1):
-        logger.debug("%i. %s.instances[%s]", i, plugin_name, repr(instance_name))
+        logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
     logger.info("Finished resolving instance dependencies")
 
     # Load the secrets file if it exists, and initialise the secrets metadata.
@@ -206,87 +209,73 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
     state.secrets.write(secrets_file_path)
     logger.info("Finished saving updated secrets file")
 
-    # Check if any instances are configured to get metadata from TRaSH-Guides.
-    uses_trash_metadata = False
-    for plugin_name in state.active_plugins:
-        for instance_config in state.instance_configs[plugin_name].values():
-            if state.managers[plugin_name].uses_trash_metadata(instance_config):
-                uses_trash_metadata = True
-                break
-        if uses_trash_metadata:
-            break
-
-    # Create a temporary directory for Buildarr to use.
-    logger.debug("Creating runtime directory")
-    with create_temp_dir() as temp_dir:
-        logger.debug("Finished creating runtime directory")
-
-        # If the TRaSH metadata is required, download it
-        # and save it to a folder.
-        if uses_trash_metadata:
-            logger.debug("Creating TRaSH metadata directory")
-            trash_metadata_dir = temp_dir / "trash"
-            trash_metadata_dir.mkdir()
+    # Render any instance configuration with TRaSH-Guides metadata referenced,
+    # populating any missing values.
+    if trash_metadata_used():
+        logger.debug("Creating TRaSH metadata directory")
+        with create_temp_dir() as trash_metadata_dir:
             logger.debug("Finished creating TRaSH metadata directory")
             logger.info("Fetching TRaSH metadata")
-            trash_fetch(trash_metadata_dir)
+            fetch_trash_metadata(trash_metadata_dir)
             logger.info("Finished fetching TRaSH metadata")
-        else:
-            logger.debug("TRaSH metadata not required")
+            logger.info("Rendering TRaSH metadata")
+            render_trash_metadata(trash_metadata_dir)
+            logger.info("Finished rendering TRaSH metadata")
 
-        # Update all instances in the determined execution order.
-        for plugin_name, instance_name in state._execution_order:
-            manager = state.managers[plugin_name]
-            instance_config = state.instance_configs[plugin_name][instance_name]
-            with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-                # Get the instance's secrets object.
-                instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+    # Update all instances in the determined execution order.
+    logger.info("Updating configuration on remote instances")
 
-                # Add actual parameters to resource definitions where
-                # TRaSH IDs are referenced.
-                if manager.uses_trash_metadata(instance_config):
-                    plugin_logger.info("Rendering TRaSH-Guides metadata")
-                    instance_config = manager.render_trash_metadata(
+    for plugin_name, instance_name in state._execution_order:
+        manager = state.managers[plugin_name]
+        instance_config = state.instance_configs[plugin_name][instance_name]
+        with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+            # Get the instance's secrets metadata.
+            instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+
+            # Fetch the current active configuration from the remote instance,
+            # so it can be compared to the local configuration.
+            plugin_logger.info("Getting remote configuration")
+            remote_instance_config = manager.from_remote(instance_config, instance_secrets)
+            plugin_logger.info("Finished getting remote configuration")
+
+            # Output the local and remote instance configuration to the debug logs,
+            # so they can be inspected to see Buildarr's state at this point, if need be.
+            for config_type, config in (
+                ("Local", instance_config),
+                ("Remote", remote_instance_config),
+            ):
+                plugin_logger.debug("%s configuration:", config_type)
+                for config_line in config.yaml(exclude_unset=True).splitlines():
+                    plugin_logger.debug(indent(config_line, "  "))
+
+            # Compare the local configuration for the instance to the active configuration,
+            # and if there are differences, update the instance.
+            plugin_logger.info("Updating remote configuration")
+            plugin_logger.info(
+                (
+                    "Remote configuration successfully updated"
+                    if manager.update_remote(
+                        plugin_name,
                         instance_config,
-                        trash_metadata_dir,
+                        instance_secrets,
+                        remote_instance_config,
                     )
-                    plugin_logger.info("Finished rendering TRaSH-Guides metadata")
+                    else "Remote configuration is up to date"
+                ),
+            )
+            plugin_logger.info("Finished updating remote configuration")
 
-                # Fetch the current active configuration from the remote instance,
-                # so they can be configured.
-                plugin_logger.info("Getting remote configuration")
-                remote_instance_config = manager.from_remote(instance_config, instance_secrets)
-                plugin_logger.info("Finished getting remote configuration")
-                plugin_logger.debug(
-                    "Remote configuration:\n%s",
-                    remote_instance_config.yaml(exclude_unset=True),
-                )
+            # TODO: Re-fetch the remote configuration and test that it
+            #       now matches the local configuration.
+            # print("Re-fetching remote config")
+            # new_active_config = manager.get_active_config(
+            #     instance_config,
+            #     getattr(secrets, manager_name),
+            # )
+            # print(
+            #     "Active configuration for instance name "
+            #     f'{instance_name}' after update:\n"
+            #     f"{pformat(new_active_config.dict(exclude_unset=True))}",
+            # )
 
-                # Push the updated state to the instance.
-                plugin_logger.info("Updating remote configuration")
-                plugin_logger.info(
-                    (
-                        "Remote configuration successfully updated"
-                        if manager.update_remote(
-                            plugin_name,
-                            instance_config,
-                            instance_secrets,
-                            remote_instance_config,
-                        )
-                        else "Remote configuration is up to date"
-                    ),
-                )
-                plugin_logger.info("Finished updating remote configuration")
-
-                # TODO: Re-fetch the remote configuration and test that it
-                #       now matches the local configuration.
-                # print("Re-fetching remote config")
-                # new_active_config = manager.get_active_config(
-                #     instance_config,
-                #     getattr(secrets, manager_name),
-                # )
-                # print(
-                #     "Active configuration for instance name "
-                #     f'{instance_name}' after update:\n"
-                #     f"{pformat(new_active_config.dict(exclude_unset=True))}",
-                # )
+    logger.info("Finished updating configuration on remote instances")
