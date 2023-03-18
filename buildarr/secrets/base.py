@@ -61,5 +61,6 @@ class SecretsBase(BaseModel, Generic[Config]):
         path.write_text(self.json())
 
     class Config:
-        validate_assignment = True
         json_encoders = {SecretStr: lambda v: v.get_secret_value()}
+        validate_all = True
+        validate_assignment = True

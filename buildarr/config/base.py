@@ -780,6 +780,13 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         # internal name, as well as the alias.
         allow_population_by_field_name = True
 
+        # Validate all configuration attributes, even the default ones.
+        # This is necessary because the default attributes sometimes need to
+        # be validated for correctness in non-default contexts.
+        # (For example, a normally optional attribute becoming required due to
+        # another attribute being enabled.)
+        validate_all = True
+
 
 def _validate_pure_posix_path(v: Any) -> PurePosixPath:
     """
