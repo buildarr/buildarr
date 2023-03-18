@@ -13,7 +13,7 @@
 
 
 """
-'buildarr daemon' CLI command.
+`buildarr daemon` CLI command.
 """
 
 
@@ -34,10 +34,11 @@ from schedule import Job as SchedulerJob, Scheduler  # type: ignore[import]
 from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
-from ..config import load as load_config
+from ..config import load_config
 from ..logging import logger
 from ..state import state
 from ..types import DayOfWeek
+from ..util import get_absolute_path
 from . import cli
 from .run import _run as run_apply
 
@@ -94,7 +95,9 @@ class Daemon:
         Load the Buildarr configuration from the given file, and set daemon configuration fields.
         """
         # Load the Buildarr configuration, and save the list of files loaded.
+        logger.info("Loading configuration file '%s'", self.config_path)
         load_config(self.config_path)
+        logger.info("Finished loading configuration file")
         # Set watch_config, update_days and update_times from either the
         # command line-provided override value or the value from the configuration.
         buildarr_config = state.config.buildarr
@@ -364,6 +367,7 @@ def parse_time(
         path_type=Path,
     ),
     default=Path.cwd() / "buildarr.yml",
+    callback=lambda ctx, params, path: get_absolute_path(path),
 )
 @click.option(
     "-w/-W",
@@ -410,7 +414,7 @@ def daemon(
     update_times: Tuple[time, ...],
 ) -> None:
     """
-    'buildarr daemon' command main routine.
+    `buildarr daemon` command main routine.
 
     Args:
         config_path (Path): Buildarr configuration file to load

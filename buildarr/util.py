@@ -19,29 +19,43 @@ Buildarr general utility functions.
 
 from __future__ import annotations
 
+import os
+
+from contextlib import contextmanager
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Mapping
 
 if TYPE_CHECKING:
-    from os import PathLike
-    from typing import Any, Dict, Union
+    from typing import Any, Dict, Generator, Union
 
 
 __all__ = ["get_absolute_path", "merge_dicts"]
 
 
-def get_absolute_path(path: Union[str, PathLike]) -> Path:
+def get_absolute_path(path: Union[str, os.PathLike]) -> Path:
     """
-    Return the absolute, fully resolved version of the given path.
+    Return the absolute version of the given path, *without* resolving symbolic links.
+
+    The reason why we don't want to resolve symbolic links is because in long lived
+    applications such as daemons, the link target could have changed while the
+    file was not being accessed, therefore making our stored reference to the file invalid.
+
+    Symbolic links should only be resolved when actually accessing the file,
+    without caching the result.
 
     Args:
-        path (Union[str, PathLike]): Path to resolve
+        path (Union[str, os.PathLike]): Path to make absolute.
 
     Returns:
-        Fully resolved absolute path
+        Absolute path
     """
 
-    return Path(path).absolute().resolve()
+    # `Path.absolute` does not expand `.` and `..`.
+    # `Path.resolve` resolves symbolic links, and has no way to disable it.
+    # Using the old `os.path` functions does what we want, so use them.
+
+    return Path(os.path.abspath(os.path.expanduser(path)))  # noqa: PTH100 PTH111
 
 
 def merge_dicts(*dicts: Mapping[Any, Any]) -> Dict[Any, Any]:
@@ -67,3 +81,22 @@ def merge_dicts(*dicts: Mapping[Any, Any]) -> Dict[Any, Any]:
                 merged_dict[key] = value
 
     return merged_dict
+
+
+@contextmanager
+def create_temp_dir(prefix: str = "buildarr.", **kwargs) -> Generator[Path, None, None]:
+    """
+    Create a temporary directory, give access to it for the executing context,
+    and clean up the directory upon exit from the context.
+
+    Any additional parameters are passed to `tempfile.TemporaryDirectory`.
+
+    Args:
+        prefix (str, optional): Temporary directory name prefix. Defaults to `buildarr.`.
+
+    Yields:
+        Temporary directory path
+    """
+
+    with TemporaryDirectory(prefix=prefix, **kwargs) as temp_dir_str:
+        yield Path(temp_dir_str)

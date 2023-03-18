@@ -21,8 +21,9 @@ from __future__ import annotations
 
 from .base import ConfigBase
 from .exceptions import ConfigError, ConfigTrashIDNotFoundError
-from .load import load
+from .load import load_config, load_instance_configs
 from .models import ConfigPlugin, ConfigPluginType, ConfigType
+from .resolve_instance_dependencies import resolve_instance_dependencies
 from .types import RemoteMapEntry
 
 __all__ = [
@@ -33,5 +34,7 @@ __all__ = [
     "ConfigType",
     "ConfigPluginType",
     "RemoteMapEntry",
-    "load",
+    "load_config",
+    "load_instance_configs",
+    "resolve_instance_dependencies",
 ]

@@ -2,11 +2,12 @@
 
 Apart from the configuration, most of the interactions with Buildarr are done via the command line.
 
-There are three major operating modes for Buildarr:
+The following commands are available for Buildarr:
 
 * `buildarr run` - Manually perform an update run on one or more instances and exit
 * `buildarr daemon` - Run Buildarr forever: perform an initial update run, and then
   schedule periodic updates
+* `buildarr test-config` - Test a configuration file for correctness (*Added in version 0.4.0*)
 * `buildarr <plugin-name> <command...>` - Ad-hoc commands defined by any loaded plugins
 
 !!! note
@@ -38,9 +39,10 @@ Options:
   --help                          Show this message and exit.
 
 Commands:
-  daemon  Run as a daemon and periodically update defined instances.
-  run     Configure instances defined in the Buildarr config file, and exit.
-  sonarr  Sonarr instance ad-hoc commands.
+  daemon       Run as a daemon and periodically update defined instances.
+  run          Update configured instances, and exit.
+  sonarr       Sonarr instance ad-hoc commands.
+  test-config  Test a Buildarr configuration file for correctness.
 ```
 
 ## Manual runs
@@ -93,7 +95,11 @@ When Buildarr detects that the remote configuration differents from the locally 
 
 If the run fails for one reason or another, an error message will be logged and Buildarr with exit with a non-zero status.
 
-Starting from version 0.4.0, Buildarr supports a dry-run mode, so you can check what *would* change on configured instances, before actually applying them. Under this mode, the output of Buildarr itself is almost exactly the same, but any actions logged in the output are not actually performed.
+### Dry runs
+
+*Added in version 0.4.0.*
+
+Buildarr ad-hoc runs support a dry-run mode, so you can check what *would* change on configured instances, before actually applying them. Under this mode, the output of Buildarr itself is almost exactly the same, but any actions logged in the output are not actually performed.
 
 ```bash
 $ buildarr run --dry-run
@@ -161,6 +167,39 @@ Buildarr daemon supports the following signal types:
 * `SIGHUP` - Reload the Buildarr configuration file and perform an update run
   (the same action taken as when the `watch_config` option is enabled and Buildarr detects configuration changes).
   Not supported on Windows.
+
+## Testing configuration
+
+*Added in version 0.4.0.*
+
+This is a mode for testing whether or not a configuration file is syntactically correct, can be loaded, and contains valid instance-to-instance link references and TRaSH-Guides metadata IDs.
+
+This mode is intended for the user to test that a configuration will be loaded properly by Buildarr, before attempting to connect with any remote instances.
+
+```bash
+$ buildarr test-config [/path/to/config.yml]
+```
+
+If a configuration file is valid, the output from Buildarr will be similar to the following:
+
+```text
+$ buildarr test-config /config/buildarr.yml
+2023-03-19 10:59:27,819 buildarr:1 buildarr.main [INFO] Buildarr version 0.4.0 (log level: INFO)
+2023-03-19 10:59:27,820 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
+2023-03-19 10:59:27,820 buildarr:1 buildarr.main [INFO] Testing configuration file: /config/buildarr.yml
+2023-03-19 10:59:27,947 buildarr:1 buildarr.main [INFO] Loading configuration: PASSED
+2023-03-19 10:59:27,947 buildarr:1 buildarr.main [INFO] Loading plugin managers: PASSED
+2023-03-19 10:59:27,971 buildarr:1 buildarr.main [INFO] Loading instance configurations: PASSED
+2023-03-19 10:59:27,971 buildarr:1 buildarr.main [INFO] Checking configured plugins: PASSED
+2023-03-19 10:59:27,971 buildarr:1 buildarr.main [INFO] Resolving instance dependencies: PASSED
+2023-03-19 10:59:31,634 buildarr:1 buildarr.main [INFO] Fetching TRaSH-Guides metadata: PASSED
+2023-03-19 10:59:31,708 buildarr:1 buildarr.main [INFO] Rendering TRaSH-Guides metadata: PASSED
+2023-03-19 10:59:32,053 buildarr:1 buildarr.main [INFO] Configuration test successful.
+```
+
+Since Buildarr does not connect to any remote instances in this mode, even if a configuration file passes the tests performed by `buildarr test-config`, it will not necessarily successfully communicate with them.
+
+To test the configuration against live remote instances, without modifying them, you can use `buildarr run --dry-run` as documented in [Dry runs](#dry-runs).
 
 ## Plugin-specific commands
 

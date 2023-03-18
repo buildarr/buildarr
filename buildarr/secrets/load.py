@@ -26,26 +26,27 @@ from pydantic import create_model
 from ..logging import logger
 from ..state import state
 from ..types import NonEmptyStr
-from ..util import get_absolute_path
 from .base import SecretsBase
 
 if TYPE_CHECKING:
-    from os import PathLike
-    from typing import Optional, Set, Union
+    from pathlib import Path
+    from typing import Optional, Set
 
 
-def load(path: Union[str, PathLike], use_plugins: Optional[Set[str]] = None) -> None:
+def load_secrets(path: Path, use_plugins: Optional[Set[str]] = None) -> bool:
     """
-    Create the secrets file model using the specified plugins.
+    Create the secrets file model using the specified plugins,
+    and load the secrets file into global state if it exists.
+
+    If the file doesn't exist, create an empty model structure instead.
 
     Args:
-        load_plugins (Set[str], optional): Plugins to use. Use all if empty.
+        path (Path): The secrets file to load, if it exists.
+        use_plugins (Optional[Set[str]]): Plugins to use. Default is to use all plugins.
 
     Returns:
-        Dynamically generated secrets file model
+        `True` if a secrets file was loaded, otherwise `False`
     """
-
-    path = get_absolute_path(path)
 
     logger.debug("Creating secrets model")
     model = create_model(
@@ -62,10 +63,13 @@ def load(path: Union[str, PathLike], use_plugins: Optional[Set[str]] = None) -> 
     )
     logger.debug("Finished creating secrets model")
 
-    logger.info("Loading secrets file from '%s'", path)
     try:
+        logger.debug("Loading secrets from file '%s'", path)
         state.secrets = model.read(path)
-        logger.info("Finished loading secrets file")
+        logger.debug("Finished loading secrets from file")
+        return True
     except FileNotFoundError:
-        logger.info("Secrets file does not exist, will create new file")
+        logger.debug("Secrets file not found, initialising empty secrets metadata")
         state.secrets = model()
+        logger.debug("Finished initialising empty secrets metadata")
+        return False
