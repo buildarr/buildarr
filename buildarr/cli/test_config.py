@@ -116,7 +116,7 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     else:
         logger.debug("Managers loaded for the following plugins:")
         for plugin_name in state.managers.keys():
-            logger.debug(" - %s", plugin_name)
+            logger.debug("  - %s", plugin_name)
         logger.info("Loading plugin managers: PASSED")
 
     # Parse and validate the instance-specific configurations under each plugin.
@@ -151,7 +151,7 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         raise
     else:
         logger.debug("Execution order:")
-        for i, (plugin_name, instance_name) in enumerate(state._execution_order):
+        for i, (plugin_name, instance_name) in enumerate(state._execution_order, 1):
             logger.debug("%i. %s.instances[%s]", i, plugin_name, repr(instance_name))
         logger.info("Resolving instance dependencies: PASSED")
 

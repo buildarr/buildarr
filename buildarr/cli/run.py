@@ -154,7 +154,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
     logger.info("Resolving instance dependencies")
     resolve_instance_dependencies()
     logger.debug("Execution order:")
-    for i, (plugin_name, instance_name) in enumerate(state._execution_order):
+    for i, (plugin_name, instance_name) in enumerate(state._execution_order, 1):
         logger.debug("%i. %s.instances[%s]", i, plugin_name, repr(instance_name))
     logger.info("Finished resolving instance dependencies")
 
