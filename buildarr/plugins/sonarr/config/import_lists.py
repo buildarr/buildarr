@@ -23,6 +23,7 @@ import re
 
 from datetime import datetime
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterable,
@@ -50,6 +51,11 @@ from ..secrets import SonarrSecrets
 from ..types import SonarrApiKey
 from .types import SonarrConfigBase, TraktAuthUser
 from .util import trakt_expires_encoder
+
+if TYPE_CHECKING:
+    from typing import Collection
+
+    from ..config import SonarrInstanceConfig
 
 
 class YearRange(ConstrainedStr):
@@ -875,7 +881,7 @@ class SonarrImportList(ProgramImportList):
                 resource_ids.add(resource)
             return sorted(resource_ids)
         source_resource_ids: Optional[Dict[str, int]] = None
-        for resource in resources:
+        for i, resource in enumerate(resources):
             if isinstance(resource, int):
                 resource_ids.add(resource)
             else:
@@ -887,7 +893,25 @@ class SonarrImportList(ProgramImportList):
                             resource_type,
                         )
                     }
-                resource_ids.add(source_resource_ids[resource])
+                try:
+                    resource_ids.add(source_resource_ids[resource])
+                except KeyError as err:
+                    # If this is a dry-run, then a non-existent resource name was passed from
+                    # the instance reference resolver.
+                    # Generate a fake ID based on the maximum existing resource ID
+                    # and the index of the resource name being currently processed, and
+                    # add it to the result.
+                    # (Since this is a dry-run, it's fine that it's fake.)
+                    if state.dry_run:
+                        max_id = max(source_resource_ids.values()) if resource_ids else 1
+                        resource_ids.add(max_id + i)
+                    # If this is **not** a dry-run, then a non-existent resource name
+                    # somehow made it past all the validation being done.
+                    # Raise a runtime error and report back to the user.
+                    else:
+                        raise RuntimeError(
+                            f"Unable to find ID for {resource_type} '{err.args[0]}'",
+                        ) from None
         return sorted(resource_ids)
 
     def _resolve_from_local(
@@ -904,7 +928,8 @@ class SonarrImportList(ProgramImportList):
             name=name,
             instance_name=instance_name,
             source_resources=self.source_quality_profiles,
-            resource_type="qualityprofile",
+            resource_type_int="quality_profile",
+            resource_type_ext="qualityprofile",
             resource_description="quality profile",
             ignore_nonexistent_ids=ignore_nonexistent_ids,
         )
@@ -912,7 +937,8 @@ class SonarrImportList(ProgramImportList):
             name=name,
             instance_name=instance_name,
             source_resources=self.source_language_profiles,
-            resource_type="languageprofile",
+            resource_type_int="language_profile",
+            resource_type_ext="languageprofile",
             resource_description="language profile",
             ignore_nonexistent_ids=ignore_nonexistent_ids,
         )
@@ -920,7 +946,8 @@ class SonarrImportList(ProgramImportList):
             name=name,
             instance_name=instance_name,
             source_resources=self.source_tags,
-            resource_type="tag",
+            resource_type_int="tag",
+            resource_type_ext="tag",
             resource_description="tag",
             ignore_nonexistent_ids=ignore_nonexistent_ids,
             name_key="label",
@@ -940,7 +967,8 @@ class SonarrImportList(ProgramImportList):
         name: str,
         instance_name: str,
         source_resources: Iterable[Union[int, str]],
-        resource_type: str,
+        resource_type_int: str,
+        resource_type_ext: str,
         resource_description: str,
         ignore_nonexistent_ids: bool,
         name_key: str = "name",
@@ -972,7 +1000,7 @@ class SonarrImportList(ProgramImportList):
         resolved_source_resources: Set[Union[int, str]] = set()
         if not source_resources:
             return resolved_source_resources
-        remote_resources = self._get_resources(instance_name, resource_type)
+        remote_resources = self._get_resources(instance_name, resource_type_ext)
         resource_ids = {r[name_key]: r["id"] for r in remote_resources}
         resource_names = {r["id"]: r[name_key] for r in remote_resources}
         for resource in source_resources:
@@ -999,13 +1027,47 @@ class SonarrImportList(ProgramImportList):
             elif resource in resource_ids:
                 resolved_source_resources.add(resource)
             else:
-                raise ValueError(
-                    f"Source %s '{resource}' "
+                # If dry-run mode is enabled, then there is a very good chance
+                # the resource does not yet exist on the target Sonarr instance.
+                # Since the instance is also managed by Buildarr, go into its configuration
+                # and check if the resource name is defined.
+                #
+                # If the resource is defined, continue as normal, and a fake ID will be assigned
+                # when encoding the request, so the dry run will complete as expected.
+                #
+                # If the resource is **not** defined, raise an error as it would
+                # in the non-dry-run case, but set `available_resources` so that
+                # the error message will be accurate.
+                if state.dry_run:
+                    target_instance_config: SonarrInstanceConfig = state.instance_configs["sonarr"][
+                        instance_name
+                    ]  # type: ignore[assignment]
+                    settings = target_instance_config.settings
+                    definitions: Collection[str] = getattr(
+                        settings.profiles if resource_type_int.endswith("_profile") else settings,
+                        f"{resource_type_int}s",
+                    ).definitions
+                    if resource in definitions:
+                        resolved_source_resources.add(resource)
+                        continue
+                    available_resources = list(definitions)
+                # If this is not a dry-run, then either the user has not defined the
+                # resource on the target instance, or for some reason it wasn't created.
+                # Either way, raise an error.
+                else:
+                    available_resources = list(resource_ids.keys())
+                _resources_str = (
+                    ", ".join(repr(p) for p in available_resources)
+                    if available_resources
+                    else "(none)"
+                )
+                error_message = (
+                    f"Source {resource_description} '{resource}' "
                     f"not found on target Sonarr instance '{instance_name}' "
                     f"in import list '{name}' "
-                    "(available language profiles: "
-                    f"{', '.join(repr(p) for p in resource_ids.keys())})",
+                    f"(available {resource_description}s: {_resources_str})"
                 )
+                raise ValueError(error_message)
         return resolved_source_resources
 
     class Config(SonarrConfigBase.Config):

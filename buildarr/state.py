@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import DefaultDict, Generator, Mapping, Optional, Sequence, Set
 
-    from .config import ConfigType
+    from .config import ConfigPlugin, ConfigType
     from .plugins import Plugin
     from .secrets import SecretsType
 
@@ -85,6 +85,11 @@ class State:
     This includes Buildarr configuration and configuration for enabled plugins.
     """
 
+    instance_configs: Mapping[str, Mapping[str, ConfigPlugin]]
+    """
+    Fully qualified configuration objects for each instance, under each plugin.
+    """
+
     secrets: SecretsType
     """
     Currently loaded instance secrets.
@@ -128,6 +133,7 @@ class State:
 
         This state function is internal, and shouldn't be used by plugins.
         """
+        self.instance_configs = None  # type: ignore[assignment]
         self.secrets = None  # type: ignore[assignment]
         self._current_plugin = None  # type: ignore[assignment]
         self._current_instance = None  # type: ignore[assignment]
