@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, List, Optional, Set
 
 import click
 
@@ -158,6 +158,9 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
                         instance_name,
                     )
 
+    # Update global application state with the fully qualified instance configurations.
+    state.instance_configs = configs
+
     # If no plugins are configured to run, there is nothing more we can do.
     # Stop here.
     if not run_plugins:
@@ -168,7 +171,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
 
     # Traverse the instance dependency chain structure to determine
     # the instance update execution order.
-    execution_order = _get_execution_order(configs)
+    execution_order = _get_execution_order()
 
     # Load the secrets file if it exists, and initialise the secrets metadata.
     # If `use_plugins` is undefined, load using all plugins available
@@ -180,7 +183,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
     # fetching them from the remote instance if they don't exist.
     for plugin_name in run_plugins:
         plugin_secrets: Dict[str, SecretsPlugin] = getattr(state.secrets, plugin_name)
-        for instance_name, instance_config in configs[plugin_name].items():
+        for instance_name, instance_config in state.instance_configs[plugin_name].items():
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 plugin_logger.info("Checking secrets")
                 try:
@@ -215,7 +218,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
     uses_trash_metadata = False
     for plugin_name in run_plugins:
         manager = managers[plugin_name]
-        for instance_config in configs[plugin_name].values():
+        for instance_config in state.instance_configs[plugin_name].values():
             if manager.uses_trash_metadata(instance_config):
                 uses_trash_metadata = True
                 break
@@ -242,7 +245,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
         # Update all instances in the determined execution order.
         for plugin_name, instance_name in execution_order:
             manager = managers[plugin_name]
-            instance_config = configs[plugin_name][instance_name]
+            instance_config = state.instance_configs[plugin_name][instance_name]
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 # Get the instance's secrets object.
                 instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
@@ -297,9 +300,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
                 # )
 
 
-def _get_execution_order(
-    configs: Mapping[str, Mapping[str, ConfigPlugin]],
-) -> List[PluginInstanceRef]:
+def _get_execution_order() -> List[PluginInstanceRef]:
     """
     Return a list of plugin-instance references in the order which
     operations should be performed on them.
@@ -307,9 +308,6 @@ def _get_execution_order(
     This performs a depth-first search on the dependency tree structure
     stored in `state._instance_dependencies`, which is generated using
     instance name references defined within Buildarr instance configurations.
-
-    Args:
-        configs (Mapping[str, Mapping[str, ConfigPlugin]]): Plugin and instance configuration.
 
     Returns:
         Execution order of instances specified as a list of (plugin, instance) tuples
@@ -321,13 +319,12 @@ def _get_execution_order(
     logger.info("Resolving instance dependencies")
     logger.debug("Execution order:")
 
-    for plugin_name, instance_configs in configs.items():
+    for plugin_name, instance_configs in state.instance_configs.items():
         for instance_name in instance_configs.keys():
             instance = (plugin_name, instance_name)
             if instance in added_plugin_instances:
                 continue
             __get_execution_order(
-                configs=configs,
                 added_plugin_instances=added_plugin_instances,
                 execution_order=execution_order,
                 plugin_name=plugin_name,
@@ -340,7 +337,6 @@ def _get_execution_order(
 
 
 def __get_execution_order(
-    configs: Mapping[str, Mapping[str, ConfigPlugin]],
     added_plugin_instances: Set[PluginInstanceRef],
     execution_order: List[PluginInstanceRef],
     plugin_name: str,
@@ -351,7 +347,6 @@ def __get_execution_order(
     Recursive depth-first search function for `get_execution_order`.
 
     Args:
-        configs (Mapping[str, Mapping[str, ConfigPlugin]]): Plugin and instance configuration.
         added_plugin_instances (Set[PluginInstanceRef]): Structure to avoid re-evaluating branches.
         execution_order (List[PluginInstanceRef]): Final data structure, appended to in-place.
         plugin_name (str): Plugin the current instance being evaluated is under.
@@ -369,7 +364,7 @@ def __get_execution_order(
 
     plugin_instance: PluginInstanceRef = (plugin_name, instance_name)
 
-    if plugin_name not in configs:
+    if plugin_name not in state.instance_configs:
         error_message = 'Unable to resolve instance dependency "'
         try:
             previous_pi = dependency_tree[-1]
@@ -401,7 +396,6 @@ def __get_execution_order(
             if target_plugin_instance not in added_plugin_instances:
                 target_plugin, target_instance = target_plugin_instance
                 __get_execution_order(
-                    configs=configs,
                     added_plugin_instances=added_plugin_instances,
                     execution_order=execution_order,
                     plugin_name=target_plugin,
