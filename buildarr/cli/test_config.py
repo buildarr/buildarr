@@ -171,7 +171,8 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     # but otherwise, create a temporary directory, download the TRaSH-Guides metadata,
     # and render the metadata into the instance-specific configurations.
     if not uses_trash_metadata:
-        logger.info("Fetching and rendering TRaSH-Guides metadata: SKIPPED (not required)")
+        logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
+        logger.info("Rendering TRaSH-Guides metadata: SKIPPED (not required)")
     else:
         logger.debug("Creating TRaSH metadata directory")
         with create_temp_dir() as trash_metadata_dir:

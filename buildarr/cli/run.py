@@ -40,7 +40,7 @@ from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefine
 
 @cli.command(
     help=(
-        "Configure instances defined in the Buildarr config file, and exit.\n\n"
+        "Update configured instances, and exit.\n\n"
         "If CONFIG-PATH is not defined, use `buildarr.yml' from the current directory."
     ),
 )
