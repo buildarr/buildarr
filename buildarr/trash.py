@@ -21,12 +21,12 @@ from __future__ import annotations
 
 from pathlib import Path
 from shutil import move
-from tempfile import TemporaryDirectory
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 from .logging import logger
 from .state import state
+from .util import create_temp_dir
 
 
 def fetch(download_dir: Path) -> None:
@@ -38,11 +38,10 @@ def fetch(download_dir: Path) -> None:
         download_dir (Path): Local folder to download the file to
     """
 
-    logger.info("Fetching TRaSH metadata")
-
     logger.debug("Creating TRaSH metadata download temporary directory")
-    with TemporaryDirectory(prefix="buildarr.") as temp_dir_str:
-        temp_dir = Path(temp_dir_str)
+    with create_temp_dir() as temp_dir:
+        logger.debug("Finished creating TRaSH metadata download temporary directory")
+
         trash_metadata_filename = temp_dir / "trash-metadata.zip"
 
         logger.debug("Downloading TRaSH metadata")
@@ -62,5 +61,3 @@ def fetch(download_dir: Path) -> None:
         logger.debug("Finished moving TRaSH metadata files to download directory")
 
         # Temporary directory will be deleted when the with block is exited.
-
-    logger.info("Finished fetching TRaSH metadata")

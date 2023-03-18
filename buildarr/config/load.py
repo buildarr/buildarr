@@ -28,33 +28,28 @@ from pydantic import create_model
 
 from ..logging import logger
 from ..state import state
-from ..util import get_absolute_path, merge_dicts
+from ..util import merge_dicts
 from .base import ConfigBase
 from .buildarr import BuildarrConfig
 from .models import ConfigType
 
 if TYPE_CHECKING:
-    from os import PathLike
-    from typing import Any, Dict, List, Optional, Set, Tuple, Union
+    from typing import Any, Dict, List, Optional, Set, Tuple
 
-    from .models import ConfigPlugin
+    from .models import ConfigPlugin, ConfigPluginType
 
 
-def load(path: Union[str, PathLike], use_plugins: Optional[Set[str]] = None) -> None:
+def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     """
     Load a configuration file using the given plugins.
 
     Args:
-        use_plugins (Set[str]): Plugins to use. Default is to use all plugins.
+        use_plugins (Optional[Set[str]]): Plugins to use. Default is to use all plugins.
         path (Union[str, PathLike]): Buildarr configuration file.
 
     Returns:
         2-tuple of the list of files loaded and the global configuration object
     """
-
-    path = get_absolute_path(path)
-
-    logger.info("Loading configuration file '%s'", path)
 
     logger.debug("Building configuration model")
     Config = cast(
@@ -82,9 +77,11 @@ def load(path: Union[str, PathLike], use_plugins: Optional[Set[str]] = None) -> 
     config = merge_dicts(*configs)
     logger.debug("Finished merging configuration objects")
 
-    logger.info("Finished loading configuration file")
-    state.config_files = files
+    logger.debug("Parsing and validating configuration")
     state.config = Config(**config)
+    logger.debug("Finished parsing and validating configuration")
+
+    state.config_files = files
 
 
 def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, ConfigPlugin]]]:
@@ -132,3 +129,46 @@ def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, Confi
             configs.extend(_configs)
 
     return (files, configs)
+
+
+def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
+    """
+    Parse fully-qualified configuration for each instance under each selected plugin.
+
+    This will also cause the `state._instance_dependencies` dependency tree structure
+    to be populated through validation of any `InstanceName` attributes present
+    in each instance-specific configuration.
+
+    Args:
+        use_plugins (Optional[Set[str]]): Plugins to use. Default is to use all plugins.
+    """
+
+    configs: Dict[str, Dict[str, ConfigPlugin]] = {}
+    active_plugins: Set[str] = set()
+
+    for plugin_name in state.plugins.keys():
+        if use_plugins and plugin_name not in use_plugins:
+            continue
+        if plugin_name not in state.config.__fields_set__:
+            continue
+        plugin_manager = state.managers[plugin_name]
+        plugin_config: ConfigPluginType = getattr(state.config, plugin_name)
+        active_plugins.add(plugin_name)
+        configs[plugin_name] = {}
+        for instance_name in (
+            plugin_config.instances.keys() if plugin_config.instances else ["default"]
+        ):
+            # Load the instance-specific configuration under aninstance-specific context,
+            # so that when the configuration gets evaluated by the parser,
+            # `InstanceName` references are properly validated and dependencies get added
+            # to `state._instance_dependencies`.
+            with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+                instance_config = plugin_manager.get_instance_config(
+                    plugin_config,
+                    instance_name,
+                )
+                configs[plugin_name][instance_name] = instance_config
+
+    # Update global application state with the fully qualified instance configurations.
+    state.instance_configs = configs
+    state.active_plugins = frozenset(active_plugins)

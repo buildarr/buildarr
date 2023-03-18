@@ -24,8 +24,9 @@ from __future__ import annotations
 from ..plugins import load as load_plugins
 from ..state import state
 from . import cli as main
-from .daemon import daemon  # noqa: F401
-from .run import run  # noqa: F401
+from .daemon import daemon
+from .run import run
+from .test_config import test_config
 
 __all__ = ["main"]
 

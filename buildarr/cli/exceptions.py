@@ -32,7 +32,10 @@ class CLIError(BuildarrError):
 
 class DaemonError(CLIError):
     """
-    Exception raised in the 'buildarr daemon' command.
+    Exception raised in the `buildarr daemon` command.
+
+    This also includes exceptions raised in the `buildarr run` command,
+    since it is a subset of this command.
     """
 
     pass
@@ -40,7 +43,15 @@ class DaemonError(CLIError):
 
 class RunError(DaemonError):
     """
-    Exception raised in the 'buildarr run' command.
+    Exception raised in the `buildarr run` command.
+    """
+
+    pass
+
+
+class TestConfigError(CLIError):
+    """
+    Exception raised in the `buildarr test-config` command.
     """
 
     pass
@@ -58,6 +69,15 @@ class RunInstanceConnectionTestFailedError(RunError):
     """
     Exception raised when a connection test to an instance
     using Buildarr-fetched secrets failed.
+    """
+
+    pass
+
+
+class TestConfigNoPluginsDefinedError(TestConfigError):
+    """
+    Configuration test error for when there is no configuration defined
+    for the loaded plugins.
     """
 
     pass

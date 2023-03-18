@@ -28,11 +28,12 @@ from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import DefaultDict, Generator, Mapping, Optional, Sequence, Set
+    from typing import DefaultDict, FrozenSet, Generator, Mapping, Optional, Sequence, Set
 
     from .config import ConfigPlugin, ConfigType
+    from .manager import ManagerPlugin
     from .plugins import Plugin
-    from .secrets import SecretsType
+    from .secrets import SecretsPlugin, SecretsType
 
 
 __all__ = ["state"]
@@ -73,11 +74,6 @@ class State:
     The loaded Buildarr plugins, mapped to the plugin's unique name.
     """
 
-    config_files: Sequence[Path] = []
-    """
-    Currently loaded configuration files, in the order they were loaded.
-    """
-
     config: ConfigType = None  # type: ignore[assignment]
     """
     Currently loaded global configuration.
@@ -85,9 +81,24 @@ class State:
     This includes Buildarr configuration and configuration for enabled plugins.
     """
 
+    config_files: Sequence[Path] = []
+    """
+    Currently loaded configuration files, in the order they were loaded.
+    """
+
+    managers: Mapping[str, ManagerPlugin[ConfigPlugin, SecretsPlugin]]
+    """
+    Manager objects for each currently loaded plugin.
+    """
+
     instance_configs: Mapping[str, Mapping[str, ConfigPlugin]]
     """
     Fully qualified configuration objects for each instance, under each plugin.
+    """
+
+    active_plugins: FrozenSet[str]
+    """
+    A data structure containing the names of all the currently active plugins.
     """
 
     secrets: SecretsType
@@ -122,6 +133,17 @@ class State:
     This state attribute is internal, and shouldn't be accessed by plugins.
     """
 
+    _execution_order: Sequence[PluginInstanceRef]
+    """
+    A list of plugin-instance references in the order which operations
+    should be performed on them.
+
+    This attribute is generated based on the dependency tree for linked instances,
+    after `state._instance_dependencies` has finished being populated.
+
+    This state attribute is internal, and shouldn't be accessed by plugins.
+    """
+
     def __init__(self) -> None:
         self._reset()
 
@@ -133,11 +155,14 @@ class State:
 
         This state function is internal, and shouldn't be used by plugins.
         """
+        self.managers = None  # type: ignore[assignment]
         self.instance_configs = None  # type: ignore[assignment]
+        self.active_plugins = None  # type: ignore[assignment]
         self.secrets = None  # type: ignore[assignment]
         self._current_plugin = None  # type: ignore[assignment]
         self._current_instance = None  # type: ignore[assignment]
         self._instance_dependencies = defaultdict(set)  # type: ignore[assignment]
+        self._execution_order = None  # type: ignore[assignment]
 
     @contextmanager
     def _with_context(
