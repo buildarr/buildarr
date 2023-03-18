@@ -51,8 +51,8 @@ def get_absolute_path(path: Union[str, os.PathLike]) -> Path:
         Absolute path
     """
 
-    # Path.absolute() does not expand `.` and `..`.
-    # Path.resolve() resolves symbolic links, and has no way to disable it.
+    # `Path.absolute` does not expand `.` and `..`.
+    # `Path.resolve` resolves symbolic links, and has no way to disable it.
     # Using the old `os.path` functions does what we want, so use them.
 
     return Path(os.path.abspath(os.path.expanduser(path)))  # noqa: PTH100 PTH111

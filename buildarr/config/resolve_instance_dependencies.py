@@ -37,7 +37,7 @@ def resolve_instance_dependencies() -> None:
     This function requires `config.load_instance_configs` to be run first,
     as that function populates `state._instance_dependencies`, which this function uses.
 
-    A depth-first search on the `state._instance_dependencies` dependency tree structure,
+    A depth-first search on the `state._instance_dependencies` dependency tree structure
     is performed, which is generated using instance name references defined within
     Buildarr instance configurations.
     """
