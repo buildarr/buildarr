@@ -116,6 +116,25 @@ def get_initialize_js() -> Tuple[str, int]:
     return (res, 200)
 
 
+@app.get(f"{app.config['API_ROOT']}/status")
+def get_status() -> Tuple[Response, int]:
+    """
+    Return the Dummy server current status.
+
+     ```bash
+    $ curl -H "X-Api-Key: 1a2b3c4d5e" http://localhost:5000/api/v1/status
+    {"version":"0.4.0"}
+    ```
+
+    Returns:
+        Dummy server status
+    """
+
+    check_api_key()
+
+    return (jsonify({"version": package_version("buildarr")}), 200)
+
+
 @app.get(f"{app.config['API_ROOT']}/settings")
 def get_settings() -> Tuple[Response, int]:
     """
