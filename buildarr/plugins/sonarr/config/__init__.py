@@ -27,7 +27,7 @@ from typing_extensions import Self
 from buildarr.config import ConfigPlugin
 from buildarr.types import NonEmptyStr, Port
 
-from ..api import get_initialize_js
+from ..api import api_get
 from ..types import SonarrApiKey, SonarrProtocol
 from .connect import SonarrConnectSettingsConfig
 from .download_clients import SonarrDownloadClientsSettingsConfig
@@ -327,10 +327,7 @@ class SonarrInstanceConfig(_SonarrInstanceConfig):
             port=secrets.port,
             protocol=secrets.protocol,
             api_key=secrets.api_key,
-            version=get_initialize_js(
-                host_url=secrets.host_url,
-                api_key=secrets.api_key.get_secret_value(),
-            )["version"],
+            version=api_get(secrets, "/api/v3/system/status")["version"],
             settings=SonarrSettingsConfig.from_remote(secrets),
         )
 
