@@ -72,7 +72,7 @@ def get_resolved_path(path: Union[str, os.PathLike]) -> Path:
     Notes:
 
     * `Path.resolve(strict=True)` raises an error when the path doesn't exist.
-    * `Path.resolve(struct=False)` does not (or does not completely) resolve the path
+    * `Path.resolve(strict=False)` does not (or does not completely) resolve the path
       if it doesn't exist.
     * Using the old `os.path` functions does what we want, so use them.
 
