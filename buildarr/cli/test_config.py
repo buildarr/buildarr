@@ -32,7 +32,7 @@ from ..logging import logger, plugin_logger
 from ..manager import load_managers
 from ..state import state
 from ..trash import fetch_trash_metadata, render_trash_metadata
-from ..util import create_temp_dir, get_absolute_path
+from ..util import create_temp_dir, get_resolved_path
 from . import cli
 from .exceptions import TestConfigNoPluginsDefinedError
 
@@ -59,11 +59,11 @@ if TYPE_CHECKING:
         file_okay=True,
         dir_okay=False,
         readable=True,
-        resolve_path=True,
         path_type=Path,
     ),
     default=Path.cwd() / "buildarr.yml",
-    callback=lambda ctx, params, path: get_absolute_path(path),
+    # Get absolute path and resolve symlinks in ad-hoc runs.
+    callback=lambda ctx, params, path: get_resolved_path(path),
 )
 @click.option(
     "-p",

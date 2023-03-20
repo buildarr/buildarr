@@ -33,7 +33,7 @@ from ..manager import load_managers
 from ..secrets import SecretsPlugin, load_secrets
 from ..state import state
 from ..trash import fetch_trash_metadata, render_trash_metadata, trash_metadata_used
-from ..util import create_temp_dir, get_absolute_path
+from ..util import create_temp_dir, get_resolved_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
 
@@ -52,11 +52,32 @@ from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefine
         file_okay=True,
         dir_okay=False,
         readable=True,
-        resolve_path=True,
         path_type=Path,
     ),
     default=Path.cwd() / "buildarr.yml",
-    callback=lambda ctx, params, path: get_absolute_path(path),
+    # Get absolute path and resolve symlinks in ad-hoc runs.
+    callback=lambda ctx, params, path: get_resolved_path(path),
+)
+@click.option(
+    "-s",
+    "--secrets-file",
+    "secrets_file_path",
+    metavar="SECRETS-JSON",
+    type=click.Path(
+        # The secrets file does not need to exist (it will be created in that case).
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        path_type=Path,
+    ),
+    default=None,
+    # Get absolute path and resolve symlinks in ad-hoc runs.
+    callback=lambda ctx, params, path: get_resolved_path(path) if path else None,
+    help=(
+        "Read secrets metadata from (and write back to) the specified JSON file. "
+        "If unspecified, use the value from the configuration file, "
+        "and if undefined there, default to `secrets.json'."
+    ),
 )
 @click.option(
     "-D",
@@ -79,7 +100,12 @@ from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefine
         "(can be defined multiple times)"
     ),
 )
-def run(config_path: Path, dry_run: bool, use_plugins: Set[str]) -> None:
+def run(
+    config_path: Path,
+    secrets_file_path: Optional[Path],
+    dry_run: bool,
+    use_plugins: Set[str],
+) -> None:
     """
     `buildarr run` main routine.
 
@@ -105,11 +131,14 @@ def run(config_path: Path, dry_run: bool, use_plugins: Set[str]) -> None:
     load_config(path=config_path, use_plugins=use_plugins)
     logger.info("Finished loading configuration file")
 
+    if not secrets_file_path:
+        secrets_file_path = state.config.buildarr.secrets_file_path
+
     # Run the instance update main function.
-    _run(use_plugins)
+    _run(secrets_file_path, use_plugins)
 
 
-def _run(use_plugins: Optional[Set[str]] = None) -> None:
+def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     """
     Buildarr instance update routine.
 
@@ -165,7 +194,6 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
     # Load the secrets file if it exists, and initialise the secrets metadata.
     # If `use_plugins` is undefined, load using all plugins available
     # to preserve cached secrets metadata that isn't used.
-    secrets_file_path = state.config.buildarr.secrets_file_path
     logger.info("Loading secrets file from '%s'", secrets_file_path)
     if load_secrets(path=secrets_file_path, use_plugins=use_plugins):
         logger.info("Finished loading secrets file")

@@ -60,6 +60,7 @@ class Daemon:
     def __init__(
         self,
         config_path: Path,
+        secrets_file_path: Optional[Path],
         watch_config: Optional[bool],
         update_days: Iterable[DayOfWeek],
         update_times: Iterable[time],
@@ -78,6 +79,7 @@ class Daemon:
         """
         # Set static configuration and override field values.
         self.config_path = config_path
+        self._default_secrets_file_path = secrets_file_path
         self._default_watch_config = watch_config
         self._default_update_days = set(update_days)
         self._default_update_times = set(update_times)
@@ -101,6 +103,11 @@ class Daemon:
         # Set watch_config, update_days and update_times from either the
         # command line-provided override value or the value from the configuration.
         buildarr_config = state.config.buildarr
+        self.secrets_file_path = (
+            self._default_secrets_file_path
+            if self._default_secrets_file_path
+            else buildarr_config.secrets_file_path
+        )
         self.watch_config = (
             self._default_watch_config
             if self._default_watch_config is not None
@@ -174,7 +181,7 @@ class Daemon:
             logger.info("   - %s %s", update_day.name.capitalize(), update_time.strftime("%H:%M"))
         # Apply initial configuration to all defined remote instances.
         logger.info("Applying initial configuration")
-        run_apply()
+        run_apply(secrets_file_path=self.secrets_file_path)
         logger.info("Finished applying initial configuration")
         # Schedule configuration update jobs according to the configuration,
         # so that remote instances are automatically updated periodically.
@@ -227,7 +234,7 @@ class Daemon:
         This method is called by the scheduled automatic update jobs.
         """
         logger.info("Running scheduled update of remote instances")
-        run_apply()
+        run_apply(secrets_file_path=self.secrets_file_path)
         state._reset()
         logger.info("Finished running scheduled update of remote instances")
         logger.info(
@@ -363,11 +370,32 @@ def parse_time(
         file_okay=True,
         dir_okay=False,
         readable=True,
-        resolve_path=True,
         path_type=Path,
     ),
     default=Path.cwd() / "buildarr.yml",
+    # Get absolute path, but do NOT resolve symlinks in daemon mode.
     callback=lambda ctx, params, path: get_absolute_path(path),
+)
+@click.option(
+    "-s",
+    "--secrets-file",
+    "secrets_file_path",
+    metavar="SECRETS-JSON",
+    type=click.Path(
+        # The secrets file does not need to exist (it will be created in that case).
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        path_type=Path,
+    ),
+    default=None,
+    # Get absolute path, but do NOT resolve symlinks in daemon mode.
+    callback=lambda ctx, params, path: get_absolute_path(path) if path else None,
+    help=(
+        "Read secrets metadata from (and write back to) the specified JSON file. "
+        "If unspecified, use the value from the configuration file, "
+        "and if undefined there, default to `secrets.json'."
+    ),
 )
 @click.option(
     "-w/-W",
@@ -409,6 +437,7 @@ def parse_time(
 )
 def daemon(
     config_path: Path,
+    secrets_file_path: Optional[Path],
     watch_config: Optional[bool],
     update_days: Tuple[DayOfWeek, ...],
     update_times: Tuple[time, ...],
@@ -431,6 +460,7 @@ def daemon(
 
     Daemon(
         config_path=config_path,
+        secrets_file_path=secrets_file_path,
         watch_config=watch_config,
         update_days=update_days,
         update_times=update_times,

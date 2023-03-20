@@ -37,12 +37,18 @@ def get_absolute_path(path: Union[str, os.PathLike]) -> Path:
     """
     Return the absolute version of the given path, *without* resolving symbolic links.
 
-    The reason why we don't want to resolve symbolic links is because in long lived
-    applications such as daemons, the link target could have changed while the
+    The reason why, in some cases, we don't want to resolve symbolic links is because
+    in long lived applications such as daemons, the link target could have changed while the
     file was not being accessed, therefore making our stored reference to the file invalid.
 
     Symbolic links should only be resolved when actually accessing the file,
     without caching the result.
+
+    Notes:
+
+    * `Path.absolute` does not expand `.` and `..`.
+    * `Path.resolve` resolves symbolic links, and has no way to disable it.
+    * Using the old `os.path` functions does what we want, so use them.
 
     Args:
         path (Union[str, os.PathLike]): Path to make absolute.
@@ -51,11 +57,33 @@ def get_absolute_path(path: Union[str, os.PathLike]) -> Path:
         Absolute path
     """
 
-    # `Path.absolute` does not expand `.` and `..`.
-    # `Path.resolve` resolves symbolic links, and has no way to disable it.
-    # Using the old `os.path` functions does what we want, so use them.
-
     return Path(os.path.abspath(os.path.expanduser(path)))  # noqa: PTH100 PTH111
+
+
+def get_resolved_path(path: Union[str, os.PathLike]) -> Path:
+    """
+    Return the absolute version of the given path, resolving symbolic links.
+
+    This is more useful in ad-hoc runs, where the file will need to be resolved regardless.
+    Do it once so we know exactly what hard file we're operating on.
+
+    Unlike `Path.resolve`, this returns an absolute path even if the actual path doesn't exist.
+
+    Notes:
+
+    * `Path.resolve(strict=True)` raises an error when the path doesn't exist.
+    * `Path.resolve(strict=False)` does not (or does not completely) resolve the path
+      if it doesn't exist.
+    * Using the old `os.path` functions does what we want, so use them.
+
+    Args:
+        path (Union[str, os.PathLike]): Path to resolve.
+
+    Returns:
+        Absolute resolved path
+    """
+
+    return Path(os.path.realpath(os.path.expanduser(path)))  # noqa: PTH111
 
 
 def merge_dicts(*dicts: Mapping[Any, Any]) -> Dict[Any, Any]:
