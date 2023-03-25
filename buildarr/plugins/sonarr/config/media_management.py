@@ -451,7 +451,7 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
     as Sonarr might remove imported media from its database
     when root folder definitions are deleted.
 
-    *Added in version 0.1.2.*
+    *New in version 0.1.2.*
     """
 
     _naming_remote_map: List[RemoteMapEntry] = [

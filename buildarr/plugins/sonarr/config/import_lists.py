@@ -660,7 +660,7 @@ class SonarrImportList(ProgramImportList):
     The name of the Sonarr instance within Buildarr, if linking this Sonarr instance
     with another Buildarr-defined Sonarr instance.
 
-    *Added in version 0.3.0.*
+    *New in version 0.3.0.*
     """
 
     full_url: AnyHttpUrl
@@ -687,8 +687,8 @@ class SonarrImportList(ProgramImportList):
     link to a Buildarr-defined Sonarr instance.
     If linking to a Sonarr instance outside Buildarr, IDs must be used.
 
-    *Changed in version 0.3.0: Renamed from `source_quality_profile_ids`
-    (which is still valid as an alias), and add support for quality profile names.*
+    *Changed in version 0.3.0*: Renamed from `source_quality_profile_ids`
+    (which is still valid as an alias), and added support for quality profile names.
     """
 
     source_language_profiles: Set[Union[PositiveInt, NonEmptyStr]] = Field(
@@ -702,8 +702,8 @@ class SonarrImportList(ProgramImportList):
     link to a Buildarr-defined Sonarr instance.
     If linking to a Sonarr instance outside Buildarr, IDs must be used.
 
-    *Changed in version 0.3.0: Renamed from `source_language_profile_ids`
-    (which is still valid as an alias), and add support for language profile names.*
+    *Changed in version 0.3.0*: Renamed from `source_language_profile_ids`
+    (which is still valid as an alias), and added support for language profile names.
     """
 
     source_tags: Set[Union[PositiveInt, NonEmptyStr]] = Field(set(), alias="source_tag_ids")
@@ -714,8 +714,8 @@ class SonarrImportList(ProgramImportList):
     link to a Buildarr-defined Sonarr instance.
     If linking to a Sonarr instance outside Buildarr, IDs must be used.
 
-    *Changed in version 0.3.0: Renamed from `source_tag_ids`
-    (which is still valid as an alias), and add support for tag names.*
+    *Changed in version 0.3.0*: Renamed from `source_tag_ids`
+    (which is still valid as an alias), and added support for tag names.
     """
 
     _implementation_name: str = "Sonarr"
