@@ -19,10 +19,11 @@
 
 from __future__ import annotations
 
+from ipaddress import ip_address
 from logging import getLogger
 from pathlib import Path
 from textwrap import indent
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import click
 import yaml
@@ -35,7 +36,11 @@ from ..manager import load_managers
 from ..state import state
 from ..util import get_resolved_path
 from . import cli
-from .exceptions import ComposeNoPluginsDefinedError, ComposeNotSupportedError
+from .exceptions import (
+    ComposeInvalidHostnameError,
+    ComposeNoPluginsDefinedError,
+    ComposeNotSupportedError,
+)
 
 if TYPE_CHECKING:
     from typing import Any, Dict, Set
@@ -99,11 +104,20 @@ logger = getLogger(__name__)
     default="always",
     help="Restart policy for services. Default is `always'.",
 )
+@click.option(
+    "-H",
+    "--ignore-hostname",
+    "ignore_hostname",
+    is_flag=True,
+    default=False,
+    help="Ignore defined hostnames on instances when creating the compose file.",
+)
 def compose(
     config_path: Path,
     use_plugins: Set[str],
     compose_version: str,
     compose_restart: str,
+    ignore_hostname: bool,
 ) -> None:
     """
     `buildarr compose` main routine.
@@ -161,7 +175,8 @@ def compose(
     for i, (plugin_name, instance_name) in enumerate(state._execution_order, 1):
         logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
 
-    compose_obj: Dict[str, Any] = {"version": compose_version}
+    compose_obj: Dict[str, Any] = {"version": compose_version, "services": {}}
+    hostnames: Dict[str, str] = {}
     volumes: Set[str] = set()
 
     for plugin_name, instance_name in state._execution_order:
@@ -170,14 +185,37 @@ def compose(
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
             service_name = f"{plugin_name}_{instance_name}"
             logger.debug("Generating Docker Compose configuration for service '%s'", service_name)
+            hostname = cast(str, service_name if ignore_hostname else instance_config.hostname)
+            logger.debug("Validating service hostname '%s'", hostname)
+            try:
+                ip_address(hostname)  # type: ignore[arg-type]
+                raise ComposeInvalidHostnameError(
+                    f"Invalid hostname '{hostname}' for {plugin_name} instance '{instance_name}': "
+                    "Expected hostname, got IP address",
+                )
+            except ValueError:
+                pass
+            if hostname == "localhost":
+                raise ComposeInvalidHostnameError(
+                    f"Invalid hostname '{hostname}' for {plugin_name} instance '{instance_name}': "
+                    "Hostname must not be localhost for Docker Compose servies",
+                )
+            if hostname in hostnames:
+                raise ComposeInvalidHostnameError(
+                    f"Invalid hostname '{hostname}' for {plugin_name} instance '{instance_name}': "
+                    f"Hostname already used by service '{hostnames[hostname]}'",
+                )
+            hostnames[hostname] = service_name
+            logger.debug("Finished validating service hostname")
             try:
                 logger.debug("Generating service-specific configuration")
-                compose_obj[service_name] = {
+                service: Dict[str, Any] = {
                     **manager.to_compose_service(
                         instance_config=instance_config,
                         compose_version=compose_version,
                         service_name=service_name,
                     ),
+                    "hostname": hostname,
                     "restart": compose_restart,
                 }
                 logger.debug("Finished generating service-specific configuration")
@@ -189,15 +227,17 @@ def compose(
             if (plugin_name, instance_name) in state._instance_dependencies:
                 depends_on: Set[str] = set()
                 logger.debug("Generating service dependencies")
-                for (target_plugin, target_instance) in state._instance_dependencies[
+                for target_plugin, target_instance in state._instance_dependencies[
                     (plugin_name, instance_name)
                 ]:
                     target_service = f"{target_plugin}_{target_instance}"
                     logger.debug("Adding dependency to service '%s'", target_service)
                     depends_on.add(target_service)
-                compose_obj[service_name]["depends_on"] = list(depends_on)
+                service["depends_on"] = list(depends_on)
                 logger.debug("Finished generating service dependencies")
-            for volume_name in compose_obj[service_name].get("volumes", {}).keys():
+            # TODO: Handle more types of volume definitions
+            # (e.g. volume lists, modern-style mount definitions).
+            for volume_name in service.get("volumes", {}).keys():
                 if "/" not in volume_name and "\\" not in volume_name:
                     logger.debug(
                         "Adding named volume '%s' to the list of internal volumes",
@@ -212,7 +252,23 @@ def compose(
                         ),
                         volume_name,
                     )
+            compose_obj["services"][service_name] = service
             logger.debug("Finished generating Docker Compose service configuration")
+
+    logger.debug("Generating Docker Compose configuration for service 'buildarr'")
+    compose_obj["services"]["buildarr"] = {
+        "image": f"{state.config.buildarr.docker_image_uri}:{package_version('buildarr')}",
+        "command": ["daemon", f"/config/{state.config_files[0].name}"],
+        "volumes": [
+            {"type": "bind", "source": str(state.config_files[0].parent), "target": "/config"},
+        ],
+        "restart": compose_restart,
+        "depends_on": [
+            f"{plugin_name}_{instance_name}"
+            for plugin_name, instance_name in state._execution_order
+        ],
+    }
+    logger.debug("Finished generating Docker Compose configuration for service 'buildarr'")
 
     if volumes:
         compose_obj["volumes"] = list(volumes)

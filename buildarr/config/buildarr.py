@@ -19,13 +19,15 @@ Buildarr settings configuration.
 
 from __future__ import annotations
 
+import os
+
 from datetime import time
 from pathlib import Path
 from typing import Set
 
 from pydantic import AnyHttpUrl, PositiveFloat
 
-from ..types import DayOfWeek, LocalPath
+from ..types import DayOfWeek, LocalPath, NonEmptyStr
 from .base import ConfigBase
 
 
@@ -150,4 +152,20 @@ class BuildarrConfig(ConfigBase):
     trash_metadata_dir_prefix: Path = Path("Guides-master")
     """
     Metadata directory name within the downloaded ZIP file.
+    """
+
+    docker_image_uri: NonEmptyStr = os.environ.get(  # type: ignore[assignment]
+        "BUILDARR_DOCKER_IMAGE_URI",
+        "callum027/buildarr",
+    )
+    """
+    Default image URI to use for the Buildarr service when generating Docker Compose files.
+
+    If undefined in the configuration file, use the value defined in the
+    `$BUILDARR_DOCKER_IMAGE_URI` environment variable. This allows third-party
+    Docker images to customise the version of Buildarr used in the command.
+
+    If no environment variable is found, use `callum027/buildarr` (the official Docker image).
+
+    *New in version 0.4.0.*
     """

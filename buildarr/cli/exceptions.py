@@ -65,6 +65,14 @@ class TestConfigError(CLIError):
     pass
 
 
+class ComposeInvalidHostnameError(ComposeError):
+    """
+    Exception raised when the hostname configuration for Docker Compose services is invalid.
+    """
+
+    pass
+
+
 class ComposeNoPluginsDefinedError(ComposeError):
     """
     Exception raised when no plugin is configured or loaded when
