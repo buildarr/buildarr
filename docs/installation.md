@@ -90,7 +90,9 @@ services:
     container_name: buildarr
     restart: always
     volumes:
-      - ./buildarr:/config
+      - type: bind
+        source: ./buildarr
+        target: /config
     environment:
       TZ: Pacific/Auckland
       PUID: "1000"
@@ -132,6 +134,8 @@ sonarr:
       settings:
         ...
 ```
+
+*New in version 0.4.0*: Buildarr now supports [generating a Docker Compose file](usage.md#generating-a-docker-compose-file) from a Buildarr configuration file, using the `buildarr compose` command.
 
 ## Automatic deployment using Ansible
 

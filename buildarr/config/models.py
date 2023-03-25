@@ -198,6 +198,22 @@ class ConfigPlugin(ConfigBase[Secrets]):
         """
         return self
 
+    def to_compose_service(self, compose_version: str, service_name: str) -> Dict[str, Any]:
+        """
+        Generate a Docker Compose service definition corresponding to this instance configuration.
+
+        Plugins should implement this function to allow Docker Compose files to be generated from
+        Buildarr configuration using the `buildarr compose` command.
+
+        Args:
+            compose_version (str): Version of the Docker Compose file.
+            service_name (str): The unique name for the generated Docker Compose service.
+
+        Returns:
+            Docker Compose service definition dictionary
+        """
+        raise NotImplementedError()
+
     @root_validator
     def _set_default_hostname(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -30,6 +30,14 @@ class CLIError(BuildarrError):
     pass
 
 
+class ComposeError(CLIError):
+    """
+    Exception raised in the `buildarr compose` command.
+    """
+
+    pass
+
+
 class DaemonError(CLIError):
     """
     Exception raised in the `buildarr daemon` command.
@@ -52,6 +60,32 @@ class RunError(DaemonError):
 class TestConfigError(CLIError):
     """
     Exception raised in the `buildarr test-config` command.
+    """
+
+    pass
+
+
+class ComposeInvalidHostnameError(ComposeError):
+    """
+    Exception raised when the hostname configuration for Docker Compose services is invalid.
+    """
+
+    pass
+
+
+class ComposeNoPluginsDefinedError(ComposeError):
+    """
+    Exception raised when no plugin is configured or loaded when
+    generating a Docker Compose environment.
+    """
+
+    pass
+
+
+class ComposeNotSupportedError(ComposeError):
+    """
+    Exception raised when an unsupported plugin is used when trying to
+    generate a Docker Compose file.
     """
 
     pass
