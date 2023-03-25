@@ -211,7 +211,9 @@ class Daemon:
         # and another initial run is performed.
         if self.watch_config:
             logger.info("Setting up config file monitoring")
-            self.observer = Observer()
+            # TODO: Remove ignore when the following issue is fixed.
+            # https://github.com/gorakhargosh/watchdog/issues/982
+            self.observer = Observer()  # type: ignore[assignment]
             config_dirs: Dict[Path, Set[str]] = {}
             for config_file in state.config_files:
                 if config_file.parent not in config_dirs:
