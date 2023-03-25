@@ -26,8 +26,7 @@ from typing import Dict, Optional, Set
 
 import click
 
-from importlib_metadata import version as package_version
-
+from .. import __version__
 from ..config import load_config, load_instance_configs, resolve_instance_dependencies
 from ..logging import get_log_level
 from ..manager import load_managers
@@ -118,11 +117,7 @@ def run(
         plugins (Set[str]): Plugins to load. If empty, use all plugins.
     """
 
-    logger.info(
-        "Buildarr version %s (log level: %s)",
-        package_version("buildarr"),
-        get_log_level(),
-    )
+    logger.info("Buildarr version %s (log level: %s)", __version__, get_log_level())
 
     if dry_run:
         logger.info(
