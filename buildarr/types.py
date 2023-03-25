@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 
 from enum import Enum, IntEnum
+from pathlib import Path
 from typing import Any, Callable, Generator
 
 from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, Field, SecretStr
@@ -29,6 +30,7 @@ from pydantic.fields import ModelField
 from typing_extensions import Annotated, Self
 
 from .state import state
+from .util import get_absolute_path
 
 Password = Annotated[SecretStr, Field(min_length=1)]
 """
@@ -403,3 +405,52 @@ class InstanceName(str):
             else:
                 raise
         return cls(value)
+
+
+class LocalPath(type(Path()), Path):  # type: ignore[misc]
+    """
+    Model type for a local path.
+
+    If the supplied path is relative, it is parsed as an absolute path
+    relative to the configuration file it was defined in.
+
+    For example, suppose a configuration file located at `/path/to/buildarr.yml`
+    was created with the following attributes:
+
+    ```yaml
+    ---
+
+    buildarr:
+      secrets_file_path: "../secrets/buildarr.json"
+    ```
+
+    Even when executing Buildarr from a different folder e.g. `/opt/buildarr`,
+    the `buildarr.secrets_file_path` attribute would be evaluated as
+    `/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
+    """
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
+        """
+        Pass class validation functions to Pydantic.
+
+        Yields:
+            Validation class functions
+        """
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: Any) -> Self:
+        """
+        Validate the local path value, and return an absolute path.
+
+        Args:
+            value (Any): Object to validate and coerce
+
+        Returns:
+            Absolute local path
+        """
+        path = cls(value)
+        if not path.is_absolute():
+            return cls(get_absolute_path(state._current_dir / path))
+        return path

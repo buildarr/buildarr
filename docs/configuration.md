@@ -38,7 +38,17 @@ Nested inclusion is allowed (included files can include other files). All the lo
 
 If any configuration attributes in files overlap, the last-read value will take precedence. Note that any overlapping attributes that are lists will be overwritten, rather than combined.
 
-Overly complicated include structures should be avoided, to ensure legibility of the configuration.
+!!! note
+
+    In order to evaluate per-file relative paths, configuration files will be parsed and validated individually first, and then validated again as a combined configuration structure.
+
+    Take care to ensure that the individual configuration files do not depend on each other being combined to become valid.
+
+    Instances that depend on other instances via e.g. `instance_name` are not subject to this limitation, and can freely be defined in separate files.
+
+    To make troubleshooting easier and to ensure readability, overly complicated include structures in configuration files should be avoided.
+
+Here is an example of a global `buildarr.yml` configuration file including two Sonarr instance configuration from separate files in the same directory as `buildarr.yml`:
 
 `buildarr.yml`:
 ```yaml
