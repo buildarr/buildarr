@@ -28,7 +28,7 @@ import yaml
 from pydantic import create_model
 
 from ..state import state
-from ..util import merge_dicts
+from ..util import get_absolute_path, merge_dicts
 from .base import ConfigBase
 from .buildarr import BuildarrConfig
 from .models import ConfigType
@@ -55,7 +55,7 @@ def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     """
 
     logger.debug("Building configuration model")
-    Config = cast(
+    model = cast(
         Type[ConfigType],
         create_model(  # type: ignore[call-overload]
             "Config",
@@ -71,7 +71,7 @@ def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     logger.debug("Finished building configuration model")
 
     logger.debug("Loading configuration file tree")
-    files, configs = _get_files_and_configs(path)
+    files, configs = _get_files_and_configs(model, path)
     logger.debug("Finished loading configuration file tree")
 
     logger.debug("Merging configuration objects in order of file predecence:")
@@ -81,13 +81,17 @@ def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     logger.debug("Finished merging configuration objects")
 
     logger.debug("Parsing and validating configuration")
-    state.config = Config(**config)
+    with state._with_current_dir(path.parent):
+        state.config = model(**config)
     logger.debug("Finished parsing and validating configuration")
 
     state.config_files = files
 
 
-def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, ConfigPlugin]]]:
+def _get_files_and_configs(
+    model: Type[ConfigType],
+    path: Path,
+) -> Tuple[List[Path], List[Dict[str, ConfigPlugin]]]:
     # Load a configuration file.
     # If other files are included using the `includes` list structure,
     # load them as well, and return a 2-tuple of
@@ -97,14 +101,24 @@ def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, Confi
     files = [path]
     configs: List[Dict[str, Any]] = []
 
-    # First, parse the original configuration file.
-    # If None is returned by the YAML parser, it means the file is empty,
-    # so treat it as an empty configuration.
+    # First, parse and validate the current configuration file.
+    #
+    # An initial validation pass is done before any merging is done,
+    # so any relative `LocalPath` type attributes are evaluated into
+    # absolute paths relative to the actual folder the configuration file is in.
+    #
+    # After creating the configuration object, turn it back into a dictionary
+    # so it can be merged with other loaded configuration files.
+    #
+    # If None is returned by the YAML parser when parsing the file,
+    # it means the file is empty, so treat it as an empty configuration.
     with path.open(mode="r") as f:
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
             config = {}
-        configs.append(config)
+        with state._with_current_dir(path.parent):
+            config_obj = model(**{k: v for k, v in config.items() if k != "includes"})
+        configs.append(config_obj.dict(exclude_unset=True))
 
     # Check if the YAML object loaded is the correct type.
     if not isinstance(config, dict):
@@ -118,7 +132,6 @@ def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, Confi
     # Make sure the `includes` structure is removed from the config objects.
     if "includes" in config:
         includes = config["includes"]
-        del config["includes"]
         if not isinstance(includes, list):
             raise ValueError(
                 "Invalid value type for 'includes' "
@@ -126,8 +139,8 @@ def _get_files_and_configs(path: Path) -> Tuple[List[Path], List[Dict[str, Confi
             )
         for include in includes:
             ip = Path(include)
-            include_path = (ip if ip.is_absolute() else (path.parent / ip)).resolve()
-            _files, _configs = _get_files_and_configs(include_path)
+            include_path = get_absolute_path(ip if ip.is_absolute() else (path.parent / ip))
+            _files, _configs = _get_files_and_configs(model, include_path)
             files.extend(_files)
             configs.extend(_configs)
 
