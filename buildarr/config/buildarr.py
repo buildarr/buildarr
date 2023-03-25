@@ -118,6 +118,9 @@ class BuildarrConfig(ConfigBase):
     secrets_file_path: Path = Path("secrets.json")
     """
     Path to store the Buildarr instance secrets file.
+
+    *New in version 0.4.0*: This configuration option can now be overridden
+    using the `--secrets-file` command line argument.
     """
 
     request_timeout: PositiveFloat = 30  # seconds
@@ -126,7 +129,7 @@ class BuildarrConfig(ConfigBase):
 
     If the timeout is reached, an error will occur and Buildarr will stop the update process.
 
-    *Added in version 0.3.0.*
+    *New in version 0.3.0.*
     """
 
     trash_metadata_download_url: AnyHttpUrl = (
