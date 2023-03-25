@@ -32,7 +32,7 @@ Usage: buildarr [OPTIONS] COMMAND [ARGS]...
   instances.
 
 Options:
-  -l, --log-level [CRITICAL|ERROR|WARNING|INFO|DEBUG|NOTSET]
+  -l, --log-level [ERROR|WARNING|INFO|DEBUG]
                                   Buildarr logging system log level. Can also
                                   be set using the `$BUILDARR_LOG_LEVEL'
                                   environment variable.  [default: INFO]
