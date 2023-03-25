@@ -32,8 +32,8 @@ import click
 
 from importlib_metadata import version as package_version
 from schedule import Job as SchedulerJob, Scheduler  # type: ignore[import]
-from watchdog.events import FileSystemEventHandler  # type: ignore[import]
-from watchdog.observers import Observer  # type: ignore[import]
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 
 from ..config import load_config
 from ..logging import get_log_level
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from types import FrameType
     from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
-    from watchdog.events import DirModifiedEvent, FileModifiedEvent  # type: ignore[import]
+    from watchdog.events import DirModifiedEvent, FileModifiedEvent
 
 
 logger = getLogger(__name__)
