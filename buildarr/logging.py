@@ -49,7 +49,12 @@ class StderrFilter(logging.Filter):
 
 def buildarr_log_record_factory(*args, **kwargs) -> logging.LogRecord:
     """
-    Filter for adding Buildarr state information to the logging record.
+    Factory function for adding Buildarr state information to a new log record.
+
+    All parameters are passed to the parent log record factory function.
+
+    Returns:
+        Created log record
     """
 
     record = log_record_factory(*args, **kwargs)
