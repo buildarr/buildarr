@@ -19,17 +19,19 @@ Sonarr plugin download client definition.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type
 
 from typing_extensions import Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import BaseEnum, NonEmptyStr, Password, Port
 
 from ...api import api_delete, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class NzbgetPriority(BaseEnum):
@@ -384,7 +386,7 @@ class DownloadClient(SonarrConfigBase):
         secrets: SonarrSecrets,
         downloadclient_id: int,
     ) -> None:
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/downloadclient/{downloadclient_id}")
 
 

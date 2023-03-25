@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+from logging import getLogger
 from pathlib import Path
 from textwrap import indent
 from typing import TYPE_CHECKING
@@ -28,7 +29,7 @@ import click
 from importlib_metadata import version as package_version
 
 from ..config import load_config, load_instance_configs, resolve_instance_dependencies
-from ..logging import logger, plugin_logger
+from ..logging import get_log_level
 from ..manager import load_managers
 from ..state import state
 from ..trash import fetch_trash_metadata, render_trash_metadata
@@ -38,6 +39,9 @@ from .exceptions import TestConfigNoPluginsDefinedError
 
 if TYPE_CHECKING:
     from typing import Set
+
+
+logger = getLogger(__name__)
 
 
 @cli.command(
@@ -90,7 +94,7 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     logger.info(
         "Buildarr version %s (log level: %s)",
         package_version("buildarr"),
-        logger.log_level,
+        get_log_level(),
     )
     logger.info(
         "Plugins loaded: %s",
@@ -201,11 +205,11 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
                             instance_name=instance_name,
                         ):
                             if state.managers[plugin_name].uses_trash_metadata(instance_config):
-                                plugin_logger.debug("Rendered instance configuration:")
+                                logger.debug("Rendered instance configuration:")
                                 for config_line in instance_config.yaml(
                                     exclude_unset=True,
                                 ).splitlines():
-                                    plugin_logger.debug(indent(config_line, "  "))
+                                    logger.debug(indent(config_line, "  "))
                 logger.info("Rendering TRaSH-Guides metadata: PASSED")
 
     # If we get to this point, this configuration is pretty much guaranteed to be valid.

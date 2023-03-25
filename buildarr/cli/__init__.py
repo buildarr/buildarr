@@ -38,7 +38,7 @@ from ..logging import setup_logger
     "-l",
     "--log-level",
     "log_level",
-    type=click.Choice(["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"]),
+    type=click.Choice(["ERROR", "WARNING", "INFO", "DEBUG"], case_sensitive=False),
     default=os.environ.get("BUILDARR_LOG_LEVEL", "INFO").upper(),
     help=(
         "Buildarr logging system log level. "

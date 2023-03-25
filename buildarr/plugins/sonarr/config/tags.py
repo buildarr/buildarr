@@ -19,16 +19,18 @@ Sonarr plugin tags settings configuration.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Dict, List
 
 from typing_extensions import Self
 
-from buildarr.logging import plugin_logger
 from buildarr.types import NonEmptyStr
 
 from ..api import api_get, api_post
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class SonarrTagsSettingsConfig(SonarrConfigBase):
@@ -90,9 +92,9 @@ class SonarrTagsSettingsConfig(SonarrConfigBase):
         if self.definitions:
             for i, tag in enumerate(self.definitions):
                 if tag in current_tags:
-                    plugin_logger.debug("%s.definitions[%i]: %s (exists)", tree, i, repr(tag))
+                    logger.debug("%s.definitions[%i]: %s (exists)", tree, i, repr(tag))
                 else:
-                    plugin_logger.info("%s.definitions[%i]: %s -> (created)", tree, i, repr(tag))
+                    logger.info("%s.definitions[%i]: %s -> (created)", tree, i, repr(tag))
                     api_post(secrets, "/api/v3/tag", {"label": tag})
                     changed = True
         return changed

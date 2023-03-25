@@ -19,6 +19,7 @@ Buildarr configuration loading function.
 
 from __future__ import annotations
 
+from logging import getLogger
 from pathlib import Path
 from typing import TYPE_CHECKING, Type, cast
 
@@ -26,7 +27,6 @@ import yaml
 
 from pydantic import create_model
 
-from ..logging import logger
 from ..state import state
 from ..util import merge_dicts
 from .base import ConfigBase
@@ -37,6 +37,9 @@ if TYPE_CHECKING:
     from typing import Any, Dict, List, Optional, Set, Tuple
 
     from .models import ConfigPlugin, ConfigPluginType
+
+
+logger = getLogger(__name__)
 
 
 def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:

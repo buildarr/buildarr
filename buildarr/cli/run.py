@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+from logging import getLogger
 from pathlib import Path
 from textwrap import indent
 from typing import Dict, Optional, Set
@@ -28,7 +29,7 @@ import click
 from importlib_metadata import version as package_version
 
 from ..config import load_config, load_instance_configs, resolve_instance_dependencies
-from ..logging import logger, plugin_logger
+from ..logging import get_log_level
 from ..manager import load_managers
 from ..secrets import SecretsPlugin, load_secrets
 from ..state import state
@@ -36,6 +37,8 @@ from ..trash import fetch_trash_metadata, render_trash_metadata, trash_metadata_
 from ..util import create_temp_dir, get_resolved_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
+
+logger = getLogger(__name__)
 
 
 @cli.command(
@@ -118,7 +121,7 @@ def run(
     logger.info(
         "Buildarr version %s (log level: %s)",
         package_version("buildarr"),
-        logger.log_level,
+        get_log_level(),
     )
 
     if dry_run:
@@ -207,16 +210,16 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
         plugin_secrets: Dict[str, SecretsPlugin] = getattr(state.secrets, plugin_name)
         for instance_name, instance_config in state.instance_configs[plugin_name].items():
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-                plugin_logger.info("Checking secrets")
+                logger.info("Checking secrets")
                 try:
                     try_instance_secrets = plugin_secrets[instance_name]
                 except KeyError:
                     try_instance_secrets = None
                 if try_instance_secrets and try_instance_secrets.test():
-                    plugin_logger.info("Connection test successful using cached secrets")
+                    logger.info("Connection test successful using cached secrets")
                     plugin_secrets[instance_name] = try_instance_secrets
                 else:
-                    plugin_logger.info(
+                    logger.info(
                         "Connection test failed using cached secrets (or not cached), "
                         "fetching secrets",
                     )
@@ -224,14 +227,14 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                         instance_config,
                     )
                     if instance_secrets.test():
-                        plugin_logger.info("Connection test successful using fetched secrets")
+                        logger.info("Connection test successful using fetched secrets")
                         plugin_secrets[instance_name] = instance_secrets
                     else:
                         raise RunInstanceConnectionTestFailedError(
                             "Connection test failed using fetched secrets "
                             f"for instance '{instance_name}': {instance_secrets}",
                         )
-                plugin_logger.info("Finished checking secrets")
+                logger.info("Finished checking secrets")
 
     # Save the latest secrets file to disk.
     logger.info("Saving updated secrets file to '%s'", secrets_file_path)
@@ -263,9 +266,9 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
 
             # Fetch the current active configuration from the remote instance,
             # so it can be compared to the local configuration.
-            plugin_logger.info("Getting remote configuration")
+            logger.info("Getting remote configuration")
             remote_instance_config = manager.from_remote(instance_config, instance_secrets)
-            plugin_logger.info("Finished getting remote configuration")
+            logger.info("Finished getting remote configuration")
 
             # Output the local and remote instance configuration to the debug logs,
             # so they can be inspected to see Buildarr's state at this point, if need be.
@@ -273,14 +276,14 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                 ("Local", instance_config),
                 ("Remote", remote_instance_config),
             ):
-                plugin_logger.debug("%s configuration:", config_type)
+                logger.debug("%s configuration:", config_type)
                 for config_line in config.yaml(exclude_unset=True).splitlines():
-                    plugin_logger.debug(indent(config_line, "  "))
+                    logger.debug(indent(config_line, "  "))
 
             # Compare the local configuration for the instance to the active configuration,
             # and if there are differences, update the instance.
-            plugin_logger.info("Updating remote configuration")
-            plugin_logger.info(
+            logger.info("Updating remote configuration")
+            logger.info(
                 (
                     "Remote configuration successfully updated"
                     if manager.update_remote(
@@ -292,7 +295,7 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                     else "Remote configuration is up to date"
                 ),
             )
-            plugin_logger.info("Finished updating remote configuration")
+            logger.info("Finished updating remote configuration")
 
             # TODO: Re-fetch the remote configuration and test that it
             #       now matches the local configuration.

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 
+from logging import getLogger
 from pathlib import Path, PurePosixPath
 from typing import (
     Any,
@@ -44,10 +45,11 @@ from pydantic import AnyUrl, BaseModel, SecretStr
 from pydantic.validators import _VALIDATORS
 from typing_extensions import Self
 
-from ..logging import plugin_logger
 from ..plugins import Secrets
 from ..types import BaseEnum, BaseIntEnum
 from .types import RemoteMapEntry
+
+logger = getLogger(__name__)
 
 OPTIONAL_TYPE_UNION_SIZE = 2
 
@@ -398,17 +400,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 set_value = True
                 value = getattr(self, attr_name)
                 if attr_name not in already_logged:
-                    plugin_logger.info(
-                        "%s.%s: %s -> (created)",
-                        tree,
-                        attr_name,
-                        formatter(value),
-                    )
+                    logger.info("%s.%s: %s -> (created)", tree, attr_name, formatter(value))
                     already_logged.add(attr_name)
             else:
                 set_value = False
                 if attr_name not in already_logged:
-                    plugin_logger.info("%s.%s: (unmanaged)", tree, attr_name)
+                    logger.info("%s.%s: (unmanaged)", tree, attr_name)
                     already_logged.add(attr_name)
             # If the attribute should be set, encode the value and add it
             # to the remote attribute structure in the correct format.
@@ -570,7 +567,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 # value, unless set_unchanged is set to True, do nothing.
                 if local_value == remote_value:
                     if attr_name not in already_logged:
-                        plugin_logger.debug(
+                        logger.debug(
                             "%s.%s: %s (up to date)",
                             tree,
                             attr_name,
@@ -584,7 +581,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 # update the remote value to reflect the changes.
                 else:
                     if attr_name not in already_logged:
-                        plugin_logger.info(
+                        logger.info(
                             "%s.%s: %s -> %s",
                             tree,
                             attr_name,
@@ -602,12 +599,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             # If set_unchanged is False, do nothing.
             else:
                 if attr_name not in already_logged:
-                    plugin_logger.debug(
-                        "%s.%s: %s (unmanaged)",
-                        tree,
-                        attr_name,
-                        formatter(remote_value),
-                    )
+                    logger.debug("%s.%s: %s (unmanaged)", tree, attr_name, formatter(remote_value))
                     already_logged.add(attr_name)
                 if attr_metadata.get("set_unchanged", set_unchanged):
                     set_value = True

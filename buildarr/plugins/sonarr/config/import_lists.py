@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 
 from datetime import datetime
+from logging import getLogger
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -42,7 +43,6 @@ from pydantic import AnyHttpUrl, ConstrainedStr, Field, PositiveInt, validator
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.state import state
 from buildarr.types import BaseEnum, InstanceName, NonEmptyStr, Password
 
@@ -56,6 +56,9 @@ if TYPE_CHECKING:
     from typing import Collection
 
     from ..config import SonarrInstanceConfig
+
+
+logger = getLogger(__name__)
 
 
 class YearRange(ConstrainedStr):
@@ -433,7 +436,7 @@ class ImportList(SonarrConfigBase):
             secrets (SonarrSecrets): Secrets metadata for the remote instance.
             importlist_id (int): ID associated with this import list on the remote instance.
         """
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/importlist/{importlist_id}")
 
 
@@ -1009,7 +1012,7 @@ class SonarrImportList(ProgramImportList):
                     resolved_source_resources.add(resource_names[resource])
                 except KeyError:
                     if ignore_nonexistent_ids:
-                        plugin_logger.warning(
+                        logger.warning(
                             (
                                 "Source %s ID %i referenced by remote Sonarr instance "
                                 "not found on target instance '%s', removing"
@@ -1363,6 +1366,6 @@ class SonarrImportListsSettingsConfig(SonarrConfigBase):
                     )
                     changed = True
                 else:
-                    plugin_logger.debug("%s: (...) (unmanaged)", importlist_tree)
+                    logger.debug("%s: (...) (unmanaged)", importlist_tree)
         # We're done!
         return changed

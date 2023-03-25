@@ -19,13 +19,13 @@ Sonarr plugin download client settings.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Dict, List, Mapping, Union
 
 from pydantic import Field
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 
 from ...api import api_get, api_put
 from ...secrets import SonarrSecrets
@@ -51,6 +51,8 @@ from .download_clients import (
     VuzeDownloadClient,
 )
 from .remote_path_mappings import SonarrRemotePathMappingsSettingsConfig
+
+logger = getLogger(__name__)
 
 DownloadClientType = Union[
     DownloadstationUsenetDownloadClient,
@@ -258,6 +260,6 @@ class SonarrDownloadClientsSettingsConfig(SonarrConfigBase):
                     )
                     changed = True
                 else:
-                    plugin_logger.debug("%s: (...) (unmanaged)", downloadclient_tree)
+                    logger.debug("%s: (...) (unmanaged)", downloadclient_tree)
         # Return the resource changed status.
         return changed

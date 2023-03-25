@@ -24,12 +24,12 @@ import re
 
 from datetime import datetime, timezone
 from http import HTTPStatus
+from logging import getLogger
 from typing import TYPE_CHECKING
 
 import json5  # type: ignore[import]
 import requests
 
-from buildarr.logging import plugin_logger
 from buildarr.state import state
 
 from .exceptions import DummyAPIError
@@ -39,6 +39,8 @@ if TYPE_CHECKING:
 
     from .secrets import DummySecrets
 
+
+logger = getLogger(__name__)
 
 INITIALIZE_JS_RES_PATTERN = re.compile(r"(?s)^window\.Dummy = ({.*});$")
 
@@ -56,7 +58,7 @@ def get_initialize_js(host_url: str, api_key: Optional[str] = None) -> Dict[str,
     """
 
     url = f"{host_url}/initialize.js"
-    plugin_logger.debug("GET %s", url)
+    logger.debug("GET %s", url)
     res = requests.get(
         url,
         headers={"X-Api-Key": api_key} if api_key else None,
@@ -66,7 +68,7 @@ def get_initialize_js(host_url: str, api_key: Optional[str] = None) -> Dict[str,
     if not res_match:
         raise RuntimeError(f"No matches for initialize.js parsing: {res.text}")
     res_json = json5.loads(res_match.group(1))
-    plugin_logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
+    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     return res_json
 
 
@@ -83,14 +85,14 @@ def api_get(secrets: DummySecrets, api_url: str) -> Any:
     """
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
-    plugin_logger.debug("GET %s", url)
+    logger.debug("GET %s", url)
     res = requests.get(
         url,
         headers={"X-Api-Key": secrets.api_key.get_secret_value()},
         timeout=state.config.buildarr.request_timeout,
     )
     res_json = res.json()
-    plugin_logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
+    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.OK:
         api_error(method="GET", url=url, response=res)
     return res_json
@@ -110,7 +112,7 @@ def api_post(secrets: DummySecrets, api_url: str, req: Any) -> Any:
     """
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
-    plugin_logger.debug("POST %s <- req=%s", url, repr(req))
+    logger.debug("POST %s <- req=%s", url, repr(req))
     headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
     if not state.dry_run:
         res = requests.post(
@@ -122,7 +124,7 @@ def api_post(secrets: DummySecrets, api_url: str, req: Any) -> Any:
     else:
         res = _create_dryrun_response("POST", url, content=json.dumps(req))
     res_json = res.json()
-    plugin_logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
+    logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.CREATED:
         api_error(method="POST", url=url, response=res)
     return res_json
@@ -142,7 +144,7 @@ def api_put(secrets: DummySecrets, api_url: str, req: Any) -> Any:
     """
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
-    plugin_logger.debug("PUT %s <- req=%s", url, repr(req))
+    logger.debug("PUT %s <- req=%s", url, repr(req))
     headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
     if not state.dry_run:
         res = requests.put(
@@ -154,7 +156,7 @@ def api_put(secrets: DummySecrets, api_url: str, req: Any) -> Any:
     else:
         res = _create_dryrun_response("PUT", url, content=json.dumps(req))
     res_json = res.json()
-    plugin_logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
+    logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
     if res.status_code != HTTPStatus.ACCEPTED:
         api_error(method="PUT", url=url, response=res)
     return res_json
@@ -170,7 +172,7 @@ def api_delete(secrets: DummySecrets, api_url: str) -> None:
     """
 
     url = f"{secrets.host_url}/{api_url.lstrip('/')}"
-    plugin_logger.debug("DELETE %s", url)
+    logger.debug("DELETE %s", url)
     headers = {"X-Api-Key": secrets.api_key.get_secret_value()}
     res = (
         requests.delete(
@@ -181,7 +183,7 @@ def api_delete(secrets: DummySecrets, api_url: str) -> None:
         if not state.dry_run
         else _create_dryrun_response("DELETE", url)
     )
-    plugin_logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
+    logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
     if res.status_code != HTTPStatus.OK:
         api_error(method="DELETE", url=url, response=res, parse_response=False)
 
