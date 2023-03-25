@@ -20,7 +20,7 @@ Sonarr plugin configuration.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from typing_extensions import Self
 
@@ -255,12 +255,18 @@ class SonarrInstanceConfig(_SonarrInstanceConfig):
     This can only be done on Sonarr instances with authentication disabled.
     """
 
+    image: NonEmptyStr = "lscr.io/linuxserver/sonarr"  # type: ignore[assignment]
+    """
+    The default Docker image URI when generating a Docker Compose file.
+    """
+
     version: Optional[str] = None
     """
     The expected version of the Sonarr instance.
     If undefined or set to `None`, the version is auto-detected.
 
-    At the moment this attribute is unused, and there is likely no need to explicitly set it.
+    This value is also used when generating a Docker Compose file.
+    When undefined or set to `None`, the version tag will be set to `latest`.
     """
 
     settings: SonarrSettingsConfig = SonarrSettingsConfig()
@@ -330,6 +336,12 @@ class SonarrInstanceConfig(_SonarrInstanceConfig):
             version=api_get(secrets, "/api/v3/system/status")["version"],
             settings=SonarrSettingsConfig.from_remote(secrets),
         )
+
+    def to_compose_service(self, compose_version: str, service_name: str) -> Dict[str, Any]:
+        return {
+            "image": f"{self.image}:{self.version or 'latest'}",
+            "volumes": {service_name: "/config"},
+        }
 
 
 class SonarrConfig(SonarrInstanceConfig):

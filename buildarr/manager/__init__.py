@@ -27,7 +27,7 @@ from ..state import state
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Dict, Optional, Set
+    from typing import Any, Dict, Optional, Set
 
 
 logger = getLogger(__name__)
@@ -82,7 +82,7 @@ class ManagerPlugin(Generic[Config, Secrets]):
         Returns whether or not the given instance configuration uses TRaSH-Guides metadata.
 
         Args:
-            config (Config): Configuration object to check
+            instance_config (Config): Instance configuration object to check.
 
         Returns:
             `True` if TRaSH-Guides metadata is used, otherwise `False`
@@ -95,7 +95,7 @@ class ManagerPlugin(Generic[Config, Secrets]):
         with all templates rendered.
 
         Args:
-            config (Config): Configuration object to read.
+            instance_config (Config): Instance configuration object to render.
             trash_metadata_dir (Path): TRaSH-Guides metadata directory.
 
         Returns:
@@ -105,10 +105,10 @@ class ManagerPlugin(Generic[Config, Secrets]):
 
     def from_remote(self, instance_config: Config, secrets: Secrets) -> Config:
         """
-        Get the remote instance configuration for this section, and return the resulting object.
+        Get the active configuration for a remote instance, and return the resulting object.
 
         Args:
-            config (Config): Configuration object to read.
+            instance_config (Config): Configuration object of the instance to connect to.
             secrets (Secrets): Remote instance host and secrets information.
 
         Returns:
@@ -139,6 +139,28 @@ class ManagerPlugin(Generic[Config, Secrets]):
             tree=tree,
             secrets=secrets,
             remote=remote_instance_config,
+        )
+
+    def to_compose_service(
+        self,
+        instance_config: Config,
+        compose_version: str,
+        service_name: str,
+    ) -> Dict[str, Any]:
+        """
+        Generate a Docker Compose service definition corresponding to this instance configuration.
+
+        Args:
+            instance_config (Config): Instance configuration to generate a service for.
+            compose_version (str): Version of the Docker Compose file.
+            service_name (str): The unique name for the generated Docker Compose service.
+
+        Returns:
+            Docker Compose service definition dictionary
+        """
+        return instance_config.to_compose_service(
+            compose_version=compose_version,
+            service_name=service_name,
         )
 
 

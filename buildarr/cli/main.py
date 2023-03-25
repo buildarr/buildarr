@@ -24,6 +24,7 @@ from __future__ import annotations
 from ..plugins import load as load_plugins
 from ..state import state
 from . import cli as main
+from .compose import compose
 from .daemon import daemon
 from .run import run
 from .test_config import test_config
