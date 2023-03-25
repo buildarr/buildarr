@@ -19,18 +19,20 @@ Sonarr plugin indexers settings configuration.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Any, Dict, List, Literal, Mapping, Optional, Set, Tuple, Type, Union
 
 from pydantic import AnyHttpUrl, Field, PositiveInt
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import BaseEnum, BaseIntEnum, NonEmptyStr, Password, RssUrl
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class NabCategory(BaseIntEnum):
@@ -250,7 +252,7 @@ class Indexer(SonarrConfigBase):
         return False
 
     def _delete_remote(self, tree: str, secrets: SonarrSecrets, indexer_id: int) -> None:
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/indexer/{indexer_id}")
 
 
@@ -1121,6 +1123,6 @@ class SonarrIndexersSettingsConfig(SonarrConfigBase):
                     )
                     changed = True
                 else:
-                    plugin_logger.debug("%s: (...) (unmanaged)", indexer_tree)
+                    logger.debug("%s: (...) (unmanaged)", indexer_tree)
         #
         return changed

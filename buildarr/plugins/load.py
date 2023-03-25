@@ -19,11 +19,11 @@ Buildarr plugin loading functions.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import TYPE_CHECKING
 
 from stevedore.extension import ExtensionManager  # type: ignore[import]
 
-from ..logging import logger
 from ..state import state
 
 if TYPE_CHECKING:
@@ -32,6 +32,9 @@ if TYPE_CHECKING:
     from importlib_metadata import EntryPoint
 
     from . import Plugin
+
+
+logger = getLogger(__name__)
 
 
 def load(namespace: str = "buildarr.plugins") -> None:

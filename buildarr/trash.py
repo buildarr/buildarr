@@ -20,13 +20,13 @@ Buildarr TRaSH-Guides metadata functions.
 from __future__ import annotations
 
 from collections import defaultdict
+from logging import getLogger
 from pathlib import Path
 from shutil import move
 from typing import TYPE_CHECKING
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-from .logging import logger, plugin_logger
 from .state import state
 from .util import create_temp_dir
 
@@ -34,6 +34,9 @@ if TYPE_CHECKING:
     from typing import DefaultDict, Dict
 
     from .config import ConfigPlugin
+
+
+logger = getLogger(__name__)
 
 
 def trash_metadata_used() -> bool:
@@ -109,14 +112,14 @@ def render_trash_metadata(trash_metadata_dir: Path) -> None:
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
             if manager.uses_trash_metadata(instance_config):
-                plugin_logger.debug("Rendering TRaSH-Guides metadata")
+                logger.debug("Rendering TRaSH-Guides metadata")
                 instance_configs[plugin_name][instance_name] = manager.render_trash_metadata(
                     instance_config,
                     trash_metadata_dir,
                 )
-                plugin_logger.debug("Finished rendering TRaSH-Guides metadata")
+                logger.debug("Finished rendering TRaSH-Guides metadata")
             else:
-                plugin_logger.debug("Skipping rendering TRaSH-Guides metadata (not used)")
+                logger.debug("Skipping rendering TRaSH-Guides metadata (not used)")
                 instance_configs[plugin_name][instance_name] = instance_config
 
     state.instance_configs = instance_configs

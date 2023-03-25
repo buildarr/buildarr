@@ -19,11 +19,11 @@ Buildarr secrets metadata loading function.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import TYPE_CHECKING, Dict
 
 from pydantic import create_model
 
-from ..logging import logger
 from ..state import state
 from ..types import NonEmptyStr
 from .base import SecretsBase
@@ -31,6 +31,8 @@ from .base import SecretsBase
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Optional, Set
+
+logger = getLogger(__name__)
 
 
 def load_secrets(path: Path, use_plugins: Optional[Set[str]] = None) -> bool:

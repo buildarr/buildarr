@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 
+from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, cast
 
@@ -28,12 +29,13 @@ from pydantic import validator
 from typing_extensions import Self
 
 from buildarr.config import ConfigTrashIDNotFoundError, RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import NonEmptyStr, TrashID
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class TrashFilter(SonarrConfigBase):
@@ -376,7 +378,7 @@ class ReleaseProfile(SonarrConfigBase):
         return False
 
     def _delete_remote(self, tree: str, secrets: SonarrSecrets, profile_id: int) -> None:
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/releaseprofile/{profile_id}")
 
     # Tell Pydantic to validate in-place assignments of attributes.
@@ -486,6 +488,6 @@ class SonarrReleaseProfilesSettingsConfig(SonarrConfigBase):
                     )
                     changed = True
                 else:
-                    plugin_logger.debug("%s: (...) (unmanaged)", profile_tree)
+                    logger.debug("%s: (...) (unmanaged)", profile_tree)
         #
         return changed

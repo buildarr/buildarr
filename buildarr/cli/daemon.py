@@ -23,6 +23,7 @@ import itertools
 import signal
 
 from datetime import datetime, time
+from logging import getLogger
 from pathlib import Path
 from time import sleep
 from typing import TYPE_CHECKING, cast
@@ -35,7 +36,7 @@ from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
 from ..config import load_config
-from ..logging import logger
+from ..logging import get_log_level
 from ..state import state
 from ..types import DayOfWeek
 from ..util import get_absolute_path
@@ -47,6 +48,9 @@ if TYPE_CHECKING:
     from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
 
     from watchdog.events import DirModifiedEvent, FileModifiedEvent  # type: ignore[import]
+
+
+logger = getLogger(__name__)
 
 
 class Daemon:
@@ -455,7 +459,7 @@ def daemon(
     logger.info(
         "Buildarr version %s (log level: %s)",
         package_version("buildarr"),
-        logger.log_level,
+        get_log_level(),
     )
 
     Daemon(

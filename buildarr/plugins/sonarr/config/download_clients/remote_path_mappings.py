@@ -19,17 +19,19 @@ Sonarr plugin download client remote path mappings.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Any, Dict, List, Mapping, Tuple
 
 from typing_extensions import Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import BaseEnum, NonEmptyStr
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class Ensure(BaseEnum):
@@ -127,7 +129,7 @@ class RemotePathMapping(SonarrConfigBase):
         secrets: SonarrSecrets,
         remotepathmapping_id: int,
     ) -> None:
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/remotepathmapping/{remotepathmapping_id}")
 
 
@@ -218,15 +220,15 @@ class SonarrRemotePathMappingsSettingsConfig(SonarrConfigBase):
             # and if not, create it.
             if rpm.ensure == Ensure.present:
                 if rpm_tuple in remote_rpms:
-                    plugin_logger.debug("%s: %s (exists)", rpm_tree, repr(rpm))
+                    logger.debug("%s: %s (exists)", rpm_tree, repr(rpm))
                 else:
-                    plugin_logger.info("%s: %s -> (created)", rpm_tree, repr(rpm))
+                    logger.info("%s: %s -> (created)", rpm_tree, repr(rpm))
                     rpm._create_remote(tree=rpm_tree, secrets=secrets)
                     changed = True
             # If the remote path mapping should not exist, check that it does not
             # exist in the remote, and if it does, delete it.
             elif rpm_tuple in remote_rpms:
-                plugin_logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
+                logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
                 rpm._delete_remote(
                     tree=rpm_tree,
                     secrets=secrets,
@@ -234,7 +236,7 @@ class SonarrRemotePathMappingsSettingsConfig(SonarrConfigBase):
                 )
                 changed = True
             else:
-                plugin_logger.debug("%s: %s (does not exist)", rpm_tree, repr(rpm))
+                logger.debug("%s: %s (does not exist)", rpm_tree, repr(rpm))
         # Handle unmanaged remote path mappings.
         # If `delete_unmanaged` is `True`, automatically delete them.
         j = -1
@@ -243,7 +245,7 @@ class SonarrRemotePathMappingsSettingsConfig(SonarrConfigBase):
             if rpm_tuple not in local_rpms:
                 rpm_tree = f"{tree}.definitions[{j}]"
                 if self.delete_unmanaged:
-                    plugin_logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
+                    logger.info("%s: %s -> (deleted)", rpm_tree, repr(rpm))
                     rpm._delete_remote(
                         tree=rpm_tree,
                         secrets=secrets,
@@ -251,7 +253,7 @@ class SonarrRemotePathMappingsSettingsConfig(SonarrConfigBase):
                     )
                     changed = True
                 else:
-                    plugin_logger.debug("%s: %s (unmanaged)", rpm_tree, repr(rpm))
+                    logger.debug("%s: %s (unmanaged)", rpm_tree, repr(rpm))
                 j -= 1
         # Return changed status.
         return changed

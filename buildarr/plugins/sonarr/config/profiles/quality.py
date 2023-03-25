@@ -19,18 +19,20 @@ Sonarr plugin quality profile configuration.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Union
 
 from pydantic import Field, validator
 from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import NonEmptyStr
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class QualityGroup(SonarrConfigBase):
@@ -324,7 +326,7 @@ class QualityProfile(SonarrConfigBase):
         return False
 
     def _delete_remote(self, tree: str, secrets: SonarrSecrets, profile_id: int) -> None:
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/qualityprofile/{profile_id}")
 
 
@@ -415,7 +417,7 @@ class SonarrQualityProfilesSettingsConfig(SonarrConfigBase):
                     )
                     changed = True
                 else:
-                    plugin_logger.debug("%s: (...) (unmanaged)", profile_tree)
+                    logger.debug("%s: (...) (unmanaged)", profile_tree)
         #
         return changed
 

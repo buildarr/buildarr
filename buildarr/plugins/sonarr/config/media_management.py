@@ -19,18 +19,20 @@ Sonarr plugin media management settings configuration.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Any, Dict, List, Optional, Set
 
 from pydantic import Field
 from typing_extensions import Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import BaseEnum, NonEmptyStr
 
 from ..api import api_delete, api_get, api_post, api_put
 from ..secrets import SonarrSecrets
 from .types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class MultiEpisodeStyle(BaseEnum):
@@ -609,15 +611,15 @@ class SonarrMediaManagementSettingsConfig(SonarrConfigBase):
             i = -1
             for root_folder, root_folder_id in current_root_folders.items():
                 if root_folder not in expected_root_folders:
-                    plugin_logger.info("%s[%i]: %s -> (deleted)", tree, i, repr(str(root_folder)))
+                    logger.info("%s[%i]: %s -> (deleted)", tree, i, repr(str(root_folder)))
                     api_delete(secrets, f"/api/v3/rootfolder/{root_folder_id}")
                     changed = True
                     i -= 1
         for i, root_folder in enumerate(self.root_folders):
             if root_folder in current_root_folders:
-                plugin_logger.debug("%s[%i]: %s (exists)", tree, i, repr(str(root_folder)))
+                logger.debug("%s[%i]: %s (exists)", tree, i, repr(str(root_folder)))
             else:
-                plugin_logger.info("%s[%i]: %s -> (created)", tree, i, repr(str(root_folder)))
+                logger.info("%s[%i]: %s -> (created)", tree, i, repr(str(root_folder)))
                 api_post(secrets, "/api/v3/rootfolder", {"path": str(root_folder)})
                 changed = True
         return changed

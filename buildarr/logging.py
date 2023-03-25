@@ -13,24 +13,20 @@
 
 
 """
-Buildarr logging functions and objects.
+Buildarr logging functions.
 """
 
 
 from __future__ import annotations
 
 import logging
-import sys
 
-from typing import TYPE_CHECKING
+from pathlib import Path
+from sys import argv, stderr, stdout
 
 from .state import state
 
-if TYPE_CHECKING:
-    from typing import Any, Mapping, MutableMapping, Tuple
-
-
-__all__ = ["logger", "plugin_logger"]
+log_record_factory = logging.getLogRecordFactory()
 
 
 class StdoutFilter(logging.Filter):
@@ -51,46 +47,20 @@ class StderrFilter(logging.Filter):
         return record.levelno != logging.INFO
 
 
-class BuildarrLoggerAdapter(logging.LoggerAdapter):
+def buildarr_log_record_factory(*args, **kwargs) -> logging.LogRecord:
     """
-    Buildarr logger adapter object.
+    Factory function for adding Buildarr state information to a new log record.
 
-    Gets wrapped around the standard logger object to provide additional output processing.
+    All parameters are passed to the parent log record factory function.
 
-    Args:
-        lg (Logger): Standard Python logger object
+    Returns:
+        Created log record
     """
 
-    @property
-    def log_level(self) -> str:
-        return logging.getLevelName(self.logger.level)
-
-    def __init__(self, lg: logging.Logger) -> None:
-        super().__init__(lg, {})
-
-    def process(self, msg: str, kwargs: Mapping[str, Any]) -> Tuple[str, MutableMapping[str, Any]]:
-        return (
-            msg,
-            {
-                **kwargs,
-                "extra": {
-                    "plugincontext": (
-                        (
-                            f"buildarr.plugins.{state._current_plugin} "
-                            + (f"{state._current_instance} " if state._current_instance else "")
-                        )
-                        if state._current_plugin
-                        else "buildarr.main "
-                    ),
-                },
-            },
-        )
-
-
-_base_logger = logging.getLogger("buildarr")
-
-logger = BuildarrLoggerAdapter(_base_logger)
-plugin_logger = BuildarrLoggerAdapter(_base_logger)
+    record = log_record_factory(*args, **kwargs)
+    record.plugin = f" <{state._current_plugin}>" if state._current_plugin else ""
+    record.instance = f" ({state._current_instance})" if state._current_instance else ""
+    return record
 
 
 def setup_logger(log_level: str = "DEBUG") -> None:
@@ -102,17 +72,33 @@ def setup_logger(log_level: str = "DEBUG") -> None:
     """
 
     formatter = logging.Formatter(
-        "%(asctime)s %(name)s:%(process)d %(plugincontext)s[%(levelname)s] %(message)s",
+        f"%(asctime)s {Path(argv[0]).name.split('.')[0]}:%(process)d %(name)s [%(levelname)s]"
+        "%(plugin)s%(instance)s %(message)s",
     )
 
-    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler = logging.StreamHandler(stdout)
     stdout_handler.addFilter(StdoutFilter())
     stdout_handler.setFormatter(formatter)
-    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler = logging.StreamHandler(stderr)
     stderr_handler.addFilter(StderrFilter())
     stderr_handler.setFormatter(formatter)
 
-    _base_logger.handlers = []
-    _base_logger.addHandler(stdout_handler)
-    _base_logger.addHandler(stderr_handler)
-    _base_logger.setLevel(logging.getLevelName(log_level))
+    logging.setLogRecordFactory(buildarr_log_record_factory)
+
+    root_logger = logging.getLogger()
+    root_logger.handlers = []
+    root_logger.filters = []
+    root_logger.addHandler(stdout_handler)
+    root_logger.addHandler(stderr_handler)
+    root_logger.setLevel(log_level.upper())
+
+
+def get_log_level() -> str:
+    """
+    Get the currently set log level for Buildarr.
+
+    Returns:
+        Log level name
+    """
+
+    return logging.getLevelName(logging.getLogger().level)

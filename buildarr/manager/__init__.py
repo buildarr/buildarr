@@ -19,15 +19,18 @@ Buildarr manager interface.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import TYPE_CHECKING, Generic
 
-from ..logging import plugin_logger
 from ..plugins import Config, Secrets
 from ..state import state
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Dict, Optional, Set
+
+
+logger = getLogger(__name__)
 
 
 class ManagerPlugin(Generic[Config, Secrets]):
@@ -155,8 +158,8 @@ def load_managers(use_plugins: Optional[Set[str]] = None) -> None:
         if plugin_name not in state.config.__fields_set__:
             continue
         with state._with_context(plugin_name=plugin_name):
-            plugin_logger.debug("Loading plugin manager")
+            logger.debug("Loading plugin manager")
             managers[plugin_name] = plugin.manager()
-            plugin_logger.debug("Finished loading plugin manager")
+            logger.debug("Finished loading plugin manager")
 
     state.managers = managers

@@ -19,18 +19,20 @@ Sonarr plugin delay profile configuration.
 
 from __future__ import annotations
 
+from logging import getLogger
 from typing import Any, Dict, List, Mapping, Set
 
 from pydantic import Field
 from typing_extensions import Self
 
 from buildarr.config import RemoteMapEntry
-from buildarr.logging import plugin_logger
 from buildarr.types import BaseEnum, NonEmptyStr
 
 from ...api import api_delete, api_get, api_post, api_put
 from ...secrets import SonarrSecrets
 from ..types import SonarrConfigBase
+
+logger = getLogger(__name__)
 
 
 class PreferredProtocol(BaseEnum):
@@ -263,7 +265,7 @@ class DelayProfile(SonarrConfigBase):
         secrets: SonarrSecrets,
         profile_id: int,
     ) -> None:
-        plugin_logger.info("%s: (...) -> (deleted)", tree)
+        logger.info("%s: (...) -> (deleted)", tree)
         api_delete(secrets, f"/api/v3/delayprofile/{profile_id}")
 
 
@@ -324,11 +326,11 @@ class SonarrDelayProfilesSettingsConfig(SonarrConfigBase):
         check_unmanaged: bool = False,
     ) -> bool:
         if not self.delete_unmanaged and "definitions" not in self.__fields_set__:
-            # TODO: printcurrent delay profile structure
+            # TODO: Print current delay profile structure.
             if remote.definitions:
-                plugin_logger.debug("%s.definitions: [...] (unmanaged)", tree)
+                logger.debug("%s.definitions: [...] (unmanaged)", tree)
             else:
-                plugin_logger.debug("%s.definitions: [] (unmanaged)", tree)
+                logger.debug("%s.definitions: [] (unmanaged)", tree)
             return False
         #
         changed = False
