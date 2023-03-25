@@ -28,8 +28,7 @@ from typing import TYPE_CHECKING, cast
 import click
 import yaml
 
-from importlib_metadata import version as package_version
-
+from .. import __version__
 from ..config import load_config, load_instance_configs, resolve_instance_dependencies
 from ..logging import get_log_level
 from ..manager import load_managers
@@ -133,11 +132,7 @@ def compose(
         use_plugins (Set[str]): Plugins to load. If empty, use all plugins.
     """
 
-    logger.debug(
-        "Buildarr version %s (log level: %s)",
-        package_version("buildarr"),
-        get_log_level(),
-    )
+    logger.debug("Buildarr version %s (log level: %s)", __version__, get_log_level())
     logger.debug(
         "Plugins loaded: %s",
         ", ".join(sorted(state.plugins.keys())) if state.plugins else "(no plugins found)",
@@ -266,7 +261,7 @@ def compose(
 
     logger.debug("Generating Docker Compose configuration for service 'buildarr'")
     compose_obj["services"]["buildarr"] = {
-        "image": f"{state.config.buildarr.docker_image_uri}:{package_version('buildarr')}",
+        "image": f"{state.config.buildarr.docker_image_uri}:{__version__}",
         "command": ["daemon", f"/config/{state.config_files[0].name}"],
         "volumes": [
             {"type": "bind", "source": str(state.config_files[0].parent), "target": "/config"},
