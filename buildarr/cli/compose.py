@@ -53,11 +53,11 @@ logger = getLogger(__name__)
     help=(
         "Generate a Docker Compose file from a Buildarr configuration.\n\n"
         "This reads instance configurations from a Buildarr configuration file, "
-        "generates a Docker Compose file that could be used to boostrap the instances, "
+        "generates a Docker Compose file that could be used to bootstrap the instances, "
         "and outputs the file to standard output.\n\n"
         "There are a few additional limitations on the instance configurations: "
         "instance hostnames must not be set to IP addresses, and all instances "
-        "must have unique hostnames, unless the `--ignore-hostnamea' option "
+        "must have unique hostnames, unless the `--ignore-hostnames' option "
         "is set.\n\n"
         "If CONFIG-PATH is not defined, use `buildarr.yml' from the current directory."
     ),

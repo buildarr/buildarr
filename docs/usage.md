@@ -7,7 +7,8 @@ The following commands are available for Buildarr:
 * `buildarr run` - Manually perform an update run on one or more instances and exit
 * `buildarr daemon` - Run Buildarr forever: perform an initial update run, and then
   schedule periodic updates
-* `buildarr test-config` - Test a configuration file for correctness (*Added in version 0.4.0*)
+* `buildarr test-config` - Test a configuration file for correctness (*New in version 0.4.0*)
+* `buildarr compose` - Generate a Docker Compose file from Buildarr configuration (*New in version 0.4.0*)
 * `buildarr <plugin-name> <command...>` - Ad-hoc commands defined by any loaded plugins
 
 !!! note
@@ -102,7 +103,7 @@ If the run fails for one reason or another, an error message will be logged and 
 
 ### Dry runs
 
-*Added in version 0.4.0.*
+*New in version 0.4.0.*
 
 Buildarr ad-hoc runs support a dry-run mode, so you can check what *would* change on configured instances, before actually applying them. Under this mode, the output of Buildarr itself is almost exactly the same, but any actions logged in the output are not actually performed.
 
@@ -175,7 +176,7 @@ Buildarr daemon supports the following signal types:
 
 ## Testing configuration
 
-*Added in version 0.4.0.*
+*New in version 0.4.0.*
 
 This is a mode for testing whether or not a configuration file is syntactically correct, can be loaded, and contains valid instance-to-instance link references and TRaSH-Guides metadata IDs.
 
@@ -205,6 +206,102 @@ $ buildarr test-config /config/buildarr.yml
 Since Buildarr does not connect to any remote instances in this mode, even if a configuration file passes the tests performed by `buildarr test-config`, it will not necessarily successfully communicate with them.
 
 To test the configuration against live remote instances, without modifying them, you can use `buildarr run --dry-run` as documented in [Dry runs](#dry-runs).
+
+## Generating a Docker Compose file
+
+*New in version 0.4.0.*
+
+This is an ad-hoc command that can be used to automatically generate a Docker Compose file from a given Buildarr configuration file.
+
+The generated Docker Compose file is guaranteed to have:
+
+* Image tags matching the instance versions defined in the Buildarr configuration file
+* Restart policy set on all services
+* Any required volumes created
+* Service dependencies added based on instance-to-instance links present in the Buildarr configuration
+* Buildarr itself added as a service in daemon mode, to deploy instance configurations and keep them up to date
+
+The resulting file will be relatively basic and might require some additional changes to suit your environment, but it should provide a good starting point for setting up automatic deployment and configuration of your *Arr stack.
+
+!!! note
+
+    There are a few additional limitations on the instance configurations, on top of Buildarr's regular constraints:
+
+    * Instance hostnames must not be set to IP addresses.
+    * All instances must have unique hostnames, unless the `--ignore-hostnames` option is set.
+
+Given the following example Buildarr configuration file, located at `/opt/buildarr/buildarr.yml`:
+
+```yaml
+---
+sonarr:
+  instances:
+    sonarr-hd: {}
+    sonarr-4k:
+      settings:
+        media_management:
+          root_folders:
+            - /tmp/videos
+        profiles:
+          language_profiles:
+            definitions:
+              English:
+                languages:
+                  - "English"
+        import_lists:
+          definitions:
+            "Sonarr (HD)":
+              type: "sonarr"
+              root_folder: "/tmp/videos"
+              quality_profile: "Any"
+              language_profile: "English"
+              full_url: "http://sonarr-hd:8989"
+              instance_name: "sonarr-hd"
+```
+
+We can use the following command to create a corresponding Docker Compose file.
+
+```bash
+$ buildarr compose /opt/buildarr/buildarr.yml > /opt/buildarr/docker-compose.yml
+```
+
+The resulting file located at `/opt/buildarr/docker-compose.yml` will look like this:
+
+```yaml
+---
+version: '3.7'
+services:
+  sonarr_sonarr-hd:
+    image: lscr.io/linuxserver/sonarr:latest
+    volumes:
+      sonarr_sonarr-hd: /config
+    hostname: sonarr-hd
+    restart: always
+  sonarr_sonarr-4k:
+    image: lscr.io/linuxserver/sonarr:latest
+    volumes:
+      sonarr_sonarr-4k: /config
+    hostname: sonarr-4k
+    restart: always
+    depends_on:
+    - sonarr_sonarr-hd
+  buildarr:
+    image: callum027/buildarr:0.4.0
+    command:
+    - daemon
+    - /config/buildarr.yml
+    volumes:
+    - type: bind
+      source: /opt/buildarr
+      target: /config
+    restart: always
+    depends_on:
+    - sonarr_sonarr-hd
+    - sonarr_sonarr-4k
+volumes:
+- sonarr_sonarr-4k
+- sonarr_sonarr-hd
+```
 
 ## Plugin-specific commands
 
