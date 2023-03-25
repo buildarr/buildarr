@@ -51,12 +51,14 @@ logger = getLogger(__name__)
 
 @cli.command(
     help=(
-        "Test a Buildarr configuration file for correctness.\n\n"
-        "This loads the configuration file and performs a number of checks on it. "
-        "If all tests pass, the file is pretty much guaranteed to work properly "
-        "in a Buildarr run, incorrect values for a remote instance notwithstanding.\n\n"
-        "To validate the configuration against remote instances without modifying them, "
-        "use `buildarr run --dry-run'.\n\n"
+        "Generate a Docker Compose file from a Buildarr configuration.\n\n"
+        "This reads instance configurations from a Buildarr configuration file, "
+        "generates a Docker Compose file that could be used to boostrap the instances, "
+        "and outputs the file to standard output.\n\n"
+        "There are a few additional limitations on the instance configurations: "
+        "instance hostnames must not be set to IP addresses, and all instances "
+        "must have unique hostnames, unless the `--ignore-hostnamea' option "
+        "is set.\n\n"
         "If CONFIG-PATH is not defined, use `buildarr.yml' from the current directory."
     ),
 )
@@ -106,18 +108,22 @@ logger = getLogger(__name__)
 )
 @click.option(
     "-H",
-    "--ignore-hostname",
-    "ignore_hostname",
+    "--ignore-hostnames",
+    "ignore_hostnames",
     is_flag=True,
     default=False,
-    help="Ignore defined hostnames on instances when creating the compose file.",
+    help=(
+        "Ignore defined hostnames on instances, "
+        "and automatically generate unique hostnames when creating the compose file. "
+        "Note that the hostnames will no longer match the Buildarr configuration file."
+    ),
 )
 def compose(
     config_path: Path,
     use_plugins: Set[str],
     compose_version: str,
     compose_restart: str,
-    ignore_hostname: bool,
+    ignore_hostnames: bool,
 ) -> None:
     """
     `buildarr compose` main routine.
@@ -185,7 +191,10 @@ def compose(
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
             service_name = f"{plugin_name}_{instance_name}"
             logger.debug("Generating Docker Compose configuration for service '%s'", service_name)
-            hostname = cast(str, service_name if ignore_hostname else instance_config.hostname)
+            hostname = cast(
+                str,
+                service_name.replace("_", "-") if ignore_hostnames else instance_config.hostname,
+            )
             logger.debug("Validating service hostname '%s'", hostname)
             try:
                 ip_address(hostname)  # type: ignore[arg-type]
