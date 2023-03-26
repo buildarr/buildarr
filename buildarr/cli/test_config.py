@@ -91,9 +91,10 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
     """
 
     logger.info("Buildarr version %s (log level: %s)", __version__, get_log_level())
+    plugin_strs = [f"{pn} ({state.plugins[pn].version})" for pn in sorted(state.plugins.keys())]
     logger.info(
-        "Plugins loaded: %s",
-        ", ".join(sorted(state.plugins.keys())) if state.plugins else "(no plugins found)",
+        "Loaded plugins: %s",
+        ", ".join(plugin_strs) if plugin_strs else "(no plugins found)",
     )
     logger.info("Testing configuration file: %s", str(config_path))
 

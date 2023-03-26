@@ -19,6 +19,7 @@ Sonarr plugin interface.
 
 from __future__ import annotations
 
+from buildarr import __version__
 from buildarr.plugins import Plugin
 
 from .cli import sonarr
@@ -36,3 +37,4 @@ class SonarrPlugin(Plugin):
     config = SonarrConfig
     manager = SonarrManager
     secrets = SonarrSecrets
+    version = __version__
