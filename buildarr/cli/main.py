@@ -37,7 +37,8 @@ load_plugins()
 
 # Load CLI modules for all installed plugins.
 for plugin_name, plugin in state.plugins.items():
-    main.add_command(plugin.cli, name=plugin_name)
+    if plugin.cli is not None:
+        main.add_command(plugin.cli, name=plugin_name)
 
 if __name__ == "__main__":
     main()
