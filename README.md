@@ -29,11 +29,15 @@ Buildarr attempts to fulfill some of the needs of users of the following project
 
 Buildarr is available on Docker Hub as a Docker image.
 
+A plugin for Sonarr is bundled into the official Docker container for Buildarr, so you can manage Sonarr instances right away.
+
 ```bash
 $ docker pull callum027/buildarr:latest
 ```
 
 Buildarr can also be installed using `pip`. Python 3.8 or later is required. Windows is natively supported.
+
+As of version 0.4.0, the Python package for Buildarr no longer includes plugins for applications. In order to use Buildarr to manage an application instance, you will also need to install its respective plugin.
 
 ```bash
 $ python3 -m venv buildarr-venv
@@ -47,13 +51,13 @@ For more information, check the [installation instructions](http://buildarr.gith
 
 ## Plugins
 
-Buildarr supports external plugins to allow additional applications to be supported. To allow for rapid development of both the plugin and the API, however, the one currently existing plugin, `buildarr-sonarr`, is vendored in as `buildarr.plugins.sonarr`.
+Buildarr supports external plugins to allow additional applications to be supported.
 
 At the time of this release the following plugins are available:
 
-* `buildarr-sonarr` - [Sonarr](https://sonarr.tv) PVR for TV shows (V3 only for now)
+* [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
 
-For more information on installing plugins and configuring the vendored plugins, check the [plugin documentation](http://buildarr.github.io/plugins).
+For more information on installing plugins, check the [plugin documentation](http://buildarr.github.io/plugins).
 
 ## Configuration
 

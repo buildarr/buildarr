@@ -2,8 +2,6 @@
 
 Buildarr supports external plugins to allow support for additional *Arr stack applications to be added.
 
-As Buildarr is still under heavy development, however, to allow for easier iteration of both the plugin and the API, the currently supported plugins are vendored into the core Buildarr package, and can be used without installing any additional packages.
-
 Successfully installed plugins will be loaded when Buildarr is run. Configured plugins will be listed under `Using plugins`.
 
 ```text
@@ -20,4 +18,4 @@ $ buildarr run
 
 At the time of this release the following plugins are available:
 
-* [buildarr-sonarr](sonarr/index.md) - [Sonarr](https://sonarr.tv) PVR for TV shows (V3 only)
+* [buildarr-sonarr](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
