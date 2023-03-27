@@ -22,7 +22,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Type
+    from typing import Optional, Type
 
     from click import Group as ClickGroup
 
@@ -87,7 +87,46 @@ class Plugin:
     ```
     """
 
-    cli: ClickGroup
+    cli: Optional[ClickGroup] = None
+    """
+    CLI command group for the plugin.
+
+    This attribute is optional.
+
+    If you would like to add custom commands for your plugin to the Buildarr CLI,
+    create a `@click.group` function with the commands defined, and set this attribute
+    to the group function.
+    """
+
     config: Type[ConfigPlugin]
+    """
+    Configuration model for the plugin.
+
+    Buildarr uses this to parse configuration for the plugin defined in the Buildarr
+    configuration file. Most of the actual methods for interacting with the configuration
+    and remote instances will also be defined in the model structure.
+    """
+
     manager: Type[ManagerPlugin]
+    """
+    Manager class for the plugin.
+
+    Buildarr instantiates an object of this class without any arguments, and
+    runs operations on configurations and secrets metadata through the methods
+    defined in this class.
+    """
+
     secrets: Type[SecretsPlugin]
+    """
+    Secrets metadata model for the plugin.
+
+    Buildarr uses this to parse and create secrets metadata objects that the plugin can use.
+    """
+
+    version: str
+    """
+    The version of the plugin package.
+
+    Gets output to the Buildarr logs so the user knows what version of the plugin
+    is installed.
+    """
