@@ -2,15 +2,17 @@
 
 Buildarr supports external plugins to allow support for additional *Arr stack applications to be added.
 
-Successfully installed plugins will be loaded when Buildarr is run. Configured plugins will be listed under `Using plugins`.
+Successfully installed plugins will be loaded when Buildarr is run, with the plugin's version output. Configured plugins will be listed under `Running with plugins`.
 
 ```text
 $ buildarr run
-2023-02-22 14:50:49,356 buildarr:1 buildarr.main [INFO] Buildarr version 0.2.0 (log level: INFO)
-2023-02-22 14:50:49,357 buildarr:1 buildarr.main [INFO] Loading configuration file '/config/buildarr.yml'
-2023-02-22 14:50:49,374 buildarr:1 buildarr.main [INFO] Finished loading configuration file
-2023-02-22 14:50:49,378 buildarr:1 buildarr.main [INFO] Plugins loaded: sonarr
-2023-02-22 14:50:49,380 buildarr:1 buildarr.main [INFO] Running with plugins: sonarr
+2023-03-29 20:39:50,856 buildarr:1 buildarr.cli.run [INFO] Buildarr version 0.4.0 (log level: INFO)
+2023-03-29 20:39:50,856 buildarr:1 buildarr.cli.run [INFO] Loading configuration file '/config/buildarr.yml'
+2023-03-29 20:39:50,872 buildarr:1 buildarr.cli.run [INFO] Finished loading configuration file
+2023-03-29 20:39:50,874 buildarr:1 buildarr.cli.run [INFO] Loaded plugins: sonarr (0.4.0)
+2023-03-29 20:39:50,875 buildarr:1 buildarr.cli.run [INFO] Loading instance configurations
+2023-03-29 20:39:50,877 buildarr:1 buildarr.cli.run [INFO] Finished loading instance configurations
+2023-03-29 20:39:50,877 buildarr:1 buildarr.cli.run [INFO] Running with plugins: sonarr
 ...
 ```
 
