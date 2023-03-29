@@ -35,7 +35,7 @@ $ docker pull callum027/buildarr:latest
 
 Buildarr can also be installed using `pip`. Python 3.8 or later is required. Windows is natively supported.
 
-As of version 0.4.0, the Python package for Buildarr no longer includes plugins for applications. In order to use Buildarr to manage an application instance, you will also need to install its respective plugin.
+As of version 0.4.0, the Python package for Buildarr no longer includes plugins for applications. In order to use Buildarr to manage an application instance, you will also need to install its corresponding plugin.
 
 ```bash
 $ python3 -m venv buildarr-venv
@@ -202,7 +202,7 @@ If you encounter an issue or error while using Buildarr, please do a Buildarr ad
 $ docker run -d --name buildarr -v $(pwd):/config -e PUID=$(id -u) -e PGID=$(id -g) callum027/buildarr:latest --log-level DEBUG run
 ```
 
-Bug reports and pull requests for Buildarr itself are welcome in the Buildarr base package repository. For reporting issues and making contributions to application plugins, check out their respective repositories:
+Bug reports and pull requests for Buildarr itself are welcome in the Buildarr base package repository. For reporting issues and making contributions to application plugins, check out their repositories:
 
 * Sonarr plugin: [https://github.com/buildarr/buildarr-sonarr](https://github.com/buildarr/buildarr-sonarr)
 
