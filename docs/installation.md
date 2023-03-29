@@ -16,6 +16,12 @@ $ . buildarr-venv/bin/activate
 $ python3 -m pip install buildarr
 ```
 
+!!! note
+
+    As of Buildarr v0.4.0, plugins are no longer bundled with the Buildarr base package.
+
+    For more information on the available plugins and installing them, see [Plugins](plugins.md).
+
 Once installed and a configuration file has been created, you can execute an update of your stack by running the following command.
 
 ```bash
@@ -59,6 +65,10 @@ For configuration testing purposes, you can call `buildarr run` using the Docker
 ```bash
 $ docker run --rm -v /path/to/config:/config -e PUID=<PUID> -e PGID=<PGID> callum027/buildarr:latest run
 ```
+
+The Docker container for Buildarr is bundled with the Sonarr plugin, so Sonarr instances can be managed out of the box.
+
+If you would like to install external plugins into the Docker container, see [Installing plugins into the Docker container](plugins.md#installing-plugins-into-the-docker-container).
 
 ## Docker Compose
 

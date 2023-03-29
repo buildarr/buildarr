@@ -202,9 +202,13 @@ If you encounter an issue or error while using Buildarr, please do a Buildarr ad
 $ docker run -d --name buildarr -v $(pwd):/config -e PUID=$(id -u) -e PGID=$(id -g) callum027/buildarr:latest --log-level DEBUG run
 ```
 
+Bug reports and pull requests for Buildarr itself are welcome in the Buildarr base package repository. For reporting issues and making contributions to application plugins, check out their respective repositories:
+
+* Sonarr plugin: [https://github.com/buildarr/buildarr-sonarr](https://github.com/buildarr/buildarr-sonarr)
+
 For developers looking to make a contribution to this project, thank you! Documentation of the internal APIs is still in the works, so for now, the best way to learn how Buildarr works is to clone the project and have a look at the comments and docstrings.
 
-Pre-commit hooks are configured for this project. In this pre-commit hook, `black`, `flake8`, `isort` and `mypy` are run to automatically format source files, ensure grammatical correctness and variable type consistency.
+Pre-commit hooks are configured for this project. In this pre-commit hook, [Black](https://black.readthedocs.io/en/stable), [Ruff](https://beta.ruff.rs/docs) and [Mypy](https://mypy-lang.org) are run to automatically format source files, ensure grammatical correctness and variable type consistency.
 
 To enable them, ensure the `pre-commit` Python package is installed in your local environment and run the following command:
 
@@ -213,8 +217,6 @@ $ pre-commit install
 ```
 
 Poetry is used to manage the Python package definition and dependencies in this project.
-
-Pull requests for Buildarr itself and the currently vendored plugins are welcome.
 
 If you're looking to develop a new plugin for adding support for a new application, please develop it as a new package and configure entry points in your Python package definitions to allow Buildarr to load your plugin.
 

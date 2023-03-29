@@ -10,7 +10,7 @@ In the future automated unit tests are planned, and major refactors of the Build
 
 The major new feature this release introduces is instance linking: the ability to define relationships between two instances.
 
-Most of the work went into the internal implementation to make it possible to use in plugins, but one use case within the Sonarr plugin itself is now supported: [Sonarr instances using another Sonarr instance](plugins/sonarr/configuration/import-lists.md#sonarr) as an import list, via the new [`instance_name`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.instance_name) attribute.
+Most of the work went into the internal implementation to make it possible to use in plugins, but one use case within the Sonarr plugin itself is now supported: [Sonarr instances using another Sonarr instance](https://buildarr.github.io/plugins/sonarr/configuration/import-lists/#sonarr) as an import list, via the new [`instance_name`](https://buildarr.github.io/plugins/sonarr/configuration/import-lists/#buildarr_sonarr.config.import_lists.SonarrImportList.instance_name) attribute.
 
 When using this attribute, Buildarr will automatically fill in the API key attribute so you don't have to, and instead of using IDs to reference quality profiles/language profiles/tags in the source instance, names can now be used:
 
@@ -49,13 +49,13 @@ A number of other improvements and bugfixes were made, such as:
 
 * Fix configuration validation to allow local and non-qualified domains on all URL-type attributes (fixes `localhost` API URL references)
 * Rename the following Sonarr import list attributes (and retain the old names as aliases to ensure backwards compatibility):
-    * `source_quality_profile_ids` renamed to [`source_quality_profiles`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.source_quality_profiles)
-    * `source_language_profile_ids` renamed to [`source_language_profiles`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.source_language_profiles)
-    * `source_tag_ids` renamed to [`source_tags`](plugins/sonarr/configuration/import-lists.md#buildarr.plugins.sonarr.config.import_lists.SonarrImportList.source_tags)
+    * `source_quality_profile_ids` renamed to [`source_quality_profiles`](https://buildarr.github.io/plugins/sonarr/configuration/import-lists/#buildarr_sonarr.config.import_lists.SonarrImportList.source_quality_profiles)
+    * `source_language_profile_ids` renamed to [`source_language_profiles`](https://buildarr.github.io/plugins/sonarr/configuration/import-lists/#buildarr_sonarr.config.import_lists.SonarrImportList.source_language_profiles)
+    * `source_tag_ids` renamed to [`source_tags`](https://buildarr.github.io/plugins/sonarr/configuration/import-lists/#buildarr_sonarr.config.import_lists.SonarrImportList.source_tags)
 * Fix reading the `$BUILDARR_LOG_LEVEL` environment variable to be case-insensitive
 * Clean up runtime state after individual update runs in daemon mode, to ensure no state leakage into subsequent runs
 * Add a new [`buildarr.request_timeout`](configuration.md#buildarr.config.buildarr.BuildarrConfig.request_timeout) configuration attribute for adjusting API request timeouts (the default is 30 seconds)
-* Improve Sonarr quality definition [`min` and `max`](plugins/sonarr/configuration/quality.md#buildarr.plugins.sonarr.config.quality.QualityDefinition.min) validation so that `400` is also a valid value for `max`, and enforce `min`-`max` value difference constraints
+* Improve Sonarr quality definition [`min` and `max`](https://buildarr.github.io/plugins/sonarr/configuration/quality/#buildarr_sonarr.config.quality.QualityDefinition.min) validation so that `400` is also a valid value for `max`, and enforce `min`-`max` value difference constraints
 * Major internal code refactor through the introduction of [Ruff](https://beta.ruff.rs/docs) to the development pipeline, fixing a large number of minor code quality issues
 
 ### Changed
