@@ -14,7 +14,11 @@ $ pip install buildarr-sonarr
 
 This will allow the Sonarr plugin to deliver releases independently of the base Buildarr package, allowing for more rapid releases of both packages, while ensuring compability between Buildarr and its plugins through plugin version pinning of the Buildarr base package.
 
+Buildarr uses [semantic versioning](https://semver.org).
+
 While Buildarr is in beta, point releases (e.g. `0.x.0`) signify there may be a breaking change to the plugin API, which plugins should accommodate with corresponding changes and adjustment of their dependency requirements.
+
+After Buildarr releases its first stable version (`v1.0.0`), major version increases (e.g. `v2.0.0`) will be used for backward-incompatible releases, while point releases (e.g. `v1.x.0`) will be made for backward-compatible feature releases.
 
 A number of other features and bugfixes have been added in this release:
 
