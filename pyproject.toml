@@ -32,7 +32,6 @@ buildarr = "buildarr.cli.main:main"
 
 [tool.poetry.plugins."buildarr.plugins"]
 "dummy" = "buildarr.plugins.dummy.plugin:DummyPlugin"
-"sonarr" = "buildarr.plugins.sonarr.plugin:SonarrPlugin"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4.0"

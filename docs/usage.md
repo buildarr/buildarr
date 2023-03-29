@@ -97,9 +97,9 @@ Of note in particular is the following line:
 2023-02-22 21:21:26,783 buildarr:1 buildarr.plugins.sonarr default [INFO] sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
 ```
 
-When Buildarr detects that the remote configuration differents from the locally defined configuration, the remote configuration will be updated. In this case, Buildarr detected that on the `default` instance configured in the Sonarr plugin, the configured GUI instance name is different from the locally defined value, so it updated the Sonarr instance to reflect the change.
+When Buildarr detects that the remote configuration differs from the locally defined configuration, the remote configuration will be updated. In this case, Buildarr detected that on the `default` instance configured in the Sonarr plugin, the configured GUI instance name is different from the locally defined value, so it updated the Sonarr instance to reflect the change.
 
-If the run fails for one reason or another, an error message will be logged and Buildarr with exit with a non-zero status.
+If the run fails for one reason or another, an error message will be logged and Buildarr will exit with a non-zero status code.
 
 ### Dry runs
 

@@ -29,11 +29,15 @@ Buildarr attempts to fulfill some of the needs of users of the following project
 
 Buildarr is available on Docker Hub as a Docker image.
 
+A plugin for Sonarr is bundled into the official Docker container for Buildarr, so you can manage Sonarr instances right away.
+
 ```bash
 $ docker pull callum027/buildarr:latest
 ```
 
 Buildarr can also be installed using `pip`. Python 3.8 or later is required. Windows is natively supported.
+
+As of version 0.4.0, the Python package for Buildarr no longer includes plugins for applications. In order to use Buildarr to manage an application instance, you will also need to install its corresponding plugin.
 
 ```bash
 $ python3 -m venv buildarr-venv
@@ -47,13 +51,13 @@ For more information, check the [installation instructions](http://buildarr.gith
 
 ## Plugins
 
-Buildarr supports external plugins to allow additional applications to be supported. To allow for rapid development of both the plugin and the API, however, the one currently existing plugin, `buildarr-sonarr`, is vendored in as `buildarr.plugins.sonarr`.
+Buildarr supports external plugins to allow additional applications to be supported.
 
 At the time of this release the following plugins are available:
 
-* `buildarr-sonarr` - [Sonarr](https://sonarr.tv) PVR for TV shows (V3 only for now)
+* [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
 
-For more information on installing plugins and configuring the vendored plugins, check the [plugin documentation](http://buildarr.github.io/plugins).
+For more information on installing plugins, check the [plugin documentation](http://buildarr.github.io/plugins).
 
 ## Configuration
 
@@ -200,9 +204,13 @@ If you encounter an issue or error while using Buildarr, please do a Buildarr ad
 $ docker run -d --name buildarr -v $(pwd):/config -e PUID=$(id -u) -e PGID=$(id -g) callum027/buildarr:latest --log-level DEBUG run
 ```
 
+Bug reports and pull requests for Buildarr itself are welcome in the Buildarr base package repository. For reporting issues and making contributions to application plugins, check out their repositories:
+
+* Sonarr plugin: [https://github.com/buildarr/buildarr-sonarr](https://github.com/buildarr/buildarr-sonarr)
+
 For developers looking to make a contribution to this project, thank you! Documentation of the internal APIs is still in the works, so for now, the best way to learn how Buildarr works is to clone the project and have a look at the comments and docstrings.
 
-Pre-commit hooks are configured for this project. In this pre-commit hook, `black`, `flake8`, `isort` and `mypy` are run to automatically format source files, ensure grammatical correctness and variable type consistency.
+Pre-commit hooks are configured for this project. In this pre-commit hook, [Black](https://black.readthedocs.io/en/stable), [Ruff](https://beta.ruff.rs/docs) and [Mypy](https://mypy-lang.org) are run to automatically format source files, ensure grammatical correctness and variable type consistency.
 
 To enable them, ensure the `pre-commit` Python package is installed in your local environment and run the following command:
 
@@ -211,8 +219,6 @@ $ pre-commit install
 ```
 
 Poetry is used to manage the Python package definition and dependencies in this project.
-
-Pull requests for Buildarr itself and the currently vendored plugins are welcome.
 
 If you're looking to develop a new plugin for adding support for a new application, please develop it as a new package and configure entry points in your Python package definitions to allow Buildarr to load your plugin.
 
