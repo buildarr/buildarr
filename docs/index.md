@@ -180,10 +180,10 @@ For more information on how to interfact with Buildarr, check the [usage documen
 
 ## To-do list
 
-* Add a dry-run mode for testing configurations (added in [version 0.4.0](release-notes.md#v040-2023-03-30))
+* Add a dry-run mode for testing configurations (added in [version 0.4.0](release-notes.md#v040-2023-03-31))
 * Test updates for all available attributes in the existing Sonarr plugin
 * Unit tests and code coverage
-* Split Sonarr plugin to its own repository (completed in [version 0.4.0](release-notes.md#v040-2023-03-30))
+* Split Sonarr plugin to its own repository (completed in [version 0.4.0](release-notes.md#v040-2023-03-31))
 * Create plugins for the following applications:
     * Sonarr V4
     * Radarr
@@ -196,7 +196,7 @@ For more information on how to interfact with Buildarr, check the [usage documen
     * Lidarr
 * Instance linking (e.g. Prowlarr-to-Sonarr/Radarr) and dependency resolution (added in [version 0.3.0](release-notes.md#v030-2023-03-15))
 * Stable plugin API between major versions
-* Auto-generation of Docker Compose environment files reflecting the Buildarr configuration (added in [version 0.4.0](release-notes.md#v040-2023-03-30))
+* Auto-generation of Docker Compose environment files reflecting the Buildarr configuration (added in [version 0.4.0](release-notes.md#v040-2023-03-31))
 
 ## Contributions
 

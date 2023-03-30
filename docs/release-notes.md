@@ -1,6 +1,6 @@
 # Release Notes
 
-## [v0.4.0](https://github.com/buildarr/buildarr/releases/tag/v0.4.0) - 2023-03-30
+## [v0.4.0](https://github.com/buildarr/buildarr/releases/tag/v0.4.0) - 2023-03-31
 
 This is a semi backwards-incompatible feature and bugfix release that undertakes large refactors to move Buildarr closer to the final form it will take for stable release.
 
@@ -52,9 +52,6 @@ A number of other features and bugfixes have been added in this release:
 * Improve and add missing docs for new features ([#70](https://github.com/buildarr/buildarr/pull/70))
 * Evaluate local paths relative to the config file ([#71](https://github.com/buildarr/buildarr/pull/71))
 * Add temporary ignore for `watchdog.Observer` type hint ([#72](https://github.com/buildarr/buildarr/pull/72))
-
-### Removed
-
 * Fork the Sonarr plugin into its own package ([#76](https://github.com/buildarr/buildarr/pull/76))
 
 
