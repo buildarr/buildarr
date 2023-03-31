@@ -32,7 +32,7 @@ As Buildarr plugins are standard Python packages, they can simply be installed u
 $ pip install buildarr-sonarr
 ```
 
-For more information on installing Buildarr as a standalone application, see the [installation instructions](installation.md#standalone-application).
+For more information on installing Buildarr as a standalone application, see the [installation instructions](../installation.md#standalone-application).
 
 ## Installing plugins into the Docker container
 
@@ -46,4 +46,4 @@ If you would like to install an external plugin that is not bundled, the Buildar
 $ docker run -d --name buildarr --restart=always -v /path/to/config:/config -e PUID=<PUID> -e PGID=<PGID> -e BUILDARR_INSTALL_PLUGINS="buildarr-sonarr" callum027/buildarr:latest
 ```
 
-For more information on installing Buildarr as a Docker container, see the [Docker installation instructions](installation.md#docker).
+For more information on installing Buildarr as a Docker container, see the [Docker installation instructions](../installation.md#docker).
