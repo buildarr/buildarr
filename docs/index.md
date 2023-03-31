@@ -55,7 +55,7 @@ At the time of this release the following plugins are available:
 
 * [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
 
-For more information on installing plugins, check the [plugin documentation](plugins.md).
+For more information on installing plugins, check the [plugin documentation](plugins/index.md).
 
 ## Configuration
 

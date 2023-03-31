@@ -6,7 +6,7 @@ This is a semi backwards-incompatible feature and bugfix release that undertakes
 
 As major strides have been taken to stabilise the plugin API, the Sonarr plugin for Buildarr has been forked into a separate package, [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr). From this version onwards, Buildarr no longer bundles application plugins.
 
-The [Docker container](plugins.md#installing-plugins-into-the-docker-container) still bundles the Sonarr plugin for ease of use, but when upgrading an existing [standalone installation](plugins.md#installing-plugins-for-a-standalone-application) of Buildarr, the Sonarr plugin package will need to be installed using `pip`.
+The [Docker container](plugins/index.md#installing-plugins-into-the-docker-container) still bundles the Sonarr plugin for ease of use, but when upgrading an existing [standalone installation](plugins/index.md#installing-plugins-for-a-standalone-application) of Buildarr, the Sonarr plugin package will need to be installed using `pip`.
 
 ```bash
 $ pip install buildarr-sonarr
