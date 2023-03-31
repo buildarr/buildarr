@@ -21,7 +21,9 @@ nav:
   - Release Notes: "release-notes.md"
   - Installation: "installation.md"
   - Configuration: "configuration.md"
-  - Plugins: "plugins.md"
+  - Plugins:
+    - Introduction: "plugins/index.md"
+    - Buildarr Sonarr Plugin: "https://buildarr.github.io/plugins/sonarr"
   - Usage: "usage.md"
   # TODO: Development documentation.
   # - Development:
