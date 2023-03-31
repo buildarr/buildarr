@@ -1,5 +1,60 @@
 # Release Notes
 
+## [v0.4.0](https://github.com/buildarr/buildarr/releases/tag/v0.4.0) - 2023-03-31
+
+This is a semi backwards-incompatible feature and bugfix release that undertakes large refactors to move Buildarr closer to the final form it will take for stable release.
+
+As major strides have been taken to stabilise the plugin API, the Sonarr plugin for Buildarr has been forked into a separate package, [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr). From this version onwards, Buildarr no longer bundles application plugins.
+
+The [Docker container](plugins/index.md#installing-plugins-into-the-docker-container) still bundles the Sonarr plugin for ease of use, but when upgrading an existing [standalone installation](plugins/index.md#installing-plugins-for-a-standalone-application) of Buildarr, the Sonarr plugin package will need to be installed using `pip`.
+
+```bash
+$ pip install buildarr-sonarr
+```
+
+This will allow the Sonarr plugin to deliver releases independently of the base Buildarr package, allowing for more rapid releases of both packages, while ensuring compability between Buildarr and its plugins through plugin version pinning of the Buildarr base package.
+
+Buildarr uses [semantic versioning](https://semver.org).
+
+While Buildarr is in beta, point releases (e.g. `0.x.0`) signify there may be a breaking change to the plugin API, which plugins should accommodate with corresponding changes and adjustment of their dependency requirements.
+
+After Buildarr releases its first stable version (`v1.0.0`), major version increases (e.g. `v2.0.0`) will be used for backward-incompatible releases, while point releases (e.g. `v1.x.0`) will be made for backward-compatible feature releases.
+
+A number of other features and bugfixes have been added in this release:
+
+* Add support for [dry runs](usage.md#dry-runs) in Buildarr ad-hoc runs, for testing configuration changes against live instances *without* modifying them
+* Add [configuration validity testing](usage.md#testing-configuration) using the `buildarr test-config` command
+* Add support for [overriding the secrets file](configuration.md#buildarr.config.buildarr.BuildarrConfig.secrets_file_path) path using the `--secrets-file` option
+* Add [automatic generation of Docker Compose files](usage.md#generating-a-docker-compose-file) from Buildarr configuration files using the `buildarr compose` command
+* Improve configuration parsing so that local relative paths read by Buildarr are resolved relative to the parent directory of the file the attribute was read from, rather than the current directory of the Buildarr process
+* Improve validation to output easier-to-read error messages in some cases
+* Improve logging so that it is clearer what source file the log message came from, and what plugin and instance name the message relates to
+* Relax Buildarr base package dependency version requirements, for improved compatibility with external plugins
+
+### Added
+
+* Add the `--dry-run` option to `buildarr run` ([#56](https://github.com/buildarr/buildarr/pull/56))
+* Add instance-specific configs to global state and fix Sonarr dry-run bug ([#59](https://github.com/buildarr/buildarr/pull/59))
+* Add the `buildarr test-config` command ([#60](https://github.com/buildarr/buildarr/pull/60))
+* Add `--secrets-file` option to daemon and run modes ([#67](https://github.com/buildarr/buildarr/pull/67))
+* Add the `buildarr compose` command ([#73](https://github.com/buildarr/buildarr/pull/73))
+* Reintroduce `buildarr.__version__` and use it internally ([#75](https://github.com/buildarr/buildarr/pull/75))
+* Add `version` attribute to plugin metadata object ([#78](https://github.com/buildarr/buildarr/pull/78))
+
+### Changed
+
+* Convert most root validators to attribute-specific validators ([#54](https://github.com/buildarr/buildarr/pull/54))
+* Remove unused code and fix pre-commit job ([#58](https://github.com/buildarr/buildarr/pull/58))
+* Enable validating default config/secrets attribute values ([#63](https://github.com/buildarr/buildarr/pull/63))
+* Reduce usage of `initialize.js` endpoints ([#66](https://github.com/buildarr/buildarr/pull/66))
+* Refactor logging infrastructure ([#68](https://github.com/buildarr/buildarr/pull/68))
+* Relax dependency version requirements ([#69](https://github.com/buildarr/buildarr/pull/69))
+* Improve and add missing docs for new features ([#70](https://github.com/buildarr/buildarr/pull/70))
+* Evaluate local paths relative to the config file ([#71](https://github.com/buildarr/buildarr/pull/71))
+* Add temporary ignore for `watchdog.Observer` type hint ([#72](https://github.com/buildarr/buildarr/pull/72))
+* Fork the Sonarr plugin into its own package ([#76](https://github.com/buildarr/buildarr/pull/76))
+
+
 ## [v0.3.0](https://github.com/buildarr/buildarr/releases/tag/v0.3.0) - 2023-03-15
 
 This is a feature and bugfix release that extends the groundwork laid in the previous version for making Buildarr more usable, and future-proof for the planned new plugins.
