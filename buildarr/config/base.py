@@ -212,7 +212,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                                 else:
                                     raise ValueError(
                                         "'value' attribute not included "
-                                        f"for remote field '{remote_attr_name}'"
+                                        f"for remote field '{remote_attr_name}' "
                                         "and 'field_default' not defined in local attribute",
                                     ) from None
                             break
