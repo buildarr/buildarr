@@ -32,7 +32,7 @@ import click
 
 from schedule import Job as SchedulerJob, Scheduler  # type: ignore[import]
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from .. import __version__
 from ..config import load_config
@@ -91,7 +91,7 @@ class Daemon:
         # for Buildarr daemon configuration fields.
         self._load_config()
         # Create the config file observer and update job scheduler objects.
-        self.observer = Observer()
+        self.observer = self._create_observer()
         self.scheduler = Scheduler()
         # Internal variables for tracking daemon state.
         self._stopped = False
@@ -133,6 +133,17 @@ class Daemon:
                 sorted(self.update_times),
             )
         ]
+
+    def _create_observer(self) -> PollingObserver:
+        """
+        Create an empty `Observer` object for monitoring for file changes.
+
+        Handlers will need to be added to start listening for changes.
+
+        Returns:
+            Empty filesystem observer object
+        """
+        return PollingObserver()
 
     def start(self) -> None:
         """
@@ -211,9 +222,7 @@ class Daemon:
         # and another initial run is performed.
         if self.watch_config:
             logger.info("Setting up config file monitoring")
-            # TODO: Remove ignore when the following issue is fixed.
-            # https://github.com/gorakhargosh/watchdog/issues/982
-            self.observer = Observer()  # type: ignore[assignment]
+            self.observer = self._create_observer()
             config_dirs: Dict[Path, Set[str]] = {}
             for config_file in state.config_files:
                 if config_file.parent not in config_dirs:
@@ -259,6 +268,7 @@ class Daemon:
         self._load_config()
         self.initial_run()
         logger.info("Finished reloading config")
+        logger.info("Buildarr ready.")
 
     def stop(self) -> None:
         """
@@ -317,6 +327,20 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         self.config_dir = config_dir
         self.filenames = filenames
         super().__init__()
+
+    def on_created(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
+        """
+        On recreation of a config file within the monitored directory,
+        reload the Buildarr daemon.
+
+        Args:
+            event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
+        """
+        if not event.is_directory and Path(event.src_path) in (
+            (self.config_dir / filename) for filename in self.filenames
+        ):
+            logger.info("Config file '%s' has been recreated", event.src_path)
+            self.daemon.reload()
 
     def on_modified(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
         """
