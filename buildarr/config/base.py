@@ -512,6 +512,10 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
         Supported `RemoteMapEntry` optional parameters:
 
+        * `equals` (`Callable[[Any, Any], bool], default: (use `a == b`))
+            * Callable function for comparing the local and remote values,
+              and return if they are equal or not, with `True` being returned
+              if they are equal, and `False` if not
         * `encoder` (`Callable[[Any], Any]`, default: (use internal function))
             * Callable function for parsing the local value to its remote equivalent
         * `root_encoder` (`Callable[[Self], Any]`, default: (undefined))
@@ -550,6 +554,9 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             set_value = False
 
             #
+            def equals(a: Any, b: Any) -> bool:
+                return a == b
+
             def formatter(v: Any) -> str:
                 return repr(attr_metadata.get("formatter", self._format_attr)(v))
 
@@ -565,7 +572,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 local_value = getattr(self, attr_name)
                 # If the local and remote attributes are set to the same
                 # value, unless set_unchanged is set to True, do nothing.
-                if local_value == remote_value:
+                if attr_metadata.get("equals", equals)(local_value, remote_value):
                     if attr_name not in already_logged:
                         logger.debug(
                             "%s.%s: %s (up to date)",
