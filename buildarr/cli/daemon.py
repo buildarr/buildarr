@@ -382,7 +382,7 @@ def parse_time(
         try:
             times.append(datetime.strptime(time_str, "%H:%M").time())
         except ValueError:
-            raise click.BadParameter(f"Invalid 24 hour time '{time_str}") from None
+            raise click.BadParameter(f"Invalid 24 hour time '{time_str}'") from None
     return tuple(times)
 
 

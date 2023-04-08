@@ -203,7 +203,7 @@ def compose(
             if hostname == "localhost":
                 raise ComposeInvalidHostnameError(
                     f"Invalid hostname '{hostname}' for {plugin_name} instance '{instance_name}': "
-                    "Hostname must not be localhost for Docker Compose servies",
+                    "Hostname must not be localhost for Docker Compose services",
                 )
             if hostname in hostnames:
                 raise ComposeInvalidHostnameError(
