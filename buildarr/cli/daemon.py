@@ -268,6 +268,7 @@ class Daemon:
         self._load_config()
         self.initial_run()
         logger.info("Finished reloading config")
+        logger.info("Buildarr ready.")
 
     def stop(self) -> None:
         """
@@ -326,6 +327,20 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         self.config_dir = config_dir
         self.filenames = filenames
         super().__init__()
+
+    def on_created(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
+        """
+        On recreation of a config file within the monitored directory,
+        reload the Buildarr daemon.
+
+        Args:
+            event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
+        """
+        if not event.is_directory and Path(event.src_path) in (
+            (self.config_dir / filename) for filename in self.filenames
+        ):
+            logger.info("Config file '%s' has been recreated", event.src_path)
+            self.daemon.reload()
 
     def on_modified(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
         """
