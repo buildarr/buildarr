@@ -1,5 +1,26 @@
 # Release Notes
 
+## [v0.4.1](https://github.com/buildarr/buildarr/releases/tag/v0.4.1) - 2023-04-09
+
+This is a backwards-compatible feature and bugfix release that resolves some issues when running Buildarr in a Docker container, and other small bugs.
+
+* A bug was fixed where Buildarr would not always detect configuration file changes in the Docker environment, particularly if run in Docker Desktop or Docker on WSL2.
+* The default settings for the YAML encoder for configurations were adjusted, changing the configuration attribute order to be closer to the intended order, and making automatically generated configuration easier to read.
+* The documentation has been updated to note the release of the [Prowlarr plugin for Buildarr](https://buildarr.github.io/plugins/prowlarr), and the installation instructions for the Docker image have been extended to reflect changes in the way the Docker container can be used.
+* The plugin API has been extended to add a hook for overriding the function that Buildarr uses to compare local and remote configuration attribute values, for when custom code for that is required.
+
+### Added
+
+* Add overriding the value compare function to remote maps ([#84](https://github.com/buildarr/buildarr/pull/84))
+
+### Changed
+
+* Fix config file monitoring in the Docker container ([#82](https://github.com/buildarr/buildarr/pull/82))
+* Fix mistakes in error messages ([#85](https://github.com/buildarr/buildarr/pull/85))
+* Update Buildarr docs ([#87](https://github.com/buildarr/buildarr/pull/87))
+* Improve built-in YAML encoding ([#88](https://github.com/buildarr/buildarr/pull/88))
+
+
 ## [v0.4.0](https://github.com/buildarr/buildarr/releases/tag/v0.4.0) - 2023-03-31
 
 This is a semi backwards-incompatible feature and bugfix release that undertakes large refactors to move Buildarr closer to the final form it will take for stable release.
