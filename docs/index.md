@@ -190,7 +190,6 @@ For more information on how to interfact with Buildarr, check the [usage documen
     * Radarr
     * Prowlarr (now available as [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr))
     * Bazarr
-    * FlareSolverr
     * Unmanic
     * Tdarr (maybe)
     * Unpackerr
