@@ -17,14 +17,15 @@ markdown_extensions:
   - pymdownx.superfences
 
 nav:
-  - Home: "index.md"
   - Release Notes: "release-notes.md"
   - Installation: "installation.md"
   - Configuration: "configuration.md"
   - Plugins:
     - Introduction: "plugins/index.md"
     - Buildarr Sonarr Plugin: "https://buildarr.github.io/plugins/sonarr"
+    - Buildarr Prowlarr Plugin: "https://buildarr.github.io/plugins/prowlarr"
   - Usage: "usage.md"
+  - GitHub: "https://github.com/buildarr/buildarr"
   # TODO: Development documentation.
   # - Development:
   #   - Introduction: "development/index.md"

@@ -42,6 +42,12 @@ Buildarr is available on Docker Hub as a Docker image.
 $ docker pull callum027/buildarr:latest
 ```
 
+!!! note
+
+    Because the Docker container is a bundle of packages consisting of Buildarr and implementing plugins, it has a separate version number from Buildarr itself.
+
+    For more information, check out the [Docker Hub page](https://hub.docker.com/r/callum027/buildarr) for the Buildarr Docker container.
+
 Once you have a configuration file, create a folder to store the configuration and auto-generated secrets files to mount into the Docker container.
 
 As API keys and login credentials are to be stored here, they should have strict permissions set, with ownership exclusively
@@ -66,7 +72,7 @@ For configuration testing purposes, you can call `buildarr run` using the Docker
 $ docker run --rm -v /path/to/config:/config -e PUID=<PUID> -e PGID=<PGID> callum027/buildarr:latest run
 ```
 
-The Docker container for Buildarr is bundled with the Sonarr plugin, so Sonarr instances can be managed out of the box.
+The Docker container for Buildarr is bundled with the [Sonarr plugin](https://buildarr.github.io/plugins/sonarr) and the [Prowlarr plugin](https://buildarr.github.io/plugins/prowlarr), so instances of those types can be managed out of the box.
 
 If you would like to install external plugins into the Docker container, see [Installing plugins into the Docker container](plugins/index.md#installing-plugins-into-the-docker-container).
 

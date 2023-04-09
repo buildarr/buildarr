@@ -22,7 +22,8 @@ Buildarr plugins are installed as Python packages, just like Buildarr itself.
 
 At the time of this release the following plugins are available:
 
-* [buildarr-sonarr](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr) - [Prowlarr](https://prowlarr.com) indexer manager for Arr applications
 
 ## Installing plugins for a standalone application
 
@@ -45,5 +46,11 @@ If you would like to install an external plugin that is not bundled, the Buildar
 ```bash
 $ docker run -d --name buildarr --restart=always -v /path/to/config:/config -e PUID=<PUID> -e PGID=<PGID> -e BUILDARR_INSTALL_PLUGINS="buildarr-sonarr" callum027/buildarr:latest
 ```
+
+If you would like to upgrade Buildarr itself or the bundled plugins within the container, set the following environment variables to the version you would like to install:
+
+* `$BUILDARR_VERSION`
+* `$BUILDARR_SONARR_VERSION`
+* `$BUILDARR_PROWLARR_VERSION`
 
 For more information on installing Buildarr as a Docker container, see the [Docker installation instructions](../installation.md#docker).
