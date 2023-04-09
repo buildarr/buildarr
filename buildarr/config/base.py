@@ -30,6 +30,7 @@ from typing import (
     Generic,
     Iterable,
     Mapping,
+    Optional,
     Set,
     Tuple,
     Type,
@@ -719,17 +720,30 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return [cls._encode_attr(v) for v in value]
         return value
 
-    def yaml(self, *args, **kwargs) -> str:
+    def yaml(
+        self,
+        *args,
+        sort_keys: bool = False,
+        yaml_kwargs: Optional[Mapping[str, Any]] = None,
+        **kwargs,
+    ) -> str:
         """
         Generate a YAML representation of the model.
 
         Internally this uses the Pydantic JSON generation function, with all arguments
         forwarded to `BaseModel.json()`. The JSON output is then re-processed using PyYAML.
 
+        Args:
+            sort_keys (bool, optional): Sort keys in the output YAML file. Defaults to `False`.
+            yaml_kwargs (Optional[Mapping[str, Any]], optional): YAML encoder keyword args.
+
         Returns:
             YAML representation of the model
         """
-        return yaml.safe_dump(json.loads(self.json(*args, **kwargs)))
+        return yaml.safe_dump(  # type: ignore[call-overload]
+            json.loads(self.json(*args, **kwargs)),
+            **{**(yaml_kwargs or {}), "sort_keys": sort_keys},
+        )
 
     class Config:
         """
