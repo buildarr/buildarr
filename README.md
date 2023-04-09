@@ -29,7 +29,7 @@ Buildarr attempts to fulfill some of the needs of users of the following project
 
 Buildarr is available on Docker Hub as a Docker image.
 
-A plugin for Sonarr is bundled into the official Docker container for Buildarr, so you can manage Sonarr instances right away.
+Plugins for Sonarr and Prowlarr are bundled into the official Docker container for Buildarr, so you can manage instances of those types right away.
 
 ```bash
 $ docker pull callum027/buildarr:latest
@@ -56,6 +56,7 @@ Buildarr supports external plugins to allow additional applications to be suppor
 At the time of this release the following plugins are available:
 
 * [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr) - [Prowlarr](https://prowlarr.com) indexer manager for Arr applications
 
 For more information on installing plugins, check the [plugin documentation](http://buildarr.github.io/plugins).
 
@@ -183,9 +184,8 @@ For more information on how to interfact with Buildarr, check the [usage documen
 * Create plugins for the following applications:
     * Sonarr V4
     * Radarr
-    * Prowlarr
+    * Prowlarr (now available as [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr))
     * Bazarr
-    * FlareSolverr
     * Unmanic
     * Tdarr (maybe)
     * Unpackerr
