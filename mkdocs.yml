@@ -1,4 +1,4 @@
-site_name: Buildarr
+site_name: Buildarr Core
 
 plugins:
   - search
