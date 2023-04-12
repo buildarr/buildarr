@@ -36,6 +36,7 @@ from .util import get_absolute_path
 if TYPE_CHECKING:
     from .config.models import ConfigPlugin
 
+
 Password = Annotated[SecretStr, Field(min_length=1)]
 """
 Constrained secrets string type for password fields. Required to be non-empty.
