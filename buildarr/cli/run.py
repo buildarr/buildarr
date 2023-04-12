@@ -190,6 +190,34 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
         logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
     logger.info("Finished resolving instance dependencies")
 
+    # Initialise any instances that have not been initialised yet.
+    # For applicable instances, this needs to be done before the main API can be queried,
+    # or secrets can even be checked.
+    for plugin_name, instance_name in state._execution_order:
+        manager = state.managers[plugin_name]
+        instance_config = state.instance_configs[plugin_name][instance_name]
+        with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+            logger.debug("Checking if the instance is initialised")
+            try:
+                is_initialized = manager.is_initialized(instance_config)
+            except NotImplementedError:
+                logger.debug("Initialisation is not required for this instance type")
+                continue
+            if is_initialized:
+                logger.debug("Instance is initialised and ready for configuration updates")
+            else:
+                logger.info("Instance has not been initialised")
+                logger.info("Initialising instance")
+                manager.initialize(
+                    (
+                        plugin_name
+                        if instance_name == "default"
+                        else f"{plugin_name}.instances[{repr(instance_config)}]"
+                    ),
+                    instance_config,
+                )
+                logger.info("Finished initialising instance")
+
     # Load the secrets file if it exists, and initialise the secrets metadata.
     # If `use_plugins` is undefined, load using all plugins available
     # to preserve cached secrets metadata that isn't used.
