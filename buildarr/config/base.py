@@ -47,7 +47,7 @@ from pydantic.validators import _VALIDATORS
 from typing_extensions import Self
 
 from ..plugins import Secrets
-from ..types import BaseEnum, BaseIntEnum
+from ..types import BaseEnum, BaseIntEnum, ModelConfigBase
 from .types import RemoteMapEntry
 
 logger = getLogger(__name__)
@@ -645,7 +645,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Returns:
             The value to pass to the logging function
         """
-        if isinstance(value, BaseEnum):
+        if isinstance(value, (BaseEnum, BaseIntEnum)):
             return value.to_name_str()
         elif isinstance(value, AnyUrl):
             return str(value)
@@ -693,7 +693,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                     [t for t in attr_union_types if t is not type(None)][0],
                     value,
                 )
-        elif issubclass(attr_type, BaseEnum):
+        elif issubclass(attr_type, (BaseEnum, BaseIntEnum)):
             return attr_type(value)
         return value
 
@@ -708,7 +708,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Returns:
             Remote attribute value
         """
-        if isinstance(value, BaseEnum):
+        if isinstance(value, (BaseEnum, BaseIntEnum)):
             return value.value
         elif isinstance(value, AnyUrl):
             return str(value)
@@ -745,12 +745,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             **{**(yaml_kwargs or {}), "sort_keys": sort_keys},
         )
 
-    class Config:
+    class Config(ModelConfigBase):
         """
-        Buildarr base Pydantic model configuration.
+        Buildarr configuration model class settings.
 
-        Sets some required configuration parameters for
-        serialisation and parsing to work correctly.
+        Sets some required parameters for serialisation,
+        parsing and validation to work correctly.
 
         To set additional parameters in your implementing class, subclass this class:
 
@@ -762,43 +762,21 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
         if TYPE_CHECKING:
             from .secrets import ExampleSecrets
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
+            class _ExampleConfig(ConfigBase[ExampleSecrets]):
                 ...
         else:
-            class ExampleConfigBase(ConfigBase):
+            class _ExampleConfig(ConfigBase):
                 ...
 
-        class ExampleConfig(ExampleConfigBase):
+        class ExampleConfig(_ExampleConfig):
             ...
 
-            class Config(ExampleConfigBase.Config):
+            class Config(_ExampleConfig.Config):
                 ...  # Add model configuration attributes here.
         ```
         """
 
-        # Add default JSON encoders for custom, non-default and otherwise non-specified
-        # classes so serialisation can work.
-        json_encoders = {
-            BaseEnum: lambda v: v.to_name_str(),
-            BaseIntEnum: lambda v: v.to_name_str(),
-            PurePosixPath: str,
-            SecretStr: lambda v: v.get_secret_value(),
-        }
-
-        # Required to avoid coersion with same-name but different-typed fields
-        # in objects for which there are multiple types that can be defined.
-        smart_union = True
-
-        # When aliases are defined, allow attributes to be referenced by their
-        # internal name, as well as the alias.
-        allow_population_by_field_name = True
-
-        # Validate all configuration attributes, even the default ones.
-        # This is necessary because the default attributes sometimes need to
-        # be validated for correctness in non-default contexts.
-        # (For example, a normally optional attribute becoming required due to
-        # another attribute being enabled.)
-        validate_all = True
+        pass
 
 
 def _validate_pure_posix_path(v: Any) -> PurePosixPath:
