@@ -20,9 +20,10 @@ Buildarr general purpose type hints, used in plugin models.
 from __future__ import annotations
 
 import re
+import warnings
 
 from enum import Enum, IntEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Callable, Generator
 
 from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, Field, SecretStr
@@ -235,6 +236,13 @@ class BaseIntEnum(IntEnum):
         Returns:
             The enumeration object for the given name
         """
+        warnings.warn(
+            (
+                "BaseIntEnum is deprecated, and will be removed in Buildarr version 0.5.0. "
+                "Please update your Buildarr plugin to use BaseEnum instead."
+            ),
+            DeprecationWarning,
+        )
         name = name_str.lower().replace("-", "_")
         for obj in cls:
             if obj.name.lower() == name:
@@ -454,3 +462,39 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
         if not path.is_absolute():
             return cls(get_absolute_path(state._current_dir / path))
         return path
+
+
+class ModelConfigBase:
+    """
+    Buildarr model configuration base class.
+
+    Sets some required configuration parameters for
+    serialisation, parsing and validation to work correctly.
+    """
+
+    # Add default JSON encoders for custom, non-default and otherwise non-specified
+    # classes so serialisation can work.
+    # Note that subclasses of types already handled by Python's built-in JSON encoder
+    # will *not* be read using this structure, so there are limitations as to
+    # what will work when defined here.
+    json_encoders = {
+        BaseEnum: lambda v: v.to_name_str(),
+        PurePosixPath: str,
+        PureWindowsPath: str,
+        SecretStr: lambda v: v.get_secret_value(),
+    }
+
+    # Required to avoid coersion with same-name but different-typed fields
+    # in objects for which there are multiple types that can be defined.
+    smart_union = True
+
+    # When aliases are defined, allow attributes to be referenced by their
+    # internal name, as well as the alias.
+    allow_population_by_field_name = True
+
+    # Validate all configuration attributes, even the default ones.
+    # This is necessary because the default attributes sometimes need to
+    # be validated for correctness in non-default contexts.
+    # (For example, a normally optional attribute becoming required due to
+    # another attribute being enabled.)
+    validate_all = True

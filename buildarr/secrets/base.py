@@ -21,9 +21,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Generic
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel
 
 from ..plugins import Config
+from ..types import ModelConfigBase
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +61,37 @@ class SecretsBase(BaseModel, Generic[Config]):
         """
         path.write_text(self.json())
 
-    class Config:
-        json_encoders = {SecretStr: lambda v: v.get_secret_value()}
-        validate_all = True
+    class Config(ModelConfigBase):
+        """
+        Buildarr secrets model class settings.
+
+        Sets some required parameters for serialisation,
+        parsing and validation to work correctly.
+
+        To set additional parameters in your implementing class, subclass this class:
+
+        ```python
+        from __future__ import annotations
+
+        from typing import TYPE_CHECKING
+        from buildarr.secrets import SecretsBase
+
+        if TYPE_CHECKING:
+            from .config import ExampleConfig
+            class _ExampleSecrets(SecretsBase[ExampleSecrets]):
+                ...
+        else:
+            class _ExampleSecrets(SecretsBase):
+                ...
+
+        class ExampleSecrets(_ExampleSecrets):
+            ...
+
+            class Config(_ExampleSecrets.Config):
+                ...  # Add model configuration attributes here.
+        ```
+        """
+
+        # Validate any values that have been modified in-place, to ensure the model
+        # still fits the constraints.
         validate_assignment = True
