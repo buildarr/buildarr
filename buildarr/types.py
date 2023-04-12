@@ -24,7 +24,7 @@ import warnings
 
 from enum import Enum, IntEnum
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any, Callable, Generator
+from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping
 
 from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, Field, SecretStr
 from pydantic.fields import ModelField
@@ -32,6 +32,10 @@ from typing_extensions import Annotated, Self
 
 from .state import state
 from .util import get_absolute_path
+
+if TYPE_CHECKING:
+    from .config.models import ConfigPlugin
+
 
 Password = Annotated[SecretStr, Field(min_length=1)]
 """
@@ -374,8 +378,6 @@ class InstanceName(str):
         Validate the type of the instance name reference,
         evaluate the reference and add the link to the dependency tree structure.
 
-        _extended_summary_
-
         Args:
             value (str): Instance name reference.
             field (ModelField): Field metadata. Used to get the linked plugin name.
@@ -393,9 +395,22 @@ class InstanceName(str):
             if plugin_name not in state.plugins:
                 raise ValueError(f"Target plugin '{plugin_name}' not installed")
             if state.config:
-                if instance_name not in getattr(state.config, plugin_name).instances:
+                instances: Mapping[str, ConfigPlugin] = getattr(
+                    state.config,
+                    plugin_name,
+                ).instances
+                if instance_name == "default":
+                    if instances:
+                        raise ValueError(
+                            "unable to use default instance as the target instance, "
+                            "instance-specific configurations are defined "
+                            f"in plugin '{plugin_name}' configuration ("
+                            f"available instances: {', '.join(repr(i) for i in instances.keys())}"
+                            ")",
+                        )
+                elif instance_name not in instances:
                     raise ValueError(
-                        f"Target instance '{instance_name}' "
+                        f"target instance '{instance_name}' "
                         f"not defined in plugin '{plugin_name}' configuration",
                     )
                 if state._current_plugin and state._current_instance:
