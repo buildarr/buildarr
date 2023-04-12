@@ -232,6 +232,11 @@ class ConfigPlugin(ConfigBase[Secrets]):
                 Dict[str, ConfigPlugin],
                 values["instances"],
             ).items():
+                if instance_name == "default":
+                    raise ValueError(
+                        "instance name 'default' is reserved within Buildarr, "
+                        "please choose a different name for this instance",
+                    )
                 if "hostname" not in instance.__fields_set__:
                     instance.hostname = instance_name  # type: ignore[assignment]
         return values
