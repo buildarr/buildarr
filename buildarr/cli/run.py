@@ -191,7 +191,7 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
     logger.info("Finished resolving instance dependencies")
 
     # Initialise any instances that have not been initialised yet.
-    # For applicable instance, this needs to be done before the main API can be queried,
+    # For applicable instances, this needs to be done before the main API can be queried,
     # or secrets can even be checked.
     for plugin_name, instance_name in state._execution_order:
         manager = state.managers[plugin_name]

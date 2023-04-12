@@ -114,7 +114,7 @@ class ManagerPlugin(Generic[Config, Secrets]):
             instance_config (Config): Instance configuration object to initialise.
 
         Raises:
-            NotImplementedError: When initialisation is not required for application type.
+            NotImplementedError: When initialisation is not required for the application type.
 
         Returns:
             `True` if the instance is initialised, otherwise `False`

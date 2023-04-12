@@ -209,7 +209,7 @@ class ConfigPlugin(ConfigBase[Secrets]):
         for the application's API to become available.
 
         Raises:
-            NotImplementedError: When initialisation is not required for application type.
+            NotImplementedError: When initialisation is not required for the application type.
 
         Returns:
             `True` if the instance is initialised, otherwise `False`
