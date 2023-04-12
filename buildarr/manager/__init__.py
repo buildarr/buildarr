@@ -103,6 +103,38 @@ class ManagerPlugin(Generic[Config, Secrets]):
         """
         return instance_config.render_trash_metadata(trash_metadata_dir)
 
+    def is_initialized(self, instance_config: Config) -> bool:
+        """
+        Return whether or not this instance needs to be initialised.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Args:
+            instance_config (Config): Instance configuration object to initialise.
+
+        Raises:
+            NotImplementedError: When initialisation is not required for application type.
+
+        Returns:
+            `True` if the instance is initialised, otherwise `False`
+        """
+        return instance_config.is_initialized()
+
+    def initialize(self, tree: str, instance_config: Config) -> None:
+        """
+        Initialise the instance, and make the main application API available for Buildarr
+        to query against.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Args:
+            tree (str): Configuration tree this instance falls under (for logging purposes).
+            instance_config (Config): Instance configuration object to initialise.
+        """
+        instance_config.initialize(tree)
+
     def from_remote(self, instance_config: Config, secrets: Secrets) -> Config:
         """
         Get the active configuration for a remote instance, and return the resulting object.

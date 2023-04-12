@@ -198,6 +198,40 @@ class ConfigPlugin(ConfigBase[Secrets]):
         """
         return self
 
+    def is_initialized(self) -> bool:
+        """
+        Return whether or not this instance needs to be initialised.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Configuration plugins should implement this function if initialisation is required
+        for the application's API to become available.
+
+        Raises:
+            NotImplementedError: When initialisation is not required for application type.
+
+        Returns:
+            `True` if the instance is initialised, otherwise `False`
+        """
+        raise NotImplementedError()
+
+    def initialize(self, tree: str) -> None:
+        """
+        Initialise the instance, and make the main application API available for Buildarr
+        to query against.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Configuration plugins should implement this function if initialisation is required
+        for the application's API to become available.
+
+        Args:
+            tree (str): Configuration tree this instance falls under (for logging purposes).
+        """
+        raise NotImplementedError()
+
     def to_compose_service(self, compose_version: str, service_name: str) -> Dict[str, Any]:
         """
         Generate a Docker Compose service definition corresponding to this instance configuration.
