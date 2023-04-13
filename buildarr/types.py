@@ -246,6 +246,7 @@ class BaseIntEnum(IntEnum):
                 "Please update your Buildarr plugin to use BaseEnum instead."
             ),
             DeprecationWarning,
+            stacklevel=1,
         )
         name = name_str.lower().replace("-", "_")
         for obj in cls:

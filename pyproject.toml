@@ -48,15 +48,15 @@ schedule = ">=1.1.0"
 importlib-metadata = ">=4.6.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "23.1.0"
-mypy = "1.1.1"
-types-pyyaml = "6.0.12.8"
-types-requests = "2.28.11.15"
+black = "23.3.0"
+mypy = "1.2.0"
+types-pyyaml = "6.0.12.9"
+types-requests = "2.28.11.17"
 mkdocs = "1.4.2"
-mkdocstrings = {extras = ["python"], version = "0.20.0"}
+mkdocstrings = {extras = ["python"], version = "0.21.2"}
 flask = "2.2.3"
 werkzeug = "2.2.3"
-ruff = "0.0.255"
+ruff = "0.0.261"
 
 [tool.ruff]
 fix = true
