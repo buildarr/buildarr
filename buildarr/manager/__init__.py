@@ -103,6 +103,22 @@ class ManagerPlugin(Generic[Config, Secrets]):
         """
         return instance_config.render_trash_metadata(trash_metadata_dir)
 
+    def render(self, instance_config: Config) -> Config:
+        """
+        Render dynamically populated attributes on the given instance configuration.
+
+        If the instance configuration returned `True` for `uses_trash_metadata`,
+        the filepath to the downloaded metadata directory will be available as
+        `state.trash_metadata_dir` in the global state.
+
+        Args:
+            instance_config (Config): Instance configuration object to render.
+
+        Returns:
+            Rendered configuration object
+        """
+        return instance_config.render()
+
     def is_initialized(self, instance_config: Config) -> bool:
         """
         Return whether or not this instance needs to be initialised.

@@ -101,6 +101,14 @@ class State:
     A data structure containing the names of all the currently active plugins.
     """
 
+    trash_metadata_dir: Path
+    """
+    TRaSH-Guides metadata directory.
+
+    Only available if required by at least one instance configuration,
+    during the render stage of a Buildarr run.
+    """
+
     secrets: SecretsType
     """
     Currently loaded instance secrets.
@@ -165,6 +173,7 @@ class State:
         self.managers = None  # type: ignore[assignment]
         self.instance_configs = None  # type: ignore[assignment]
         self.active_plugins = None  # type: ignore[assignment]
+        self.trash_metadata_dir = None  # type: ignore[assignment]
         self.secrets = None  # type: ignore[assignment]
         self._current_plugin = None  # type: ignore[assignment]
         self._current_instance = None  # type: ignore[assignment]

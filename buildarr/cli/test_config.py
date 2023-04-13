@@ -27,12 +27,17 @@ from typing import TYPE_CHECKING
 import click
 
 from .. import __version__
-from ..config import load_config, load_instance_configs, resolve_instance_dependencies
+from ..config import (
+    load_config,
+    load_instance_configs,
+    render_instance_configs,
+    resolve_instance_dependencies,
+)
 from ..logging import get_log_level
 from ..manager import load_managers
 from ..state import state
 from ..trash import fetch_trash_metadata, render_trash_metadata
-from ..util import create_temp_dir, get_resolved_path
+from ..util import get_resolved_path
 from . import cli
 from .exceptions import TestConfigNoPluginsDefinedError
 
@@ -167,46 +172,61 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         if uses_trash_metadata:
             break
 
-    # Skip this test if no configuration uses TRaSH-Guides metadata,
-    # but otherwise, create a temporary directory, download the TRaSH-Guides metadata,
-    # and render the metadata into the instance-specific configurations.
-    if not uses_trash_metadata:
+    # Test rendering the instance configuration.
+    # If the TRaSH-Guides metadata is required by the configuration, run the rendering
+    # with the TRaSH-Guides metadata available.
+    # If the configuration reports that TRaSH-Guides metadata is not required,
+    # run the test without fetching it.
+    if uses_trash_metadata:
+        fetching_metadata = True
+        try:
+            logger.debug("Fetching TRaSH metadata")
+            with fetch_trash_metadata() as trash_metadata_dir:
+                logger.debug("Finished fetching TRaSH metadata")
+                logger.info("Fetching TRaSH-Guides metadata: PASSED")
+                fetching_metadata = False
+                # TODO: Remove `render_trash_metadata` in Buildarr v0.5.0.
+                try:
+                    logger.debug("Rendering TRaSH metadata")
+                    render_trash_metadata(trash_metadata_dir)
+                    logger.debug("Finished rendering TRaSH metadata")
+                except Exception:
+                    logger.error("Rendering TRaSH-Guides metadata: FAILED")
+                    raise
+                else:
+                    logger.info("Rendering TRaSH-Guides metadata: PASSED")
+                try:
+                    logger.debug("Rendering instance configuration dynamic attributes")
+                    render_instance_configs()
+                    logger.debug("Finished rendering instance configuration dynamic attributes")
+                except Exception:
+                    logger.error("Rendering instance configuration dynamic attributes: FAILED")
+                    raise
+                else:
+                    logger.info("Rendering instance configuration dynamic attributes: PASSED")
+        except Exception:
+            if fetching_metadata:
+                logger.error("Fetching TRaSH-Guides metadata: FAILED")
+            raise
+    else:
         logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
         logger.info("Rendering TRaSH-Guides metadata: SKIPPED (not required)")
-    else:
-        logger.debug("Creating TRaSH metadata directory")
-        with create_temp_dir() as trash_metadata_dir:
-            logger.debug("Finished creating TRaSH metadata directory")
-            try:
-                logger.debug("Fetching TRaSH metadata")
-                fetch_trash_metadata(trash_metadata_dir)
-                logger.debug("Finished fetching TRaSH metadata")
-            except Exception:
-                logger.error("Fetching TRaSH-Guides metadata: FAILED")
-                raise
-            else:
-                logger.info("Fetching TRaSH-Guides metadata: PASSED")
-            try:
-                logger.debug("Rendering TRaSH metadata")
-                render_trash_metadata(trash_metadata_dir)
-                logger.debug("Finished rendering TRaSH metadata")
-            except Exception:
-                logger.error("Rendering TRaSH-Guides metadata: FAILED")
-                raise
-            else:
-                for plugin_name, instance_configs in state.instance_configs.items():
-                    for instance_name, instance_config in instance_configs.items():
-                        with state._with_context(
-                            plugin_name=plugin_name,
-                            instance_name=instance_name,
-                        ):
-                            if state.managers[plugin_name].uses_trash_metadata(instance_config):
-                                logger.debug("Rendered instance configuration:")
-                                for config_line in instance_config.yaml(
-                                    exclude_unset=True,
-                                ).splitlines():
-                                    logger.debug(indent(config_line, "  "))
-                logger.info("Rendering TRaSH-Guides metadata: PASSED")
+        try:
+            logger.debug("Rendering instance configuration dynamic attributes")
+            render_instance_configs()
+            logger.debug("Finished rendering instance configuration dynamic attributes")
+        except Exception:
+            logger.error("Rendering instance configuration dynamic attributes: FAILED")
+            raise
+        else:
+            logger.info("Rendering instance configuration dynamic attributes: PASSED")
+    for plugin_name, instance_configs in state.instance_configs.items():
+        for instance_name, instance_config in instance_configs.items():
+            with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+                if state.managers[plugin_name].uses_trash_metadata(instance_config):
+                    logger.debug("Rendered instance configuration:")
+                    for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                        logger.debug(indent(config_line, "  "))
 
     # If we get to this point, this configuration is pretty much guaranteed to be valid.
     # Incorrect values for a remote application instance notwithstanding, it should

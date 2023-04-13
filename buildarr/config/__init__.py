@@ -23,6 +23,7 @@ from .base import ConfigBase
 from .exceptions import ConfigError, ConfigTrashIDNotFoundError
 from .load import load_config, load_instance_configs
 from .models import ConfigPlugin, ConfigPluginType, ConfigType
+from .render_instance_configs import render_instance_configs
 from .resolve_instance_dependencies import resolve_instance_dependencies
 from .types import RemoteMapEntry
 
@@ -37,4 +38,5 @@ __all__ = [
     "load_config",
     "load_instance_configs",
     "resolve_instance_dependencies",
+    "render_instance_configs",
 ]
