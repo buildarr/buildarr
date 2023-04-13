@@ -189,6 +189,32 @@ class ManagerPlugin(Generic[Config, Secrets]):
             remote=remote_instance_config,
         )
 
+    def delete_remote(
+        self,
+        tree: str,
+        local_instance_config: Config,
+        secrets: Secrets,
+        remote_instance_config: Config,
+    ) -> bool:
+        """
+        Compare the local configuration to a remote instance, and delete any resources
+        that are unmanaged or unused on the remote, and allowed to be deleted.
+
+        Args:
+            tree (str): Configuration tree represented as a string. Mainly used in logging.
+            local_instance_config (Config): Local instance configuration to compare to the remote.
+            secrets (Secrets): Remote instance host and secrets information.
+            remote_instance_config (Config): Currently active remote instance configuration.
+
+        Returns:
+            `True` if the remote configuration changed, otherwise `False`
+        """
+        return local_instance_config.delete_remote(
+            tree=tree,
+            secrets=secrets,
+            remote=remote_instance_config,
+        )
+
     def to_compose_service(
         self,
         instance_config: Config,

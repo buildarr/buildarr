@@ -634,6 +634,41 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         # Return the completed remote attribute dictionary structure.
         return (changed, remote_attrs)
 
+    def delete_remote(
+        self,
+        tree: str,
+        secrets: Secrets,
+        remote: Self,
+    ) -> bool:
+        """
+        Compare the local configuration to a remote instance, and delete any resources
+        that are unmanaged or unused on the remote, and allowed to be deleted.
+
+        This function should be overloaded by implementing classes with resources that
+        may need to be deleted from a remote instance if it is unmanaged by Buildarr
+        or simply unused.
+
+        The base function simply implements traversing the configuration tree
+        to call child section functions.
+
+        Args:
+            tree (str): Configuration tree represented as a string. Mainly used in logging.
+            secrets (Secrets): Remote instance host and secrets information.
+            remote (Self): Remote instance configuration for the current section.
+
+        Returns:
+            `True` if the remote configuration changed, otherwise `False`
+        """
+        changed = False
+        for field_name, field in self:
+            if isinstance(field, ConfigBase) and field.delete_remote(
+                f"{tree}.{field_name}",
+                secrets,
+                getattr(remote, field_name),
+            ):
+                changed = True
+        return changed
+
     @classmethod
     def _format_attr(cls, value: Any) -> Any:
         """
