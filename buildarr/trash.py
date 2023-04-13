@@ -20,9 +20,10 @@ Buildarr TRaSH-Guides metadata functions.
 from __future__ import annotations
 
 from collections import defaultdict
+from contextlib import contextmanager
 from logging import getLogger
 from pathlib import Path
-from shutil import move
+from shutil import move, rmtree
 from typing import TYPE_CHECKING
 from urllib.request import urlretrieve
 from zipfile import ZipFile
@@ -31,7 +32,7 @@ from .state import state
 from .util import create_temp_dir
 
 if TYPE_CHECKING:
-    from typing import DefaultDict, Dict
+    from typing import DefaultDict, Dict, Generator
 
     from .config import ConfigPlugin
 
@@ -57,13 +58,17 @@ def trash_metadata_used() -> bool:
     return False
 
 
-def fetch_trash_metadata(trash_metadata_dir: Path) -> None:
+@contextmanager
+def fetch_trash_metadata() -> Generator[Path, None, None]:
     """
     Download the TRaSH-Guides metadata from the URL specified in the Buildarr config
-    to the given local directory.
+    to a temporary directory.
 
-    Args:
-        metadata_dir (Path): The local folder to extract the metadata to.
+    The temporary path gets added to the Buildarr global state, in addition to
+    being yielded to the caller.
+
+    Yields:
+        The temporary folder containing TRaSH-Guides metadata
     """
 
     logger.debug("Creating TRaSH metadata download temporary directory")
@@ -78,17 +83,24 @@ def fetch_trash_metadata(trash_metadata_dir: Path) -> None:
 
         logger.debug("Extracting TRaSH metadata")
         with ZipFile(trash_metadata_filename) as zip_file:
-            zip_file.extractall(path=temp_dir / "trash-metadata")
+            zip_file.extractall(path=temp_dir / "__trash-metadata__")
+        trash_metadata_filename.unlink()
         logger.debug("Finished extracting TRaSH metadata")
 
         logger.debug("Moving TRaSH metadata files to target directory")
         for subfile in (
-            temp_dir / "trash-metadata" / state.config.buildarr.trash_metadata_dir_prefix
+            temp_dir / "__trash-metadata__" / state.config.buildarr.trash_metadata_dir_prefix
         ).iterdir():
-            move(str(subfile), trash_metadata_dir)
+            move(str(subfile), temp_dir)
+        rmtree(temp_dir / "__trash-metadata__")
         logger.debug("Finished moving TRaSH metadata files to target directory")
 
-        # Temporary directory will be deleted when the with block is exited.
+        state.trash_metadata_dir = temp_dir
+        yield temp_dir
+        state.trash_metadata_dir = None  # type: ignore[assignment]
+
+        logger.debug("Deleting TRaSH metadata download temporary directory")
+    logger.debug("Finished deleting TRaSH metadata download temporary directory")
 
 
 def render_trash_metadata(trash_metadata_dir: Path) -> None:

@@ -198,6 +198,18 @@ class ConfigPlugin(ConfigBase[Secrets]):
         """
         return self
 
+    def render(self) -> Self:
+        """
+        Render any dynamically populated attributes in this instance configuration.
+
+        Configuration plugins should implement this function if there are any attributes
+        that get dynamically populated, e.g. TRaSH-Guides metadata.
+
+        Returns:
+            Rendered configuration object
+        """
+        return self
+
     def is_initialized(self) -> bool:
         """
         Return whether or not this instance needs to be initialised.

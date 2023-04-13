@@ -27,13 +27,18 @@ from typing import Dict, Optional, Set
 import click
 
 from .. import __version__
-from ..config import load_config, load_instance_configs, resolve_instance_dependencies
+from ..config import (
+    load_config,
+    load_instance_configs,
+    render_instance_configs,
+    resolve_instance_dependencies,
+)
 from ..logging import get_log_level
 from ..manager import load_managers
 from ..secrets import SecretsPlugin, load_secrets
 from ..state import state
 from ..trash import fetch_trash_metadata, render_trash_metadata, trash_metadata_used
-from ..util import create_temp_dir, get_resolved_path
+from ..util import get_resolved_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
 
@@ -190,6 +195,25 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
         logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
     logger.info("Finished resolving instance dependencies")
 
+    # Render dynamically populated attributes in instance configurations,
+    # with the TRaSH-Guides metadata directory available in the global state
+    # only if at least one instance configuration requires it.
+    if trash_metadata_used():
+        logger.info("Fetching TRaSH metadata")
+        with fetch_trash_metadata() as trash_metadata_dir:
+            # TODO: Remove `render_trash_metadata` in Buildarr v0.5.0.
+            logger.info("Finished fetching TRaSH metadata")
+            logger.info("Rendering TRaSH metadata")
+            render_trash_metadata(trash_metadata_dir)
+            logger.info("Finished rendering TRaSH metadata")
+            logger.info("Rendering instance configuration dynamic attributes")
+            render_instance_configs()
+            logger.info("Finished rendering instance configuration dynamic attributes")
+    else:
+        logger.info("Rendering instance configuration dynamic attributes")
+        render_instance_configs()
+        logger.info("Finished rendering instance configuration dynamic attributes")
+
     # Initialise any instances that have not been initialised yet.
     # For applicable instances, this needs to be done before the main API can be queried,
     # or secrets can even be checked.
@@ -264,19 +288,6 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
     logger.info("Saving updated secrets file to '%s'", secrets_file_path)
     state.secrets.write(secrets_file_path)
     logger.info("Finished saving updated secrets file")
-
-    # Render any instance configuration with TRaSH-Guides metadata referenced,
-    # populating any missing values.
-    if trash_metadata_used():
-        logger.debug("Creating TRaSH metadata directory")
-        with create_temp_dir() as trash_metadata_dir:
-            logger.debug("Finished creating TRaSH metadata directory")
-            logger.info("Fetching TRaSH metadata")
-            fetch_trash_metadata(trash_metadata_dir)
-            logger.info("Finished fetching TRaSH metadata")
-            logger.info("Rendering TRaSH metadata")
-            render_trash_metadata(trash_metadata_dir)
-            logger.info("Finished rendering TRaSH metadata")
 
     # Update all instances in the determined execution order.
     logger.info("Updating configuration on remote instances")
