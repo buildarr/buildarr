@@ -330,8 +330,11 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
     # After all configuration and resources have been created/updated on
     # the remote instances, make another pass and remove any unmanaged or
     # unused resources slated for deletion.
+    # The execution order is the reverse of the normal order, to ensure
+    # any resources on source instances that depend on resources on
+    # target instances (via instance links) are removed first.
     logger.info("Deleting unmanaged/unused resources on remote instances")
-    for plugin_name, instance_name in state._execution_order:
+    for plugin_name, instance_name in reversed(state._execution_order):
         manager = state.managers[plugin_name]
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
