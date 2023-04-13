@@ -29,6 +29,7 @@ from typing import (
     Dict,
     Generic,
     Iterable,
+    List,
     Mapping,
     Optional,
     Set,
@@ -708,16 +709,21 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Returns:
             Local attribute value
         """
-        return cls._decode_attr_(cls.__fields__[attr_name].type_, value)
+        return cls._decode_attr_(cls.__fields__[attr_name].outer_type_, value)
 
     @classmethod
     def _decode_attr_(cls, attr_type: Type[Any], value: Any) -> Any:
-        if get_type_origin(attr_type) is list:
-            return [cls._decode_attr_(get_type_args(attr_type)[0], v) for v in value]
-        elif get_type_origin(attr_type) is set:
-            return set(cls._decode_attr_(get_type_args(attr_type)[0], v) for v in value)
-        elif get_type_origin(attr_type) is Union:
-            attr_union_types = get_type_args(attr_type)
+        type_tree: List[Type[Any]] = [attr_type]
+        while get_type_origin(type_tree[-1]) is not None:
+            origin_type = get_type_origin(type_tree[-1])
+            if origin_type is not None:
+                type_tree.append(origin_type)
+        if type_tree[-1] is list:
+            return [cls._decode_attr_(get_type_args(type_tree[-2])[0], v) for v in value]
+        elif type_tree[-1] is set:
+            return set(cls._decode_attr_(get_type_args(type_tree[-2])[0], v) for v in value)
+        elif type_tree[-1] is Union:
+            attr_union_types = get_type_args(type_tree[-2])
             #
             if (
                 len(attr_union_types) == OPTIONAL_TYPE_UNION_SIZE
@@ -728,8 +734,8 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                     [t for t in attr_union_types if t is not type(None)][0],
                     value,
                 )
-        elif issubclass(attr_type, (BaseEnum, BaseIntEnum)):
-            return attr_type(value)
+        elif issubclass(type_tree[-1], (BaseEnum, BaseIntEnum)):
+            return type_tree[-1](value)
         return value
 
     @classmethod
