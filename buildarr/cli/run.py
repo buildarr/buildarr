@@ -22,7 +22,7 @@ from __future__ import annotations
 from logging import getLogger
 from pathlib import Path
 from textwrap import indent
-from typing import Dict, Optional, Set
+from typing import TYPE_CHECKING
 
 import click
 
@@ -35,12 +35,17 @@ from ..config import (
 )
 from ..logging import get_log_level
 from ..manager import load_managers
-from ..secrets import SecretsPlugin, load_secrets
+from ..secrets import load_secrets
 from ..state import state
 from ..trash import fetch_trash_metadata, render_trash_metadata, trash_metadata_used
 from ..util import get_resolved_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
+
+if TYPE_CHECKING:
+    from typing import Dict, Optional, Set
+
+    from ..secrets import SecretsPlugin
 
 logger = getLogger(__name__)
 
@@ -291,22 +296,14 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
 
     # Update all instances in the determined execution order.
     logger.info("Updating configuration on remote instances")
-
     for plugin_name, instance_name in state._execution_order:
         manager = state.managers[plugin_name]
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-            # Get the instance's secrets metadata.
             instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
-
-            # Fetch the current active configuration from the remote instance,
-            # so it can be compared to the local configuration.
-            logger.info("Getting remote configuration")
+            logger.info("Fetching remote configuration to check if updates are required")
             remote_instance_config = manager.from_remote(instance_config, instance_secrets)
-            logger.info("Finished getting remote configuration")
-
-            # Output the local and remote instance configuration to the debug logs,
-            # so they can be inspected to see Buildarr's state at this point, if need be.
+            logger.info("Finished fetching remote configuration")
             for config_type, config in (
                 ("Local", instance_config),
                 ("Remote", remote_instance_config),
@@ -314,9 +311,6 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                 logger.debug("%s configuration:", config_type)
                 for config_line in config.yaml(exclude_unset=True).splitlines():
                     logger.debug(indent(config_line, "  "))
-
-            # Compare the local configuration for the instance to the active configuration,
-            # and if there are differences, update the instance.
             logger.info("Updating remote configuration")
             logger.info(
                 (
@@ -331,18 +325,39 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                 ),
             )
             logger.info("Finished updating remote configuration")
-
-            # TODO: Re-fetch the remote configuration and test that it
-            #       now matches the local configuration.
-            # print("Re-fetching remote config")
-            # new_active_config = manager.get_active_config(
-            #     instance_config,
-            #     getattr(secrets, manager_name),
-            # )
-            # print(
-            #     "Active configuration for instance name "
-            #     f'{instance_name}' after update:\n"
-            #     f"{pformat(new_active_config.dict(exclude_unset=True))}",
-            # )
-
     logger.info("Finished updating configuration on remote instances")
+
+    # After all configuration and resources have been created/updated on
+    # the remote instances, make another pass and remove any unmanaged or
+    # unused resources slated for deletion.
+    logger.info("Deleting unmanaged/unused resources on remote instances")
+    for plugin_name, instance_name in state._execution_order:
+        manager = state.managers[plugin_name]
+        instance_config = state.instance_configs[plugin_name][instance_name]
+        with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
+            instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+            logger.info("Refetching remote configuration to delete unused resources")
+            remote_instance_config = manager.from_remote(instance_config, instance_secrets)
+            logger.info("Finished refetching remote configuration")
+            for config_type, config in (
+                ("Local", instance_config),
+                ("Remote", remote_instance_config),
+            ):
+                logger.debug("%s configuration:", config_type)
+                for config_line in config.yaml(exclude_unset=True).splitlines():
+                    logger.debug(indent(config_line, "  "))
+            logger.info("Deleting unmanaged/unused resources on the remote instance")
+            logger.info(
+                (
+                    "Unused resources successfully deleted"
+                    if manager.delete_remote(
+                        plugin_name,
+                        instance_config,
+                        instance_secrets,
+                        remote_instance_config,
+                    )
+                    else "Remote configuration is clean"
+                ),
+            )
+            logger.info("Finished deleting unmanaged/unused resources on the remote instance")
+    logger.info("Finished deleting unmanaged/unused resources on remote instances")
