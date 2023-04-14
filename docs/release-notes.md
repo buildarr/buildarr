@@ -1,4 +1,4 @@
-# Release Notes
+# Release Notes (Buildarr Core)
 
 ## [v0.4.2](https://github.com/buildarr/buildarr/releases/tag/v0.4.2) - 2023-04-14
 
