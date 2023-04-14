@@ -1,4 +1,41 @@
-# Release Notes
+# Release Notes (Buildarr Core)
+
+## [v0.4.2](https://github.com/buildarr/buildarr/releases/tag/v0.4.2) - 2023-04-14
+
+This is a backwards-compatible feature and bugfix release.
+
+This release mainly introduces new behind-the-scenes plugin API functionality to accommodate for new Buildarr plugins currently in development.
+
+* Add a new generic rendering stage to Buildarr runs for populating dynamic configuration attributes (e.g. TRaSH-Guides metadata), that is not specific to TRaSH-Guides metadata.
+    * The current TRaSH-Guides metadata rendering function is now deprecated, and scheduled to be removed in Buildarr v0.5.0.
+* Add a new stage to Buildarr runs for initialising new instances (e.g. with admin credentials or environment settings), that runs after rendering dynamic configuration attributes, but before secrets or remote configuration fetching takes place.
+    * This is intended to be used if an application requires initialising before the main API can be used by Buildarr, even before secrets metadata can be checked/fetched.
+* Add a new stage to Buildarr runs for deleting resources from the remote instance if they are not managed by Buildarr or unused, and deletion is allowed in the configuration.
+    * This runs after the main configuration update stage, and improves stability of resource deletions by performing them in the reverse instance dependency order, ensuring resources that require resources on another instance are removed first.
+    * Any plugins that perform resource deletions are expected to move this functionality to this new Buildarr run stage.
+
+Some bugs that are likely to be encountered when setting up a complex Arr stack with linked instances have also been fixed:
+
+* Partially fix an issue where attributes of the integer enumeration type (`BaseIntEnum`) were not properly handled, resulting in strange logging and potentially validation errors.
+    * Since it is not feasible to fully resolve the issue, the `BaseIntEnum` type is now deprecated, and scheduled to be removed in Buildarr v0.5.0.
+* Allow the default instance of an application plugin (a configuration specified without using `instances:`) to be referenced in instance links, by specifying the reserved `default` instance name.
+    * A validation check has been added to disallow the user from defining an instance-specific configuration named `default`, as that is now (and always has been) a reserved name with respect to instance names in Buildarr.
+* Fix an issue where some non-empty data structure types were not evaluated properly when reading the active configuration of a remote instance, resulting in a Buildarr internal error.
+
+### Added
+
+* Add Buildarr run stage for initialising new instances ([#99](https://github.com/buildarr/buildarr/pull/99))
+* Add generic configuration rendering stage ([#101](https://github.com/buildarr/buildarr/pull/101))
+* Add resource deletion stage after configuration updates ([#102](https://github.com/buildarr/buildarr/pull/102))
+
+### Changed
+
+* Deprecate `BaseIntEnum` ([#95](https://github.com/buildarr/buildarr/pull/95))
+* Allow the default instance to be used in instance links ([#98](https://github.com/buildarr/buildarr/pull/98))
+* Update development dependencies ([#103](https://github.com/buildarr/buildarr/pull/103))
+* Fix default config attribute decoder type discovery ([#105](https://github.com/buildarr/buildarr/pull/105))
+* Delete resources using the reverse execution order ([#106](https://github.com/buildarr/buildarr/pull/106))
+
 
 ## [v0.4.1](https://github.com/buildarr/buildarr/releases/tag/v0.4.1) - 2023-04-09
 
