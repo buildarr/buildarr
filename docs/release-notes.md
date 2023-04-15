@@ -1,5 +1,32 @@
 # Release Notes (Buildarr Core)
 
+## [v0.5.0](https://github.com/buildarr/buildarr/releases/tag/v0.5.0) - 2023-04-16
+
+This is a backwards-incompatible feature release.
+
+The main changes are behind-the-scenes improvements to the plugin API. Plugins will need to be updated to support this new version.
+
+Due to requiring more work than anticipated to keep working, the deprecated `--dry-run` option has been removed from the `buildarr run` command. If you require more testing for your configuration than `buildarr test-config` does, it is recommended to create a staging environment for your Arr stack, and test configuration changes against that.
+
+The following issues have also been addressed:
+
+* Added a new `request_timeout` global state attribute, which provides a valid value even when the Buildarr configuration is not loaded (e.g. plugin-specific ad-hoc commands). This allows plugins to fix an issue where when dumping instance configurations, they were trying to access the corresponding attribute in the Buildarr config, which isn't loaded for that command.
+
+### Added
+
+* Add `request_timeout` global state attribute ([#114](https://github.com/buildarr/buildarr/pull/114))
+
+### Changed
+
+* Set `validate_assignment` to `True` by default for config models ([#115](https://github.com/buildarr/buildarr/pull/115))
+* Change `ConfigBase.uses_trash_metadata` to a function ([#116](https://github.com/buildarr/buildarr/pull/116))
+
+### Removed
+
+* Remove deprecated features for Buildarr v0.5.0 ([#112](https://github.com/buildarr/buildarr/pull/112))
+* Remove the deprecated ad-hoc run `--dry-run` option ([#113](https://github.com/buildarr/buildarr/pull/113))
+
+
 ## [v0.4.2](https://github.com/buildarr/buildarr/releases/tag/v0.4.2) - 2023-04-14
 
 This is a backwards-compatible feature and bugfix release.

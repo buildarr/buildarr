@@ -156,5 +156,3 @@ Buildarr operates on a principle of "don't touch what is not explicitly defined"
         - trash_metadata_download_url
         - trash_metadata_dir_prefix
         - docker_image_uri
-      show_root_heading: false
-      show_source: false
