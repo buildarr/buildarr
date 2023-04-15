@@ -54,8 +54,6 @@ logger = getLogger(__name__)
         "This loads the configuration file and performs a number of checks on it. "
         "If all tests pass, the file is pretty much guaranteed to work properly "
         "in a Buildarr run, incorrect values for a remote instance notwithstanding.\n\n"
-        "To validate the configuration against remote instances without modifying them, "
-        "use `buildarr run --dry-run'.\n\n"
         "If CONFIG-PATH is not defined, use `buildarr.yml' from the current directory."
     ),
 )

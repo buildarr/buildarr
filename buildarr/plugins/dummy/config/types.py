@@ -30,9 +30,9 @@ if TYPE_CHECKING:
     from ..secrets import DummySecrets
 
     class DummyConfigBase(ConfigBase[DummySecrets]):
-        ...
+        pass
 
 else:
 
     class DummyConfigBase(ConfigBase):
-        ...
+        pass

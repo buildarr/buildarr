@@ -80,7 +80,7 @@ After Buildarr releases its first stable version (`v1.0.0`), major version incre
 
 A number of other features and bugfixes have been added in this release:
 
-* Add support for [dry runs](usage.md#dry-runs) in Buildarr ad-hoc runs, for testing configuration changes against live instances *without* modifying them
+* Add support for dry runs in Buildarr ad-hoc runs, for testing configuration changes against live instances *without* modifying them
 * Add [configuration validity testing](usage.md#testing-configuration) using the `buildarr test-config` command
 * Add support for [overriding the secrets file](configuration.md#buildarr.config.buildarr.BuildarrConfig.secrets_file_path) path using the `--secrets-file` option
 * Add [automatic generation of Docker Compose files](usage.md#generating-a-docker-compose-file) from Buildarr configuration files using the `buildarr compose` command

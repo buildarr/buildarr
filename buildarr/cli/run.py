@@ -92,14 +92,6 @@ logger = getLogger(__name__)
     ),
 )
 @click.option(
-    "-D",
-    "--dry-run",
-    "dry_run",
-    is_flag=True,
-    default=False,
-    help="Enable dry-run mode. Update runs are executed, but instances are not modified.",
-)
-@click.option(
     "-p",
     "--plugin",
     "use_plugins",
@@ -115,7 +107,6 @@ logger = getLogger(__name__)
 def run(
     config_path: Path,
     secrets_file_path: Optional[Path],
-    dry_run: bool,
     use_plugins: Set[str],
 ) -> None:
     """
@@ -123,17 +114,10 @@ def run(
 
     Args:
         config_path (Path): Configuration file to load.
-        dry_run (bool): If set to `True`, run in dry-run mode.
         plugins (Set[str]): Plugins to load. If empty, use all plugins.
     """
 
     logger.info("Buildarr version %s (log level: %s)", __version__, get_log_level())
-
-    if dry_run:
-        logger.info(
-            "Dry-run mode enabled: executing update runs, but will not modify instances",
-        )
-        state.dry_run = True
 
     logger.info("Loading configuration file '%s'", config_path)
     load_config(path=config_path, use_plugins=use_plugins)

@@ -107,17 +107,7 @@ When Buildarr detects that the remote configuration differs from the locally def
 
 If the run fails for one reason or another, an error message will be logged and Buildarr will exit with a non-zero status code.
 
-### Dry runs
-
-*New in version 0.4.0.*
-
-Buildarr ad-hoc runs support a dry-run mode, so you can check what *would* change on configured instances, before actually applying them. Under this mode, the output of Buildarr itself is almost exactly the same, but any actions logged in the output are not actually performed.
-
-```bash
-$ buildarr run --dry-run
-```
-
-This allows you to test changes in the configuration, or check the current state of remote instances against the configuration before actually committing changes.
+*Changed in version 0.5.0*: Dry runs have been removed from Buildarr. If [testing your configuration](#testing-configuration) does not cover your needs, consider creating a staging environment for your Arr stack, and test changes there before rolling it out to your production stack.
 
 ## As a service (daemon mode)
 
@@ -216,8 +206,6 @@ $ buildarr test-config /config/buildarr.yml
 ```
 
 Since Buildarr does not connect to any remote instances in this mode, even if a configuration file passes the tests performed by `buildarr test-config`, it will not necessarily successfully communicate with them.
-
-To test the configuration against live remote instances, without modifying them, you can use `buildarr run --dry-run` as documented in [Dry runs](#dry-runs).
 
 ## Generating a Docker Compose file
 
