@@ -92,6 +92,4 @@ class SecretsBase(BaseModel, Generic[Config]):
         ```
         """
 
-        # Validate any values that have been modified in-place, to ensure the model
-        # still fits the constraints.
-        validate_assignment = True
+        pass
