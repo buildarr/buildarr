@@ -69,6 +69,18 @@ class State:
         """
         return False
 
+    @property
+    def request_timeout(self) -> float:
+        """
+        Default timeout for HTTP requests, in seconds.
+
+        If the Buildarr configuration is loaded, the value defined there is used.
+        Otherwise, this is set to a default of 30 seconds.
+        """
+        if self.config is not None:
+            return self.config.buildarr.request_timeout
+        return 30.0
+
     plugins: Mapping[str, Plugin] = {}
     """
     The loaded Buildarr plugins, mapped to the plugin's unique name.
