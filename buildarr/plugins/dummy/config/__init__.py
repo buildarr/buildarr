@@ -19,7 +19,6 @@ Dummy plugin configuration.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
 from typing_extensions import Self
@@ -149,29 +148,23 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         """
         return self.settings.uses_trash_metadata
 
-    def render_trash_metadata(self, trash_metadata_dir: Path) -> Self:
+    def render(self) -> Self:
         """
-        Read TRaSH-Guides metadata, and return a configuration object with all templates rendered.
-
-        Args:
-            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
+        Render dynamic configuration attributes, and return the resulting configuration object.
 
         Returns:
             Rendered configuration object
         """
         copy = self.copy(deep=True)
-        copy._render_trash_metadata(trash_metadata_dir)
+        copy._render()
         return copy
 
-    def _render_trash_metadata(self, trash_metadata_dir: Path) -> None:
+    def _render(self) -> None:
         """
-        Render configuration attributes obtained from TRaSH-Guides, in-place.
-
-        Args:
-            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
+        Render dynamic configuration attributes in place.
         """
         if self.settings.uses_trash_metadata:
-            self.settings._render_trash_metadata(trash_metadata_dir)
+            self.settings._render()
 
     @classmethod
     def from_remote(cls, secrets: DummySecrets) -> Self:
@@ -211,34 +204,3 @@ class DummyConfig(DummyInstanceConfig):
     Globally specified configuration values apply to all instances.
     Configuration values specified on an instance-level take precedence at runtime.
     """
-
-    @property
-    def uses_trash_metadata(self) -> bool:
-        """
-        A flag determining whether or not this configuration uses TRaSH-Guides metadata.
-
-        Returns:
-            `True` if TRaSH-Guides metadata is used, otherwise `False`
-        """
-        for instance in self.instances.values():
-            if instance.uses_trash_metadata:
-                return True
-        return super().uses_trash_metadata
-
-    def render_trash_metadata(self, trash_metadata_dir: Path) -> Self:
-        """
-        Read TRaSH-Guides metadata, and return a configuration object with all templates rendered.
-
-        Args:
-            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
-
-        Returns:
-            Rendered configuration object
-        """
-        copy = self.copy(deep=True)
-        for instance in copy.instances.values():
-            if instance.uses_trash_metadata:
-                instance._render_trash_metadata(trash_metadata_dir)
-        if self.uses_trash_metadata:
-            copy._render_trash_metadata(trash_metadata_dir)
-        return copy

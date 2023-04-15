@@ -20,9 +20,8 @@ Buildarr general purpose type hints, used in plugin models.
 from __future__ import annotations
 
 import re
-import warnings
 
-from enum import Enum, IntEnum
+from enum import Enum
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping
 
@@ -218,85 +217,7 @@ class BaseEnum(Enum):
                 raise ValueError(f"Invalid {cls.__name__} name or value: {value}") from None
 
 
-class BaseIntEnum(IntEnum):
-    """
-    Integer numeration base class for use in Buildarr configurations.
-
-    Like `BaseEnum`, but as the enumeration values are guaranteed to be integer type,
-    it natively supports sorting functions such as `sorted`.
-    """
-
-    @classmethod
-    def from_name_str(cls, name_str: str) -> Self:
-        """
-        Get the enumeration object corresponding to the given name case-insensitively.
-
-        Args:
-            name_str (str): Name of the enumeration value (case insensitive).
-
-        Raises:
-            KeyError: When the enumeration name is invalid (does not exist).
-
-        Returns:
-            The enumeration object for the given name
-        """
-        warnings.warn(
-            (
-                "BaseIntEnum is deprecated, and will be removed in Buildarr version 0.5.0. "
-                "Please update your Buildarr plugin to use BaseEnum instead."
-            ),
-            DeprecationWarning,
-            stacklevel=1,
-        )
-        name = name_str.lower().replace("-", "_")
-        for obj in cls:
-            if obj.name.lower() == name:
-                return obj
-        raise KeyError(repr(name))
-
-    def to_name_str(self) -> str:
-        """
-        Return the name for this enumaration object.
-
-        Returns:
-            Enumeration name
-        """
-        return self.name.replace("_", "-")
-
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
-        """
-        Pass class validation functions to Pydantic.
-
-        Yields:
-            Validation class functions
-        """
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> Self:
-        """
-        Validate and coerce the given value to an enumeration object.
-
-        Args:
-            value (Any): Object to validate and coerce
-
-        Raises:
-            ValueError: If a enumeration object corresponding with the value cannot be found
-
-        Returns:
-            Enumeration object corresponding to the given value
-        """
-        try:
-            return cls(value)
-        except ValueError:
-            try:
-                return cls.from_name_str(value)
-            except (TypeError, KeyError):
-                raise ValueError(f"Invalid {cls.__name__} name or value: {value}") from None
-
-
-class DayOfWeek(BaseIntEnum):
+class DayOfWeek(BaseEnum):
     """
     Sortable eumeration for the days in the week (Monday to Sunday).
 

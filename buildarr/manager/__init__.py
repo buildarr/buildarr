@@ -26,7 +26,6 @@ from ..plugins import Config, Secrets
 from ..state import state
 
 if TYPE_CHECKING:
-    from pathlib import Path
     from typing import Any, Dict, Optional, Set
 
 
@@ -88,20 +87,6 @@ class ManagerPlugin(Generic[Config, Secrets]):
             `True` if TRaSH-Guides metadata is used, otherwise `False`
         """
         return instance_config.uses_trash_metadata
-
-    def render_trash_metadata(self, instance_config: Config, trash_metadata_dir: Path) -> Config:
-        """
-        Read TRaSH-Guides metadata, and return an instance configuration object
-        with all templates rendered.
-
-        Args:
-            instance_config (Config): Instance configuration object to render.
-            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
-
-        Returns:
-            Rendered configuration object
-        """
-        return instance_config.render_trash_metadata(trash_metadata_dir)
 
     def render(self, instance_config: Config) -> Config:
         """

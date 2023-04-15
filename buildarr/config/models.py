@@ -19,7 +19,6 @@ Buildarr plugin configuration object models.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Dict, Type, cast
 
 from pydantic import root_validator
@@ -183,20 +182,6 @@ class ConfigPlugin(ConfigBase[Secrets]):
                 ),
             ),
         )
-
-    def render_trash_metadata(self, trash_metadata_dir: Path) -> Self:
-        """
-        Read TRaSH-Guides metadata, and return a configuration object with all templates rendered.
-
-        Configuration plugins should implement this function if TRaSH-Guides metadata is used.
-
-        Args:
-            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
-
-        Returns:
-            Rendered configuration object
-        """
-        return self
 
     def render(self) -> Self:
         """

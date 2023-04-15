@@ -36,7 +36,7 @@ from ..config import (
 from ..logging import get_log_level
 from ..manager import load_managers
 from ..state import state
-from ..trash import fetch_trash_metadata, render_trash_metadata
+from ..trash import fetch_trash_metadata
 from ..util import get_resolved_path
 from . import cli
 from .exceptions import TestConfigNoPluginsDefinedError
@@ -181,20 +181,10 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         fetching_metadata = True
         try:
             logger.debug("Fetching TRaSH metadata")
-            with fetch_trash_metadata() as trash_metadata_dir:
+            with fetch_trash_metadata():
                 logger.debug("Finished fetching TRaSH metadata")
                 logger.info("Fetching TRaSH-Guides metadata: PASSED")
                 fetching_metadata = False
-                # TODO: Remove `render_trash_metadata` in Buildarr v0.5.0.
-                try:
-                    logger.debug("Rendering TRaSH metadata")
-                    render_trash_metadata(trash_metadata_dir)
-                    logger.debug("Finished rendering TRaSH metadata")
-                except Exception:
-                    logger.error("Rendering TRaSH-Guides metadata: FAILED")
-                    raise
-                else:
-                    logger.info("Rendering TRaSH-Guides metadata: PASSED")
                 try:
                     logger.debug("Rendering instance configuration dynamic attributes")
                     render_instance_configs()
@@ -210,7 +200,6 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             raise
     else:
         logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
-        logger.info("Rendering TRaSH-Guides metadata: SKIPPED (not required)")
         try:
             logger.debug("Rendering instance configuration dynamic attributes")
             render_instance_configs()
