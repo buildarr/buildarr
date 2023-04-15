@@ -138,15 +138,14 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     Configuration options for Dummy itself are set within this structure.
     """
 
-    @property
     def uses_trash_metadata(self) -> bool:
         """
-        A flag determining whether or not this instance configuration uses TRaSH-Guides metadata.
+        Return whether or not this instance configuration uses TRaSH-Guides metadata.
 
         Returns:
             `True` if TRaSH-Guides metadata is used, otherwise `False`
         """
-        return self.settings.uses_trash_metadata
+        return self.settings.uses_trash_metadata()
 
     def render(self) -> Self:
         """
@@ -155,6 +154,8 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         Returns:
             Rendered configuration object
         """
+        if not self.settings.uses_trash_metadata():
+            return self
         copy = self.copy(deep=True)
         copy._render()
         return copy
@@ -163,8 +164,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         """
         Render dynamic configuration attributes in place.
         """
-        if self.settings.uses_trash_metadata:
-            self.settings._render()
+        self.settings._render()
 
     @classmethod
     def from_remote(cls, secrets: DummySecrets) -> Self:

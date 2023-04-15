@@ -108,10 +108,9 @@ class DummySettingsConfig(DummyConfigBase):
     * `ConfigBase.get_update_remote_attrs`
     """
 
-    @property
     def uses_trash_metadata(self) -> bool:
         """
-        A flag determining whether or not this instance configuration uses TRaSH-Guides metadata.
+        Return whether or not this instance configuration uses TRaSH-Guides metadata.
 
         Returns:
             `True` if TRaSH-Guides metadata is used, otherwise `False`

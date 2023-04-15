@@ -86,7 +86,7 @@ class ManagerPlugin(Generic[Config, Secrets]):
         Returns:
             `True` if TRaSH-Guides metadata is used, otherwise `False`
         """
-        return instance_config.uses_trash_metadata
+        return instance_config.uses_trash_metadata()
 
     def render(self, instance_config: Config) -> Config:
         """
