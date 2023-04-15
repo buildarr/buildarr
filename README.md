@@ -177,7 +177,6 @@ For more information on how to interfact with Buildarr, check the [usage documen
 
 ## To-do list
 
-* Add a dry-run mode for testing configurations (added in [version 0.4.0](https://buildarr.github.io/release-notes/#v040-2023-03-31))
 * Test updates for all available attributes in the existing Sonarr plugin
 * Unit tests and code coverage
 * Split Sonarr plugin to its own repository (completed in [version 0.4.0](https://buildarr.github.io/release-notes/#v040-2023-03-31))

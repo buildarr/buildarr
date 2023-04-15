@@ -27,7 +27,7 @@ from buildarr.secrets import SecretsPlugin
 from buildarr.types import NonEmptyStr, Port
 
 from .api import api_get, get_initialize_js
-from .exceptions import DummyAPIError
+from .exceptions import DummyAPIError, DummySecretsUnauthorizedError
 from .types import DummyApiKey, DummyProtocol
 
 # Allow Mypy to properly resolve configuration type declarations in secrets classes.
@@ -37,12 +37,12 @@ if TYPE_CHECKING:
     from .config import DummyConfig
 
     class _DummySecrets(SecretsPlugin[DummyConfig]):
-        ...
+        pass
 
 else:
 
     class _DummySecrets(SecretsPlugin):
-        ...
+        pass
 
 
 class DummySecrets(_DummySecrets):
@@ -98,14 +98,25 @@ class DummySecrets(_DummySecrets):
         Returns:
             Secrets object
         """
-        return cls(
-            hostname=config.hostname,
-            port=config.port,
-            protocol=config.protocol,
-            api_key=(
-                config.api_key if config.api_key else get_initialize_js(config.host_url)["apiKey"]
-            ),
-        )
+        try:
+            return cls(
+                hostname=config.hostname,
+                port=config.port,
+                protocol=config.protocol,
+                api_key=(
+                    config.api_key
+                    if config.api_key
+                    else get_initialize_js(config.host_url)["apiKey"]
+                ),
+            )
+        except DummyAPIError as err:
+            if err.status_code == HTTPStatus.UNAUTHORIZED:
+                raise DummySecretsUnauthorizedError(
+                    "Unable to retrieve the API key for the Dummy instance "
+                    f"at '{config.host_url}': Authentication is enabled",
+                ) from None
+            else:
+                raise
 
     def test(self) -> bool:
         """
@@ -118,7 +129,7 @@ class DummySecrets(_DummySecrets):
             api_get(self, "/api/v1/settings")
             return True
         except DummyAPIError as err:
-            if err.response.status_code == HTTPStatus.UNAUTHORIZED:
+            if err.status_code == HTTPStatus.UNAUTHORIZED:
                 return False
             else:
                 raise

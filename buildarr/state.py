@@ -59,15 +59,15 @@ class State:
     Whether Buildarr is in testing mode or not.
     """
 
-    dry_run: bool = False
-    """
-    Whether Buildarr is in dry run mode or not.
+    @property
+    def dry_run(self) -> bool:
+        """
+        Whether Buildarr is in dry run mode or not.
 
-    When set to `True` under a CLI command that supports it, the command should not
-    perform any action that would change the state of any external instances.
-
-    Custom CLI commands can set this attribute to `True` if they support a dry-run mode.
-    """
+        **Note: As of Buildarr v0.5.0, this mode is no longer available,
+        and `state.dry_run` will always return `False`.**
+        """
+        return False
 
     plugins: Mapping[str, Plugin] = {}
     """
