@@ -217,8 +217,3 @@ class DummySettingsConfig(DummyConfigBase):
             api_post(secrets, "/api/v1/settings", remote_attrs)
             return True
         return False
-
-    class Config(DummyConfigBase.Config):
-        # Ensure in-place assignments of attributes are always validated,
-        # since this class performs such modifications in certain cases.
-        validate_assignment = True

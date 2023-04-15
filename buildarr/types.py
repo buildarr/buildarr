@@ -483,3 +483,7 @@ class ModelConfigBase:
     # (For example, a normally optional attribute becoming required due to
     # another attribute being enabled.)
     validate_all = True
+
+    # Validate any values that have been modified in-place, to ensure the model
+    # still fits the constraints.
+    validate_assignment = True
