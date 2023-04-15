@@ -19,7 +19,6 @@ Buildarr TRaSH-Guides metadata functions.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from contextlib import contextmanager
 from logging import getLogger
 from pathlib import Path
@@ -32,9 +31,7 @@ from .state import state
 from .util import create_temp_dir
 
 if TYPE_CHECKING:
-    from typing import DefaultDict, Dict, Generator
-
-    from .config import ConfigPlugin
+    from typing import Generator
 
 
 logger = getLogger(__name__)
@@ -104,37 +101,3 @@ def fetch_trash_metadata() -> Generator[Path, None, None]:
 
         logger.debug("Deleting TRaSH metadata download temporary directory")
     logger.debug("Finished deleting TRaSH metadata download temporary directory")
-
-
-def render_trash_metadata(trash_metadata_dir: Path) -> None:
-    """
-    Render TRaSH-Guides metadata on any instance configurations where used,
-    and update the global state.
-
-    Plugins will parse the TRaSH-Guides metadata files in the given directory
-    and return new configuration objects with attributes populated from the metadata.
-
-    Instances that do not use TRaSH-Guides metadata will be left unchanged.
-
-    Args:
-        trash_metadata_dir (Path): Local folder containing TRaSH-Guides metadata files.
-    """
-
-    instance_configs: DefaultDict[str, Dict[str, ConfigPlugin]] = defaultdict(dict)
-
-    for plugin_name, instance_name in state._execution_order:
-        manager = state.managers[plugin_name]
-        instance_config = state.instance_configs[plugin_name][instance_name]
-        with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-            if manager.uses_trash_metadata(instance_config):
-                logger.debug("Rendering TRaSH-Guides metadata")
-                instance_configs[plugin_name][instance_name] = manager.render_trash_metadata(
-                    instance_config,
-                    trash_metadata_dir,
-                )
-                logger.debug("Finished rendering TRaSH-Guides metadata")
-            else:
-                logger.debug("Skipping rendering TRaSH-Guides metadata (not used)")
-                instance_configs[plugin_name][instance_name] = instance_config
-
-    state.instance_configs = instance_configs

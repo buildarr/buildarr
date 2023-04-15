@@ -48,7 +48,7 @@ from pydantic.validators import _VALIDATORS
 from typing_extensions import Self
 
 from ..plugins import Secrets
-from ..types import BaseEnum, BaseIntEnum, ModelConfigBase
+from ..types import BaseEnum, ModelConfigBase
 from .types import RemoteMapEntry
 
 logger = getLogger(__name__)
@@ -681,7 +681,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Returns:
             The value to pass to the logging function
         """
-        if isinstance(value, (BaseEnum, BaseIntEnum)):
+        if isinstance(value, BaseEnum):
             return value.to_name_str()
         elif isinstance(value, AnyUrl):
             return str(value)
@@ -734,7 +734,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                     [t for t in attr_union_types if t is not type(None)][0],
                     value,
                 )
-        elif issubclass(type_tree[-1], (BaseEnum, BaseIntEnum)):
+        elif issubclass(type_tree[-1], BaseEnum):
             return type_tree[-1](value)
         return value
 
@@ -749,7 +749,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Returns:
             Remote attribute value
         """
-        if isinstance(value, (BaseEnum, BaseIntEnum)):
+        if isinstance(value, BaseEnum):
             return value.value
         elif isinstance(value, AnyUrl):
             return str(value)

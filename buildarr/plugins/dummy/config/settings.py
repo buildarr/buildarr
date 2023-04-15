@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import json
 
-from pathlib import Path
 from typing import Any, List, Mapping, Optional, Union, cast
 from uuid import UUID, uuid4
 
@@ -119,20 +118,20 @@ class DummySettingsConfig(DummyConfigBase):
         """
         return bool(self.trash_id)
 
-    def _render_trash_metadata(self, sonarr_metadata_dir: Path) -> None:
+    def _render(self) -> None:
         """
-        Render configuration attributes obtained from TRaSH-Guides, in-place.
+        Render dynamic configuration attributes in place.
+
+        Specifically, this function reads a value from the TRaSH-Guides metadata
+        and populates the `trash_value` attribute with it.
 
         Set `trash_value` to the minimum data rate value for the
         `Bluray-1080p` quality definition in the profile.
-
-        Args:
-            trash_metadata_dir (Path): TRaSH-Guides metadata directory.
         """
         if not self.trash_id:
             return
         for quality_file in (
-            sonarr_metadata_dir / "docs" / "json" / "sonarr" / "quality-size"
+            state.trash_metadata_dir / "docs" / "json" / "sonarr" / "quality-size"
         ).iterdir():
             with quality_file.open() as f:
                 quality_json: Mapping[str, Any] = json.load(f)

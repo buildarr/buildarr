@@ -37,7 +37,7 @@ from ..logging import get_log_level
 from ..manager import load_managers
 from ..secrets import load_secrets
 from ..state import state
-from ..trash import fetch_trash_metadata, render_trash_metadata, trash_metadata_used
+from ..trash import fetch_trash_metadata, trash_metadata_used
 from ..util import get_resolved_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
@@ -205,12 +205,8 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
     # only if at least one instance configuration requires it.
     if trash_metadata_used():
         logger.info("Fetching TRaSH metadata")
-        with fetch_trash_metadata() as trash_metadata_dir:
-            # TODO: Remove `render_trash_metadata` in Buildarr v0.5.0.
+        with fetch_trash_metadata():
             logger.info("Finished fetching TRaSH metadata")
-            logger.info("Rendering TRaSH metadata")
-            render_trash_metadata(trash_metadata_dir)
-            logger.info("Finished rendering TRaSH metadata")
             logger.info("Rendering instance configuration dynamic attributes")
             render_instance_configs()
             logger.info("Finished rendering instance configuration dynamic attributes")
