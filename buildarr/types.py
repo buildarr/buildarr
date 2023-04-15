@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 
 from enum import Enum
+from functools import total_ordering
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping
 
@@ -217,6 +218,7 @@ class BaseEnum(Enum):
                 raise ValueError(f"Invalid {cls.__name__} name or value: {value}") from None
 
 
+@total_ordering
 class DayOfWeek(BaseEnum):
     """
     Sortable eumeration for the days in the week (Monday to Sunday).
@@ -239,6 +241,41 @@ class DayOfWeek(BaseEnum):
     friday = 4
     saturday = 5
     sunday = 6
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Reimplement tha `a == b` operator for `DayOfWeek`, so integers
+        of the same value also get evaluated as equal.
+
+        Args:
+            other (Any): Object to check is equal to this object.
+
+        Returns:
+            `True` if this object is equal to `other`, otherwise `False`
+        """
+        try:
+            other_obj = DayOfWeek(other)
+        except ValueError:
+            raise NotImplementedError() from None
+        return self.value == other_obj.value
+
+    def __lt__(self, other: Any) -> bool:
+        """
+        Implement the `a < b` operator for `DayOfWeek`.
+
+        The `total_ordering` decorator will declare the rest.
+
+        Args:
+            other (Any): Object to check is greater than this object.
+
+        Returns:
+            `True` if this object is less than `other`, otherwise `False`
+        """
+        try:
+            other_obj = DayOfWeek(other)
+        except ValueError:
+            raise NotImplementedError() from None
+        return self.value < other_obj.value
 
 
 class InstanceName(str):
