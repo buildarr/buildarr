@@ -126,14 +126,14 @@ class ConfigPlugin(ConfigBase[Secrets]):
         """
         return f"{self.protocol}://{self.hostname}:{self.port}"
 
-    @property
     def uses_trash_metadata(self) -> bool:
         """
-        A flag determining whether or not this configuration uses TRaSH-Guides metadata.
+        Return whether or not this instance configuration uses TRaSH-Guides metadata.
 
-        Configuration plugins should implement this property if TRaSH-Guides metadata is used.
+        Configuration plugins should implement this function if TRaSH-Guides metadata is used.
 
-        This property is checked by the `ManagerPlugin.uses_trash_metadata()` function.
+        Returns:
+            `True` if TRaSH-Guides metadata is used, otherwise `False`
         """
         return False
 
