@@ -129,7 +129,7 @@ class Daemon:
         self.update_daytimes = [
             (update_day, update_time)
             for update_day, update_time in itertools.product(
-                sorted(self.update_days),
+                sorted(self.update_days, key=lambda v: v.value),
                 sorted(self.update_times),
             )
         ]
