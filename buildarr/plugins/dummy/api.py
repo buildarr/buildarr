@@ -124,7 +124,7 @@ def api_get(
     res = session.get(
         url,
         headers={"X-Api-Key": api_key} if api_key else None,
-        timeout=get_request_timeout(),
+        timeout=state.request_timeout,
     )
     res_json = res.json()
 
@@ -172,7 +172,7 @@ def api_post(
     res = session.post(
         url,
         headers={"X-Api-Key": api_key} if api_key else None,
-        timeout=get_request_timeout(),
+        timeout=state.request_timeout,
         **({"json": req} if req is not None else {}),
     )
     res_json = res.json()
@@ -222,7 +222,7 @@ def api_put(
         url,
         headers={"X-Api-Key": api_key} if api_key else None,
         json=req,
-        timeout=get_request_timeout(),
+        timeout=state.request_timeout,
     )
     res_json = res.json()
 
@@ -265,7 +265,7 @@ def api_delete(
     res = session.delete(
         url,
         headers={"X-Api-Key": api_key} if api_key else None,
-        timeout=get_request_timeout(),
+        timeout=state.request_timeout,
     )
 
     logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
@@ -315,11 +315,3 @@ def api_error(
             f"(Non-JSON error response)\n{response.text}"
 
     raise DummyAPIError(error_message, status_code=response.status_code)
-
-
-def get_request_timeout() -> float:
-    # TODO: Remove this function when `request_timeout` gets added to Buildarr global state.
-    try:
-        return state.config.buildarr.request_timeout
-    except AttributeError:
-        return 30
