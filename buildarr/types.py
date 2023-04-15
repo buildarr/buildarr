@@ -244,7 +244,7 @@ class DayOfWeek(BaseEnum):
 
     def __eq__(self, other: Any) -> bool:
         """
-        Reimplement tha `a == b` operator for `DayOfWeek`, so integers
+        Reimplement the `a == b` operator for `DayOfWeek`, so integers
         of the same value also get evaluated as equal.
 
         Args:
@@ -258,6 +258,17 @@ class DayOfWeek(BaseEnum):
         except ValueError:
             raise NotImplementedError() from None
         return self.value == other_obj.value
+
+    def __hash__(self) -> int:
+        """
+        Implement the hash method for `DayOfWeek`.
+
+        Simply return the enumeration value, since it is an integer and always unique.
+
+        Returns:
+            `DayOfWeek` hash
+        """
+        return self.value
 
     def __lt__(self, other: Any) -> bool:
         """
