@@ -49,8 +49,17 @@ def render_instance_configs() -> None:
         manager = state.managers[plugin_name]
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-            logger.debug("Rendering dynamic configuration attributes")
-            instance_configs[plugin_name][instance_name] = manager.render(instance_config)
-            logger.debug("Finished dynamic configuration attributes")
+            logger.debug("Performing pre-initialisation configuration rendering")
+            try:
+                instance_configs[plugin_name][instance_name] = manager.render(instance_config)
+            except NotImplementedError:
+                logger.debug(
+                    (
+                        "Skipped performing re-initialisation configuration rendering "
+                        "(not supported by plugin)"
+                    ),
+                )
+            else:
+                logger.debug("Finished performing pre-initialisation configuration rendering")
 
     state.instance_configs = instance_configs

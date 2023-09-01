@@ -192,8 +192,11 @@ class ConfigPlugin(ConfigBase[Secrets]):
 
         Returns:
             Rendered configuration object
+
+        Raises:
+            NotImplementedError: When pre-initialisation rendering is not supported.
         """
-        return self
+        raise NotImplementedError()
 
     def is_initialized(self) -> bool:
         """
@@ -205,11 +208,11 @@ class ConfigPlugin(ConfigBase[Secrets]):
         Configuration plugins should implement this function if initialisation is required
         for the application's API to become available.
 
-        Raises:
-            NotImplementedError: When initialisation is not required for the application type.
-
         Returns:
             `True` if the instance is initialised, otherwise `False`
+
+        Raises:
+            NotImplementedError: When initialisation is not supported for the application type.
         """
         raise NotImplementedError()
 
@@ -226,6 +229,9 @@ class ConfigPlugin(ConfigBase[Secrets]):
 
         Args:
             tree (str): Configuration tree this instance falls under (for logging purposes).
+
+        Raises:
+            NotImplementedError: When initialisation is not supported for the application type.
         """
         raise NotImplementedError()
 
@@ -250,6 +256,9 @@ class ConfigPlugin(ConfigBase[Secrets]):
 
         Returns:
             Rendered configuration object
+
+        Raises:
+            NotImplementedError: When post-initialisation rendering is not supported.
         """
         raise NotImplementedError()
 
