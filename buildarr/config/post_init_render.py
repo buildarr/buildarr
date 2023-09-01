@@ -13,7 +13,7 @@
 
 
 """
-Buildarr configuration rendering function.
+Post-initialisation configuration rendering stage.
 """
 
 
