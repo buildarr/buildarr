@@ -36,7 +36,7 @@ from ..config import (
 from ..logging import get_log_level
 from ..manager import load_managers
 from ..state import state
-from ..trash import fetch_trash_metadata
+from ..trash import cleanup_trash_metadata, fetch_trash_metadata, trash_metadata_used
 from ..util import get_resolved_path
 from . import cli
 from .exceptions import TestConfigNoPluginsDefinedError
@@ -161,52 +161,33 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         logger.info("Resolving instance dependencies: PASSED")
 
     # Check if any instances are configured to get metadata from TRaSH-Guides.
-    uses_trash_metadata = False
-    for plugin_name in state.active_plugins:
-        for instance_config in state.instance_configs[plugin_name].values():
-            if state.managers[plugin_name].uses_trash_metadata(instance_config):
-                uses_trash_metadata = True
-                break
-        if uses_trash_metadata:
-            break
-
-    # Test rendering the instance configuration.
-    # If the TRaSH-Guides metadata is required by the configuration, run the rendering
-    # with the TRaSH-Guides metadata available.
-    # If the configuration reports that TRaSH-Guides metadata is not required,
-    # run the test without fetching it.
-    if uses_trash_metadata:
-        fetching_metadata = True
+    if trash_metadata_used():
+        # Test fetching TRaSH-Guides metadata.
         try:
             logger.debug("Fetching TRaSH metadata")
-            with fetch_trash_metadata():
-                logger.debug("Finished fetching TRaSH metadata")
-                logger.info("Fetching TRaSH-Guides metadata: PASSED")
-                fetching_metadata = False
-                try:
-                    logger.debug("Rendering instance configuration dynamic attributes")
-                    render_instance_configs()
-                    logger.debug("Finished rendering instance configuration dynamic attributes")
-                except Exception:
-                    logger.error("Rendering instance configuration dynamic attributes: FAILED")
-                    raise
-                else:
-                    logger.info("Rendering instance configuration dynamic attributes: PASSED")
+            fetch_trash_metadata()
+            logger.debug("Finished fetching TRaSH metadata")
         except Exception:
-            if fetching_metadata:
-                logger.error("Fetching TRaSH-Guides metadata: FAILED")
-            raise
-    else:
-        logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
-        try:
-            logger.debug("Rendering instance configuration dynamic attributes")
-            render_instance_configs()
-            logger.debug("Finished rendering instance configuration dynamic attributes")
-        except Exception:
-            logger.error("Rendering instance configuration dynamic attributes: FAILED")
+            logger.error("Fetching TRaSH-Guides metadata: FAILED")
             raise
         else:
-            logger.info("Rendering instance configuration dynamic attributes: PASSED")
+            logger.info("Fetching TRaSH-Guides metadata: PASSED")
+        # Test pre-initialisation rendering of the instance configuration.
+        try:
+            logger.debug("Performing pre-initialisation configuration render")
+            render_instance_configs()
+            logger.debug("Finished performing pre-initialisation configuration render")
+        except Exception:
+            logger.error("Pre-initialisation configuration render: FAILED")
+            raise
+        else:
+            logger.info("Pre-initialisation configuration render: PASSED")
+        # Clean up the TRaSH-Guides metadata, now that rendering has completed.
+        cleanup_trash_metadata()
+    else:
+        logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
+
+    # Log the pre-initialisation rendered configuration to debug output.
     for plugin_name, instance_configs in state.instance_configs.items():
         for instance_name, instance_config in instance_configs.items():
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
