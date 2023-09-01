@@ -50,11 +50,20 @@ def post_init_render() -> None:
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
             instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
-            logger.debug("Rendering post-initialisation configuration rendering")
-            instance_configs[plugin_name][instance_name] = manager.post_init_render(
-                instance_config,
-                instance_secrets,
-            )
-            logger.debug("Finished post-initialisation configuration rendering")
+            logger.debug("Performing post-initialisation configuration rendering")
+            try:
+                instance_configs[plugin_name][instance_name] = manager.post_init_render(
+                    instance_config,
+                    instance_secrets,
+                )
+            except NotImplementedError:
+                logger.debug(
+                    (
+                        "Skipped performing post-initialisation configuration rendering "
+                        "(not supported by plugin)"
+                    ),
+                )
+            else:
+                logger.debug("Finished performing post-initialisation configuration rendering")
 
     state.instance_configs = instance_configs
