@@ -23,7 +23,8 @@ import os
 
 from contextlib import contextmanager
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from shutil import rmtree
+from tempfile import TemporaryDirectory, mkdtemp
 from typing import TYPE_CHECKING, Mapping
 
 if TYPE_CHECKING:
@@ -112,7 +113,7 @@ def merge_dicts(*dicts: Mapping[Any, Any]) -> Dict[Any, Any]:
 
 
 @contextmanager
-def create_temp_dir(prefix: str = "buildarr.", **kwargs) -> Generator[Path, None, None]:
+def temp_dir(prefix: str = "buildarr.", **kwargs) -> Generator[Path, None, None]:
     """
     Create a temporary directory, give access to it for the executing context,
     and clean up the directory upon exit from the context.
@@ -128,3 +129,34 @@ def create_temp_dir(prefix: str = "buildarr.", **kwargs) -> Generator[Path, None
 
     with TemporaryDirectory(prefix=prefix, **kwargs) as temp_dir_str:
         yield Path(temp_dir_str)
+
+
+def create_temp_dir(prefix: str = "buildarr.", **kwargs) -> Path:
+    """
+    Create a temporary directory, and return it without any additional handling.
+
+    The caller is trusted to clean up the directory once it is no longer needed.
+
+    Args:
+        prefix (str, optional): Temporary directory name prefix. Defaults to `buildarr.`.
+
+    Returns:
+        Temporary directory path
+    """
+
+    return Path(mkdtemp(prefix=prefix, **kwargs))
+
+
+def remove_dir(path: os.PathLike, nonexist_ok: bool = True) -> None:
+    """
+    Delete a temporary directory and all containing files.
+
+    Args:
+        nonexist_ok (bool, optional): Return OK if the directory doesn't exist. Defaults to `true`.
+    """
+
+    try:
+        rmtree(path)
+    except FileNotFoundError:
+        if not nonexist_ok:
+            raise

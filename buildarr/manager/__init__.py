@@ -136,6 +136,27 @@ class ManagerPlugin(Generic[Config, Secrets]):
         """
         instance_config.initialize(tree)
 
+    def post_init_render(self, instance_config: Config, secrets: Secrets) -> Config:
+        """
+        Render dynamically populated configuration attributes that require the instance
+        to be initialised.
+
+        Typically used for fetching configuration attribute schemas from the remote instance
+        for validation during rendering.
+
+        If the instance configuration returned `True` for `uses_trash_metadata`,
+        the filepath to the downloaded metadata directory will be available as
+        `state.trash_metadata_dir` in the global state.
+
+        Args:
+            instance_config (Config): Instance configuration object to render.
+            secrets (Secrets): Remote instance host and secrets information.
+
+        Returns:
+            Rendered configuration object
+        """
+        return instance_config.post_init_render(secrets)
+
     def from_remote(self, instance_config: Config, secrets: Secrets) -> Config:
         """
         Get the active configuration for a remote instance, and return the resulting object.
