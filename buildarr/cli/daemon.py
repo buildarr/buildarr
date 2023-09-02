@@ -388,11 +388,20 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         Args:
             event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
         """
-        if not event.is_directory and Path(event.src_path) in (
-            (self.config_dir / filename) for filename in self.filenames
-        ):
-            logger.info("Config file '%s' has been recreated", event.src_path)
-            self.daemon.reload()
+        try:
+            if not event.is_directory and Path(event.src_path) in (
+                (self.config_dir / filename) for filename in self.filenames
+            ):
+                logger.info("Config file '%s' has been recreated", event.src_path)
+                self.daemon.reload()
+        except Exception as err:
+            logger.exception(
+                (
+                    "Unexpected exception occurred "
+                    f"while handling config file recreation event: %s"
+                ),
+                err,
+            )
 
     def on_modified(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
         """
@@ -402,11 +411,20 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         Args:
             event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
         """
-        if not event.is_directory and Path(event.src_path) in (
-            (self.config_dir / filename) for filename in self.filenames
-        ):
-            logger.info("Config file '%s' has been modified", event.src_path)
-            self.daemon.reload()
+        try:
+            if not event.is_directory and Path(event.src_path) in (
+                (self.config_dir / filename) for filename in self.filenames
+            ):
+                logger.info("Config file '%s' has been modified", event.src_path)
+                self.daemon.reload()
+        except Exception as err:
+            logger.exception(
+                (
+                    "Unexpected exception occurred "
+                    f"while handling config file modification event: %s"
+                ),
+                err,
+            )
 
 
 def parse_time(
