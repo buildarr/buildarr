@@ -387,11 +387,13 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         Args:
             event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
         """
+        buildarr_ran = False
         try:
             if not event.is_directory and Path(event.src_path) in (
                 (self.config_dir / filename) for filename in self.filenames
             ):
                 logger.info("Config file '%s' has been recreated", event.src_path)
+                buildarr_ran = True
                 self.daemon.reload()
         except Exception as err:
             logger.exception(
@@ -402,7 +404,8 @@ class ConfigDirEventHandler(FileSystemEventHandler):
                 err,
             )
         finally:
-            logger.info("Buildarr ready.")
+            if buildarr_ran:
+                logger.info("Buildarr ready.")
 
     def on_modified(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
         """
@@ -412,11 +415,13 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         Args:
             event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
         """
+        buildarr_ran = False
         try:
             if not event.is_directory and Path(event.src_path) in (
                 (self.config_dir / filename) for filename in self.filenames
             ):
                 logger.info("Config file '%s' has been modified", event.src_path)
+                buildarr_ran = True
                 self.daemon.reload()
         except Exception as err:
             logger.exception(
@@ -427,7 +432,8 @@ class ConfigDirEventHandler(FileSystemEventHandler):
                 err,
             )
         finally:
-            logger.info("Buildarr ready.")
+            if buildarr_ran:
+                logger.info("Buildarr ready.")
 
 
 def parse_time(
