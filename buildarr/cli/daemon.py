@@ -111,7 +111,7 @@ class Daemon:
         """
         with self._run_lock():
             self._initial_run()
-            self._start_signal_handlers()
+            self._setup_signal_handlers()
             self._log_next_run()
             logger.info("Buildarr ready.")
         # Enter the update job schedule main loop.
@@ -334,7 +334,7 @@ class Daemon:
             finally:
                 logger.info("Buildarr ready.")
 
-    def _start_signal_handlers(self) -> None:
+    def _setup_signal_handlers(self) -> None:
         """
         Setup `SIGINT`, `SIGTERM` and `SIGHUP` signal handers.
 
