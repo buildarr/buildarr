@@ -136,18 +136,6 @@ class Daemon:
         self._stopped = True
         self._stop_handlers()
 
-    def reload(self) -> None:
-        """
-        Reload the Buildarr configuration, and re-run the initial run.
-
-        This method is called by the config file monitor and SIGHUP handler.
-        """
-        with self._run_lock():
-            logger.info("Reloading config")
-            self._initial_run()
-            logger.info("Finished reloading config")
-            self._log_next_run()
-
     @contextmanager
     def _run_lock(self) -> Generator[None, None, None]:
         """
@@ -234,7 +222,10 @@ class Daemon:
         self._setup_watch_config()
         # Apply initial configuration to all defined remote instances.
         logger.info("Applying initial configuration")
-        run_apply(secrets_file_path=self._secrets_file_path)
+        try:
+            run_apply(secrets_file_path=self._secrets_file_path)
+        finally:
+            state._reset()
         logger.info("Finished applying initial configuration")
 
     def _setup_update_schedule(self) -> None:
@@ -263,8 +254,10 @@ class Daemon:
         """
         with self._run_lock():
             logger.info("Running scheduled update of remote instances")
-            run_apply(secrets_file_path=self._secrets_file_path)
-            state._reset()
+            try:
+                run_apply(secrets_file_path=self._secrets_file_path)
+            finally:
+                state._reset()
             logger.info("Finished running scheduled update of remote instances")
             self._log_next_run()
             logger.info("Buildarr ready.")
@@ -318,6 +311,29 @@ class Daemon:
             self._observer = PollingObserver()
             logger.info("Finished disabling config file monitoring")
 
+    def _watch_config_reload(self, changed_file: str, action: str) -> None:
+        """
+        Reload the Buildarr configuration, and re-run the initial run.
+
+        This method is called by the config file monitor.
+        Because this runs in a different thread, add extra handling to make sure
+        that thread does not stop when an error occurs.
+        """
+        with self._run_lock():
+            try:
+                logger.info("Config file '%s' has been %s", changed_file, action)
+                logger.info("Reloading config")
+                self._initial_run()
+                logger.info("Finished reloading config")
+                self._log_next_run()
+            except Exception as err:
+                logger.exception(
+                    "Unexpected exception occurred while handling config file event: %s",
+                    err,
+                )
+            finally:
+                logger.info("Buildarr ready.")
+
     def _start_signal_handlers(self) -> None:
         # Setup SIGINT, SIGTERM, and SIGHUP signal handers.
         # SIGHUP can be used to reload the configuration, even if watch_config is disabled.
@@ -354,7 +370,12 @@ class Daemon:
         SIGHUP handler callback method.
         """
         logger.info("%s received", signal.Signals(signalnum).name)
-        self.reload()
+        with self._run_lock():
+            logger.info("Reloading config")
+            self._initial_run()
+            logger.info("Finished reloading config")
+            self._log_next_run()
+            logger.info("Buildarr ready.")
 
 
 class ConfigDirEventHandler(FileSystemEventHandler):
@@ -387,25 +408,10 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         Args:
             event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
         """
-        buildarr_ran = False
-        try:
-            if not event.is_directory and Path(event.src_path) in (
-                (self.config_dir / filename) for filename in self.filenames
-            ):
-                logger.info("Config file '%s' has been recreated", event.src_path)
-                buildarr_ran = True
-                self.daemon.reload()
-        except Exception as err:
-            logger.exception(
-                (
-                    "Unexpected exception occurred "
-                    "while handling config file recreation event: %s"
-                ),
-                err,
-            )
-        finally:
-            if buildarr_ran:
-                logger.info("Buildarr ready.")
+        if not event.is_directory and Path(event.src_path) in (
+            (self.config_dir / filename) for filename in self.filenames
+        ):
+            self.daemon._watch_config_reload(event.src_path, "recreated")
 
     def on_modified(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
         """
@@ -415,25 +421,10 @@ class ConfigDirEventHandler(FileSystemEventHandler):
         Args:
             event (Union[DirModifiedEvent, FileModifiedEvent]): Event metadata
         """
-        buildarr_ran = False
-        try:
-            if not event.is_directory and Path(event.src_path) in (
-                (self.config_dir / filename) for filename in self.filenames
-            ):
-                logger.info("Config file '%s' has been modified", event.src_path)
-                buildarr_ran = True
-                self.daemon.reload()
-        except Exception as err:
-            logger.exception(
-                (
-                    "Unexpected exception occurred "
-                    "while handling config file modification event: %s"
-                ),
-                err,
-            )
-        finally:
-            if buildarr_ran:
-                logger.info("Buildarr ready.")
+        if not event.is_directory and Path(event.src_path) in (
+            (self.config_dir / filename) for filename in self.filenames
+        ):
+            self.daemon._watch_config_reload(event.src_path, "modified")
 
 
 def parse_time(
