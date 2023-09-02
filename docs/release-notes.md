@@ -1,8 +1,30 @@
 # Release Notes (Buildarr Core)
 
+## [v0.6.0](https://github.com/buildarr/buildarr/releases/tag/v0.6.0) - 2023-09-02
+
+This is a backwards-compatible feature and bugfix release.
+
+The main addition is a new run stage for Buildarr plugins: post-initialisation rendering. This is similar to the existing (henceforth called pre-initialisation) rendering stage, but runs after the instance initialisation stage. This allows it to expose the instance secrets, giving the plugin access to the remote instance while rendering the configuration.
+
+This can be useful for things such as resolving select option names from names via the API schema, which is sometimes used when rendering TRaSH-Guides metadata. The new stage is used in the upcoming Radarr plugin for Buildarr.
+
+The following issues have also been resolved:
+
+* Buildarr daemon stopped watching configuration file changes, if an unexpected error occurred while performing the initial run following reloading the configuration files.
+
+### Added
+
+* Add post-initialisation rendering step ([#126](https://github.com/buildarr/buildarr/pull/126))
+
+### Changed
+
+* Detect plugins that do not use config rendering ([#116](https://github.com/buildarr/buildarr/pull/116))
+* Fix running plugins that do not perform config rendering ([#132](https://github.com/buildarr/buildarr/pull/132))
+* Improve daemon reloading ([#131](https://github.com/buildarr/buildarr/pull/131))
+
 ## [v0.5.0](https://github.com/buildarr/buildarr/releases/tag/v0.5.0) - 2023-04-16
 
-This is a backwards-incompatible feature release.
+This is a **backwards-incompatible** feature release.
 
 The main changes are behind-the-scenes improvements to the plugin API. Plugins will need to be updated to support this new version.
 

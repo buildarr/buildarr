@@ -92,12 +92,12 @@ def _resolve_instance_dependencies(
         error_message = 'Unable to resolve instance dependency "'
         try:
             previous_pi = dependency_tree[-1]
-            error_message += f"{previous_pi[0]}.instances[{repr(previous_pi[1])}] -> "
+            error_message += f"{previous_pi[0]}.instances[{previous_pi[1]!r}] -> "
         except IndexError:
             # Shouldn't happen because dependency keys are generated from
             # instance configuration, but handle it just in case.
             pass
-        error_message += f'{plugin_name}.instances[{repr(instance_name)}]": '
+        error_message += f'{plugin_name}.instances[{instance_name!r}]": '
         if plugin_name not in state.plugins:
             error_message += f"Plugin '{plugin_name}' not installed"
         else:
@@ -109,7 +109,7 @@ def _resolve_instance_dependencies(
             (
                 "Detected dependency cycle in configuration for instance references:\n"
                 + "\n".join(
-                    f"  {i}. {pname}.instances[{repr(iname)}]"
+                    f"  {i}. {pname}.instances[{iname!r}]"
                     for i, (pname, iname) in enumerate([*dependency_tree, plugin_instance], 1)
                 )
             ),

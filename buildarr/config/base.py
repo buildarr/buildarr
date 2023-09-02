@@ -731,7 +731,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 and value is not None
             ):
                 return cls._decode_attr(
-                    [t for t in attr_union_types if t is not type(None)][0],
+                    next(t for t in attr_union_types if t is not type(None)),
                     value,
                 )
         elif issubclass(type_tree[-1], BaseEnum):
