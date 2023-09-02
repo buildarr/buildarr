@@ -398,7 +398,7 @@ class ConfigDirEventHandler(FileSystemEventHandler):
             logger.exception(
                 (
                     "Unexpected exception occurred "
-                    f"while handling config file recreation event: %s"
+                    "while handling config file recreation event: %s"
                 ),
                 err,
             )
@@ -421,7 +421,7 @@ class ConfigDirEventHandler(FileSystemEventHandler):
             logger.exception(
                 (
                     "Unexpected exception occurred "
-                    f"while handling config file modification event: %s"
+                    "while handling config file modification event: %s"
                 ),
                 err,
             )
