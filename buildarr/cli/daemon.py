@@ -136,20 +136,6 @@ class Daemon:
         self._stopped = True
         self._stop_handlers()
 
-    def update(self) -> None:
-        """
-        Perform a scheduled update of the remote instances.
-
-        This method is called by the scheduled automatic update jobs.
-        """
-        with self._run_lock():
-            logger.info("Running scheduled update of remote instances")
-            run_apply(secrets_file_path=self._secrets_file_path)
-            state._reset()
-            logger.info("Finished running scheduled update of remote instances")
-            self._log_next_run()
-            logger.info("Buildarr ready.")
-
     def reload(self) -> None:
         """
         Reload the Buildarr configuration, and re-run the initial run.
@@ -161,7 +147,6 @@ class Daemon:
             self._initial_run()
             logger.info("Finished reloading config")
             self._log_next_run()
-            logger.info("Buildarr ready.")
 
     @contextmanager
     def _run_lock(self) -> Generator[None, None, None]:
@@ -267,8 +252,22 @@ class Daemon:
             )
             cast(SchedulerJob, getattr(self._scheduler.every().week, update_day.name)).at(
                 update_time.strftime("%H:%M"),
-            ).do(self.update)
+            ).do(self._update)
         logger.info("Finished scheduling update jobs")
+
+    def _update(self) -> None:
+        """
+        Perform a scheduled update of the remote instances.
+
+        This method is called by the scheduled automatic update jobs.
+        """
+        with self._run_lock():
+            logger.info("Running scheduled update of remote instances")
+            run_apply(secrets_file_path=self._secrets_file_path)
+            state._reset()
+            logger.info("Finished running scheduled update of remote instances")
+            self._log_next_run()
+            logger.info("Buildarr ready.")
 
     def _log_next_run(self) -> None:
         """
@@ -402,6 +401,8 @@ class ConfigDirEventHandler(FileSystemEventHandler):
                 ),
                 err,
             )
+        finally:
+            logger.info("Buildarr ready.")
 
     def on_modified(self, event: Union[DirModifiedEvent, FileModifiedEvent]) -> None:
         """
@@ -425,6 +426,8 @@ class ConfigDirEventHandler(FileSystemEventHandler):
                 ),
                 err,
             )
+        finally:
+            logger.info("Buildarr ready.")
 
 
 def parse_time(
