@@ -236,7 +236,7 @@ class Daemon:
         if self._watch_config:
             logger.info(" - Configuration files to watch:")
             for config_file in state.config_files:
-                logger.info("   - %s", str(config_file))
+                logger.info("   - %s", config_file)
         logger.info(" - Update at:")
         for update_day, update_time in self._update_daytimes:
             logger.info("   - %s %s", update_day.name.capitalize(), update_time.strftime("%H:%M"))
@@ -298,20 +298,23 @@ class Daemon:
             for config_dir, filenames in config_dirs.items():
                 logger.debug(
                     "Scheduling event handler for directory '%s' with config files %s",
-                    str(config_dir),
+                    config_dir,
                     ", ".join(repr(filename) for filename in filenames),
                 )
                 self._observer.schedule(
                     ConfigDirEventHandler(self, config_dir, filenames),
                     config_dir,
                 )
+                logger.debug("Finished scheduling event handler for directory '%s'", config_dir)
             logger.debug("Starting config file observer")
             self._observer.start()
+            logger.debug("Finished starting config file observer")
             logger.info("Finished enabling config file monitoring")
         else:
             logger.info("Disabling config file monitoring")
             self._observer.stop()
             self._observer = PollingObserver()
+            logger.info("Finished disabling config file monitoring")
 
     def _start_signal_handlers(self) -> None:
         # Setup SIGINT, SIGTERM, and SIGHUP signal handers.
