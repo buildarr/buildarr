@@ -109,10 +109,10 @@ def get_initialize_js() -> Tuple[str, int]:
         `initialize.js`
     """
 
-    res = f"window.Dummy = {{\n  apiRoot: {repr(app.config['API_ROOT'])}"
+    res = f"window.Dummy = {{\n  apiRoot: {app.config['API_ROOT']!r}"
     if "API_KEY" in app.config and app.config["API_KEY"]:
-        res += f",\n  apiKey: {repr(app.config['API_KEY'])}"
-    res += f",\n  version: {repr(__version__)}\n}};"
+        res += f",\n  apiKey: {app.config['API_KEY']!r}"
+    res += f",\n  version: {__version__!r}\n}};"
 
     return (res, 200)
 

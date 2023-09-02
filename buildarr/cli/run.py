@@ -218,7 +218,7 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                     (
                         plugin_name
                         if instance_name == "default"
-                        else f"{plugin_name}.instances[{repr(instance_config)}]"
+                        else f"{plugin_name}.instances[{instance_config!r}]"
                     ),
                     instance_config,
                 )
