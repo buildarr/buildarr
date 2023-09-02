@@ -228,6 +228,8 @@ class Daemon:
 
         Push initial updates to their configuration to all defined instances.
         """
+        # Load the latest Buildarr configuration.
+        self._load_config()
         # Print the daemon-specific configuration to the log.
         logger.info("Daemon configuration:")
         logger.info(" - Watch configuration files: %s", "Yes" if self._watch_config else "No")
