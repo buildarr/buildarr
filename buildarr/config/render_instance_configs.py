@@ -55,10 +55,11 @@ def render_instance_configs() -> None:
             except NotImplementedError:
                 logger.debug(
                     (
-                        "Skipped performing re-initialisation configuration rendering "
+                        "Skipped performing pre-initialisation configuration rendering "
                         "(not supported by plugin)"
                     ),
                 )
+                instance_configs[plugin_name][instance_name] = instance_config
             else:
                 logger.debug("Finished performing pre-initialisation configuration rendering")
 
