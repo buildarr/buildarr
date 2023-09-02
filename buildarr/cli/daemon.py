@@ -26,7 +26,7 @@ from contextlib import contextmanager
 from datetime import datetime, time
 from logging import getLogger
 from pathlib import Path
-from threading import Lock
+from threading import Lock, current_thread
 from time import sleep
 from typing import TYPE_CHECKING, cast
 
@@ -168,10 +168,13 @@ class Daemon:
         """
         Control Buildarr run jobs using a lock, ensuring only one job runs at a given time.
         """
+        thread = current_thread()
         self._lock.acquire()
         try:
+            logger.debug("Thread '%s' acquired daemon run lock", thread.name)
             yield
         finally:
+            logger.debug("Thread '%s' releasing daemon run lock", thread.name)
             self._lock.release()
 
     def _load_config(self) -> None:
