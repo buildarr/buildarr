@@ -63,6 +63,7 @@ def post_init_render() -> None:
                         "(not supported by plugin)"
                     ),
                 )
+                instance_configs[plugin_name][instance_name] = instance_config
             else:
                 logger.debug("Finished performing post-initialisation configuration rendering")
 
