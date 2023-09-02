@@ -282,6 +282,7 @@ class Daemon:
         If disabled and was previously enabled, stop configuration watching.
         """
         if self._watch_config == self._old_watch_config:
+            logger.debug("Skipped setting up config file monitoring (disabled)")
             return
         if self._watch_config:
             logger.info("Setting up config file monitoring")
