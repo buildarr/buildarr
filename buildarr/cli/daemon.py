@@ -22,9 +22,11 @@ from __future__ import annotations
 import itertools
 import signal
 
+from contextlib import contextmanager
 from datetime import datetime, time
 from logging import getLogger
 from pathlib import Path
+from threading import Lock
 from time import sleep
 from typing import TYPE_CHECKING, cast
 
@@ -45,7 +47,7 @@ from .run import _run as run_apply
 
 if TYPE_CHECKING:
     from types import FrameType
-    from typing import Dict, Iterable, List, Optional, Set, Tuple, Union
+    from typing import Dict, Generator, Iterable, List, Optional, Set, Tuple, Union
 
     from watchdog.events import DirModifiedEvent, FileModifiedEvent
 
@@ -83,87 +85,35 @@ class Daemon:
         """
         # Set static configuration and override field values.
         self.config_path = config_path
-        self._default_secrets_file_path = secrets_file_path
-        self._default_watch_config = watch_config
-        self._default_update_days = set(update_days)
-        self._default_update_times = set(update_times)
-        # Load the Buildarr configuration from the given file, and set appropriate values
-        # for Buildarr daemon configuration fields.
-        self._load_config()
-        # Create the config file observer and update job scheduler objects.
-        self.observer = self._create_observer()
-        self.scheduler = Scheduler()
+        self.default_secrets_file_path = secrets_file_path
+        self.default_watch_config = watch_config
+        self.default_update_days = set(update_days)
+        self.default_update_times = set(update_times)
         # Internal variables for tracking daemon state.
         self._stopped = False
-
-    def _load_config(self) -> None:
-        """
-        Load the Buildarr configuration from the given file, and set daemon configuration fields.
-        """
-        # Load the Buildarr configuration, and save the list of files loaded.
-        logger.info("Loading configuration file '%s'", self.config_path)
-        load_config(self.config_path)
-        logger.info("Finished loading configuration file")
-        # Set watch_config, update_days and update_times from either the
-        # command line-provided override value or the value from the configuration.
-        buildarr_config = state.config.buildarr
-        self.secrets_file_path = (
-            self._default_secrets_file_path
-            if self._default_secrets_file_path
-            else buildarr_config.secrets_file_path
-        )
-        self.watch_config = (
-            self._default_watch_config
-            if self._default_watch_config is not None
-            else buildarr_config.watch_config
-        )
-        self.update_days = (
-            self._default_update_days if self._default_update_days else buildarr_config.update_days
-        )
-        self.update_times = (
-            self._default_update_times
-            if self._default_update_times
-            else buildarr_config.update_times
-        )
-        # Generate the update job schedule.
-        self.update_daytimes = [
-            (update_day, update_time)
-            for update_day, update_time in itertools.product(
-                sorted(self.update_days),
-                sorted(self.update_times),
-            )
-        ]
-
-    def _create_observer(self) -> PollingObserver:
-        """
-        Create an empty `Observer` object for monitoring for file changes.
-
-        Handlers will need to be added to start listening for changes.
-
-        Returns:
-            Empty filesystem observer object
-        """
-        return PollingObserver()
+        self._lock = Lock()
+        self._secrets_file_path: Path = None  # type: ignore[assignment]
+        self._watch_config = False
+        self._update_days: Set[DayOfWeek] = set()
+        self._update_times: Set[time] = set()
+        self._update_daytimes: List[Tuple[DayOfWeek, time]] = []
+        self._old_secrets_file_path: Optional[Path] = None
+        self._old_watch_config = False
+        self._old_update_days: Set[DayOfWeek] = set()
+        self._old_update_times: Set[time] = set()
+        self._old_update_daytimes: List[Tuple[DayOfWeek, time]] = []
+        self._observer = PollingObserver()
+        self._scheduler = Scheduler()
 
     def start(self) -> None:
         """
         Start the Buildarr daemon main loop.
         """
-        # Run the initial run routine.
-        self.initial_run()
-        # Setup SIGINT, SIGTERM, and SIGHUP signal handers.
-        # SIGHUP can be used to reload the configuration, even if watch_config is disabled.
-        logger.info("Setting up signal handlers")
-        signal.signal(signal.SIGINT, self._sigterm_handler)
-        signal.signal(signal.SIGTERM, self._sigterm_handler)
-        if hasattr(signal, "SIGHUP"):
-            logger.debug("Setting up SIGHUP signal handler")
-            signal.signal(signal.SIGHUP, self._sighup_handler)  # type: ignore[attr-defined]
-        else:
-            logger.debug("SIGHUP is not available on this platform")
-        logger.info("Finished setting up signal handlers")
-        # Buildarr daemon setup is now complete.
-        logger.info("Buildarr ready.")
+        with self._run_lock():
+            self._initial_run()
+            self._start_signal_handlers()
+            self._log_next_run()
+            logger.info("Buildarr ready.")
         # Enter the update job schedule main loop.
         # This is a non-blocking process, so if there are no jobs to run,
         # it returns and sleeps for a pre-determined amount of time.
@@ -172,57 +122,168 @@ class Daemon:
         while not self._stopped:
             if run_once:
                 sleep(1)
-            self.scheduler.run_pending()
+            self._scheduler.run_pending()
             run_once = True
-        # Once we get here, daemon shutdown is now complete.
         logger.info("Finished stopping daemon")
 
-    def initial_run(self) -> None:
+    def stop(self) -> None:
         """
-        Initial run routine.
+        Signal the daemon to stop, and shutdown job schedulers and monitors.
 
-        Push initial updates to their configuration to all defined instances,
-        setup update job schedulers and config file monitoring.
+        This method is called by the SIGINT and SIGHUP handlers.
+        """
+        logger.info("Stopping daemon")
+        self._stopped = True
+        self._stop_handlers()
+
+    def update(self) -> None:
+        """
+        Perform a scheduled update of the remote instances.
+
+        This method is called by the scheduled automatic update jobs.
+        """
+        with self._run_lock():
+            logger.info("Running scheduled update of remote instances")
+            run_apply(secrets_file_path=self._secrets_file_path)
+            state._reset()
+            logger.info("Finished running scheduled update of remote instances")
+            self._log_next_run()
+            logger.info("Buildarr ready.")
+
+    def reload(self) -> None:
+        """
+        Reload the Buildarr configuration, and re-run the initial run.
+
+        This method is called by the config file monitor and SIGHUP handler.
+        """
+        with self._run_lock():
+            logger.info("Reloading config")
+            self._initial_run()
+            logger.info("Finished reloading config")
+            self._log_next_run()
+            logger.info("Buildarr ready.")
+
+    @contextmanager
+    def _run_lock(self) -> Generator[None, None, None]:
+        """
+        Control Buildarr run jobs using a lock, ensuring only one job runs at a given time.
+        """
+        self._lock.acquire()
+        try:
+            yield
+        finally:
+            self._lock.release()
+
+    def _load_config(self) -> None:
+        """
+        Load the daemon configuration from the command line arguments
+        and the Buildarr configuration.
+        """
+        # Load the Buildarr configuration, and save the list of files loaded.
+        logger.info("Loading configuration file '%s'", self.config_path)
+        load_config(self.config_path)
+        logger.info("Finished loading configuration file")
+        # Fetch the new configuration values, from the command line overrides,
+        # then the Buildarr configuration, in that order.
+        buildarr_config = state.config.buildarr
+        secrets_file_path = (
+            self.default_secrets_file_path
+            if self.default_secrets_file_path
+            else buildarr_config.secrets_file_path
+        )
+        watch_config = (
+            self.default_watch_config
+            if self.default_watch_config is not None
+            else buildarr_config.watch_config
+        )
+        update_days = (
+            self.default_update_days if self.default_update_days else buildarr_config.update_days
+        )
+        update_times = (
+            self.default_update_times if self.default_update_times else buildarr_config.update_times
+        )
+        # Record whether or not the values were updated.
+        self._old_secrets_file_path = self._secrets_file_path
+        self._old_watch_config = self._watch_config
+        self._old_update_days = self._update_days
+        self._old_update_times = self._update_times
+        self._old_update_daytimes = self._update_daytimes
+        # Set the new values.
+        self._secrets_file_path = secrets_file_path
+        self._watch_config = watch_config
+        self._update_days = update_days
+        self._update_times = update_times
+        # Generate the update job schedule.
+        self._update_daytimes = [
+            (update_day, update_time)
+            for update_day, update_time in itertools.product(
+                sorted(self._update_days),
+                sorted(self._update_times),
+            )
+        ]
+
+    def _initial_run(self) -> None:
+        """
+        Perform an initial Buildarr run under this configuration.
+
+        Push initial updates to their configuration to all defined instances.
         """
         # Print the daemon-specific configuration to the log.
         logger.info("Daemon configuration:")
-        logger.info(" - Watch configuration files: %s", "Yes" if self.watch_config else "No")
-        if self.watch_config:
+        logger.info(" - Watch configuration files: %s", "Yes" if self._watch_config else "No")
+        if self._watch_config:
             logger.info(" - Configuration files to watch:")
             for config_file in state.config_files:
                 logger.info("   - %s", str(config_file))
         logger.info(" - Update at:")
-        for update_day, update_time in self.update_daytimes:
+        for update_day, update_time in self._update_daytimes:
             logger.info("   - %s %s", update_day.name.capitalize(), update_time.strftime("%H:%M"))
+        # Setup update schedule.
+        self._setup_update_schedule()
+        # Setup configuration file watching, if enabled.
+        self._setup_watch_config()
         # Apply initial configuration to all defined remote instances.
         logger.info("Applying initial configuration")
-        run_apply(secrets_file_path=self.secrets_file_path)
+        run_apply(secrets_file_path=self._secrets_file_path)
         logger.info("Finished applying initial configuration")
-        # Schedule configuration update jobs according to the configuration,
-        # so that remote instances are automatically updated periodically.
+
+    def _setup_update_schedule(self) -> None:
+        """
+        Schedule configuration update jobs according to the configuration,
+        so that remote instances are automatically updated periodically.
+        """
         logger.info("Scheduling update jobs")
-        self.scheduler.clear()
-        for update_day, update_time in self.update_daytimes:
+        self._scheduler.clear()
+        for update_day, update_time in self._update_daytimes:
             logger.debug(
                 "Scheduling update job for %s %s",
                 update_day.name.capitalize(),
                 update_time.strftime("%H:%M"),
             )
-            cast(SchedulerJob, getattr(self.scheduler.every().week, update_day.name)).at(
+            cast(SchedulerJob, getattr(self._scheduler.every().week, update_day.name)).at(
                 update_time.strftime("%H:%M"),
             ).do(self.update)
         logger.info("Finished scheduling update jobs")
+
+    def _log_next_run(self) -> None:
+        """
+        Print a log alerting the user to the next scheduled run time.
+        """
         logger.info(
             "The next run will be at %s",
-            self.scheduler.next_run.strftime("%Y-%m-%d %H:%M"),
+            self._scheduler.next_run.strftime("%Y-%m-%d %H:%M"),
         )
-        # If configuration watching is enabled, setup event handlers
-        # for when the active configuration files are modified.
-        # When they are modified, the configuration is reloaded
-        # and another initial run is performed.
-        if self.watch_config:
+
+    def _setup_watch_config(self) -> None:
+        """
+        Start configuration watching, if enabled and the schedule has changed.
+        If disabled and was previously enabled, stop configuration watching.
+        """
+        if self._watch_config == self._old_watch_config:
+            return
+        if self._watch_config:
             logger.info("Setting up config file monitoring")
-            self.observer = self._create_observer()
+            self._observer = PollingObserver()
             config_dirs: Dict[Path, Set[str]] = {}
             for config_file in state.config_files:
                 if config_file.parent not in config_dirs:
@@ -234,61 +295,40 @@ class Daemon:
                     str(config_dir),
                     ", ".join(repr(filename) for filename in filenames),
                 )
-                self.observer.schedule(
+                self._observer.schedule(
                     ConfigDirEventHandler(self, config_dir, filenames),
                     config_dir,
                 )
             logger.debug("Starting config file observer")
-            self.observer.start()
+            self._observer.start()
             logger.info("Finished setting up config file monitoring")
+        else:
+            logger.info("Disabling config file monitoring")
+            self._observer.stop()
+            self._observer = PollingObserver()
 
-    def update(self) -> None:
-        """
-        Update the configuration of the remote instances.
-
-        This method is called by the scheduled automatic update jobs.
-        """
-        logger.info("Running scheduled update of remote instances")
-        run_apply(secrets_file_path=self.secrets_file_path)
-        state._reset()
-        logger.info("Finished running scheduled update of remote instances")
-        logger.info(
-            "The next run will be at %s",
-            self.scheduler.next_run.strftime("%Y-%m-%d %H:%M"),
-        )
-
-    def reload(self) -> None:
-        """
-        Reload the Buildarr configuration, and re-run the initial run.
-
-        This method is called by the config file monitor and SIGHUP handler.
-        """
-        logger.info("Reloading config")
-        self._stop_handlers()
-        self._load_config()
-        self.initial_run()
-        logger.info("Finished reloading config")
-        logger.info("Buildarr ready.")
-
-    def stop(self) -> None:
-        """
-        Signal the daemon to stop, and shutdown job schedulers and monitors.
-
-        This method is called by the SIGINT and SIGHNUP handlers.
-        """
-        logger.info("Stopping daemon")
-        self._stopped = True
-        self._stop_handlers()
+    def _start_signal_handlers(self) -> None:
+        # Setup SIGINT, SIGTERM, and SIGHUP signal handers.
+        # SIGHUP can be used to reload the configuration, even if watch_config is disabled.
+        logger.info("Setting up signal handlers")
+        signal.signal(signal.SIGINT, self._sigterm_handler)
+        signal.signal(signal.SIGTERM, self._sigterm_handler)
+        if hasattr(signal, "SIGHUP"):
+            logger.debug("Setting up SIGHUP signal handler")
+            signal.signal(signal.SIGHUP, self._sighup_handler)  # type: ignore[attr-defined]
+        else:
+            logger.debug("SIGHUP is not available on this platform")
+        logger.info("Finished setting up signal handlers")
 
     def _stop_handlers(self) -> None:
         """
         Shutdown the config file monitors and clear the automatic update job schedule.
         """
         logger.info("Stopping config file observer")
-        self.observer.stop()
+        self._observer.stop()
         logger.info("Finished stopping config file observer")
         logger.info("Clearing update job schedule")
-        self.scheduler.clear()
+        self._scheduler.clear()
         logger.info("Finished clearing update job schedule")
 
     def _sigterm_handler(self, signalnum: int, frame: Optional[FrameType]) -> None:
