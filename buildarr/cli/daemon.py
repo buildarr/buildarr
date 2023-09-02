@@ -335,10 +335,15 @@ class Daemon:
                 logger.info("Buildarr ready.")
 
     def _start_signal_handlers(self) -> None:
-        # Setup SIGINT, SIGTERM, and SIGHUP signal handers.
-        # SIGHUP can be used to reload the configuration, even if watch_config is disabled.
+        """
+        Setup `SIGINT`, `SIGTERM` and `SIGHUP` signal handers.
+
+        SIGHUP can be used to reload the configuration, even if `watch_config` is disabled.
+        """
         logger.info("Setting up signal handlers")
+        logger.debug("Setting up SIGINT signal handler")
         signal.signal(signal.SIGINT, self._sigterm_handler)
+        logger.debug("Setting up SIGTERM signal handler")
         signal.signal(signal.SIGTERM, self._sigterm_handler)
         if hasattr(signal, "SIGHUP"):
             logger.debug("Setting up SIGHUP signal handler")
