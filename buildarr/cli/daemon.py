@@ -282,10 +282,13 @@ class Daemon:
         If disabled and was previously enabled, stop configuration watching.
         """
         if self._watch_config == self._old_watch_config:
-            logger.debug("Skipped setting up config file monitoring (disabled)")
+            logger.info(
+                "Config file monitoring is already %s",
+                "enabled" if self._watch_config else "disabled",
+            )
             return
         if self._watch_config:
-            logger.info("Setting up config file monitoring")
+            logger.info("Enabling config file monitoring")
             self._observer = PollingObserver()
             config_dirs: Dict[Path, Set[str]] = {}
             for config_file in state.config_files:
@@ -304,7 +307,7 @@ class Daemon:
                 )
             logger.debug("Starting config file observer")
             self._observer.start()
-            logger.info("Finished setting up config file monitoring")
+            logger.info("Finished enabling config file monitoring")
         else:
             logger.info("Disabling config file monitoring")
             self._observer.stop()
