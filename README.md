@@ -29,11 +29,11 @@ Buildarr attempts to fulfill some of the needs of users of the following project
 
 Buildarr is available on Docker Hub as a Docker image.
 
-Plugins for Sonarr and Prowlarr are bundled into the official Docker container for Buildarr, so you can manage instances of those types right away.
-
 ```bash
 $ docker pull callum027/buildarr:latest
 ```
+
+[All available plugins](#plugins) at the time of release are bundled into the official Docker container for Buildarr, so you can manage instances of those types right away.
 
 Buildarr can also be installed using `pip`. Python 3.8 or later is required. Windows is natively supported.
 
@@ -56,7 +56,9 @@ Buildarr supports external plugins to allow additional applications to be suppor
 At the time of this release the following plugins are available:
 
 * [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-radarr`](https://buildarr.github.io/plugins/radarr) - [Radarr](https://radarr.video) PVR for movies
 * [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr) - [Prowlarr](https://prowlarr.com) indexer manager for Arr applications
+* [`buildarr-jellyseerr`](https://buildarr.github.io/plugins/jellyseerr) - [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) media request manager for Jellyfin, Sonarr and Radarr
 
 For more information on installing plugins, check the [plugin documentation](http://buildarr.github.io/plugins).
 

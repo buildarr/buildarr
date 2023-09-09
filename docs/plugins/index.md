@@ -23,7 +23,9 @@ Buildarr plugins are installed as Python packages, just like Buildarr itself.
 At the time of this release the following plugins are available:
 
 * [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-radarr`](https://buildarr.github.io/plugins/radarr) - [Radarr](https://radarr.video) PVR for movies
 * [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr) - [Prowlarr](https://prowlarr.com) indexer manager for Arr applications
+* [`buildarr-jellyseerr`](https://buildarr.github.io/plugins/jellyseerr) - [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) media request manager for Jellyfin, Sonarr and Radarr
 
 ## Installing plugins for a standalone application
 
@@ -51,6 +53,8 @@ If you would like to upgrade Buildarr itself or the bundled plugins within the c
 
 * `$BUILDARR_VERSION`
 * `$BUILDARR_SONARR_VERSION`
+* `$BUILDARR_RADARR_VERSION`
 * `$BUILDARR_PROWLARR_VERSION`
+* `$BUILDARR_JELLYSEERR_VERSION`
 
 For more information on installing Buildarr as a Docker container, see the [Docker installation instructions](../installation.md#docker).
