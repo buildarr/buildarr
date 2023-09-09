@@ -72,7 +72,12 @@ For configuration testing purposes, you can call `buildarr run` using the Docker
 $ docker run --rm -v /path/to/config:/config -e PUID=<PUID> -e PGID=<PGID> callum027/buildarr:latest run
 ```
 
-The Docker container for Buildarr is bundled with the [Sonarr plugin](https://buildarr.github.io/plugins/sonarr) and the [Prowlarr plugin](https://buildarr.github.io/plugins/prowlarr), so instances of those types can be managed out of the box.
+The Docker container for Buildarr is bundled with the following plugins (allowing out-of-the-box configuration):
+
+* [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-radarr`](https://buildarr.github.io/plugins/radarr) - [Radarr](https://radarr.video) PVR for movies
+* [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr) - [Prowlarr](https://prowlarr.com) indexer manager for Arr applications
+* [`buildarr-jellyseerr`](https://buildarr.github.io/plugins/jellyseerr) - [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) media request manager for Jellyfin, Sonarr and Radarr
 
 If you would like to install external plugins into the Docker container, see [Installing plugins into the Docker container](plugins/index.md#installing-plugins-into-the-docker-container).
 

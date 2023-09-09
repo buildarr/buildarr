@@ -54,7 +54,9 @@ Buildarr supports external plugins to allow additional applications to be suppor
 At the time of this release the following plugins are available:
 
 * [`buildarr-sonarr`](https://buildarr.github.io/plugins/sonarr) - [Sonarr](https://sonarr.tv) PVR for TV shows
+* [`buildarr-radarr`](https://buildarr.github.io/plugins/radarr) - [Radarr](https://radarr.video) PVR for movies
 * [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr) - [Prowlarr](https://prowlarr.com) indexer manager for Arr applications
+* [`buildarr-jellyseerr`](https://buildarr.github.io/plugins/jellyseerr) - [Jellyseerr](https://github.com/Fallenbagel/jellyseerr) media request manager for Jellyfin, Sonarr and Radarr
 
 For more information on installing plugins, check the [plugin documentation](plugins/index.md).
 
