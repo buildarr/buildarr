@@ -27,7 +27,7 @@ Buildarr attempts to fulfill some of the needs of users of the following project
 
 Buildarr is available on Docker Hub as a Docker image.
 
-Plugins for Sonarr and Prowlarr are bundled into the official Docker container for Buildarr, so you can manage instances of those types right away.
+[All available plugins](#plugins) at the time of release are bundled into the official Docker container for Buildarr, so you can manage instances of those types right away.
 
 ```bash
 $ docker pull callum027/buildarr:latest
