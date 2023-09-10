@@ -1,5 +1,18 @@
 # Release Notes (Buildarr Core)
 
+## [v0.6.1](https://github.com/buildarr/buildarr/releases/tag/v0.6.1) - 2023-09-11
+
+This is a backwards-compatible feature release that adds built-in support for parsing, decoding and encoding email attribute types that include a name (e.g. `Example Admin <admin@example.com>`).
+
+Some plugins use this attribute type (`NameEmail` in Pydantic) without explicitly defining parameters for parsing it, so this adds sane defaults for that attribute type to ensure parsing works appropriately.
+
+This will not be done for every possible type, but this application is generic and common enough that it is advantageous to build it into the core Buildarr application.
+
+### Added
+
+* Add built-in support for handling NameEmail attribute types ([#138](https://github.com/buildarr/buildarr/pull/138))
+
+
 ## [v0.6.0](https://github.com/buildarr/buildarr/releases/tag/v0.6.0) - 2023-09-02
 
 This is a backwards-compatible feature and bugfix release.
@@ -21,6 +34,7 @@ The following issues have also been resolved:
 * Detect plugins that do not use config rendering ([#116](https://github.com/buildarr/buildarr/pull/116))
 * Fix running plugins that do not perform config rendering ([#132](https://github.com/buildarr/buildarr/pull/132))
 * Improve daemon reloading ([#131](https://github.com/buildarr/buildarr/pull/131))
+
 
 ## [v0.5.0](https://github.com/buildarr/buildarr/releases/tag/v0.5.0) - 2023-04-16
 
