@@ -232,7 +232,7 @@ def _expand_relative_paths(
         return {
             key: _expand_relative_paths(
                 config_dir=config_dir,
-                value_type=field._outer_type,
+                value_type=field.outer_type_,
                 value=value[key],
             )
             for key, field in type_tree[-1].__fields__.items()
