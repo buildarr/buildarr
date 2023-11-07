@@ -1,5 +1,85 @@
 # Release Notes (Buildarr Core)
 
+## [v0.6.2](https://github.com/buildarr/buildarr/releases/tag/v0.6.2) - 2023-11-07
+
+This is a backwards-compatible feature release that makes using multiple configuration files more flexible.
+
+Buildarr allows you to split your configuration into multiple files using the `includes` option.
+
+Before this release, however, there was a limitation to this functionality: each individual file had to be a valid configuration file on its own, and each file had to parse correctly when validated.
+
+`prowlarr.yml`:
+
+```yaml
+---
+
+includes:
+  - prowlarr-2.yml
+
+prowlarr:
+  instances:
+    prowlarr:
+      api_key: xxxx
+      settings:
+        indexers:
+          indexers:
+            definitions:
+              "Nyaa.si":
+                type: nyaasi
+                enable: true
+                sync_profile: Standard
+                redirect: false
+                priority: 15
+                grab_limit: 50  # Overridden in the included file.
+                query_limit: 10010
+                fields:
+                  torrentBaseSettings.seedRatio: null
+                  prefer_magnet_links: true
+```
+
+`prowlarr-2.yml`:
+
+```yaml
+---
+
+prowlarr:
+  instances:
+    prowlarr:
+      settings:
+        indexers:
+          indexers:
+            definitions:
+              "Nyaa.si":
+                type: nyaasi  # Already defined, but must be defined here to work.
+                sync_profile: Standard  # Already defined, but must be defined here to work as well.
+                grab_limit: 104  # Override the value in the original file.
+```
+
+With this release, this limitation has now been eliminated. The above example can now be simplified to the following, and it will work as expected:
+
+```yaml
+---
+
+prowlarr:
+  instances:
+    prowlarr:
+      settings:
+        indexers:
+          indexers:
+            definitions:
+              "Nyaa.si":
+                grab_limit: 104  # Override the value in the original file.
+```
+
+This makes it possible to more freely structure your configuration files, e.g. splitting secret parameters (e.g. API keys and passwords) into a separate file from the main configuration.
+
+For more information, check the configuration documentation.
+
+### Changed
+
+* Allow any configuration value to be defined in any file ([#146](https://github.com/buildarr/buildarr/pull/146))
+
+
 ## [v0.6.1](https://github.com/buildarr/buildarr/releases/tag/v0.6.1) - 2023-09-11
 
 This is a backwards-compatible feature release that adds built-in support for parsing, decoding and encoding email attribute types that include a name (e.g. `Example Admin <admin@example.com>`).
