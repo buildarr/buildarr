@@ -229,11 +229,15 @@ def _expand_relative_paths(
     except TypeError:
         is_subclass = False
     if is_subclass:
-        return _expand_relative_paths(
-            config_dir=config_dir,
-            value_type=type_tree[-1],
-            value=value,
-        )
+        return {
+            key: _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=field._outer_type,
+                value=value[key],
+            )
+            for key, field in type_tree[-1].__fields__.items()
+            if key in value
+        }
     return value
 
 
