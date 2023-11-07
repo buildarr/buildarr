@@ -133,13 +133,6 @@ class State:
     This state attribute is internal, and shouldn't be accessed by plugins.
     """
 
-    _only_validate_localpaths: bool = False
-    """
-    Whether or not to only validate `LocalPath` attributes when loading configuration.
-
-    This state attribute is internal, and shouldn't be accessed by plugins.
-    """
-
     _current_plugin: str
     """
     The plugin being processed in the current context.
@@ -195,7 +188,6 @@ class State:
         self.trash_metadata_dir = None  # type: ignore[assignment]
         self.secrets = None  # type: ignore[assignment]
         self._current_dir = Path.cwd()
-        self._only_validate_localpaths = False
         self._current_plugin = None  # type: ignore[assignment]
         self._current_instance = None  # type: ignore[assignment]
         self._instance_dependencies = defaultdict(set)  # type: ignore[assignment]

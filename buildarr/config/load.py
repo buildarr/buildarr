@@ -28,6 +28,7 @@ import yaml
 from pydantic import create_model
 
 from ..state import state
+from ..types import LocalPath
 from ..util import get_absolute_path, merge_dicts
 from .base import ConfigBase
 from .buildarr import BuildarrConfig
@@ -116,13 +117,13 @@ def _get_files_and_configs(
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
             config = {}
-        with state._with_current_dir(path.parent):
-            try:
-                state._only_validate_localpaths = True
-                config_obj = model(**{k: v for k, v in config.items() if k != "includes"})
-            finally:
-                state._only_validate_localpaths = False
-        configs.append(config_obj.dict(exclude_unset=True))
+        config = {k: v for k, v in config.items() if k != "includes"}
+        _expand_relative_paths(
+            config_dir=path.parent,
+            model=model,
+            config=config,
+        )
+        configs.append(config)
 
     from pprint import pprint
 
@@ -153,6 +154,21 @@ def _get_files_and_configs(
             configs.extend(_configs)
 
     return (files, configs)
+
+
+def _expand_relative_paths(
+    config_dir: Path,
+    model: Type[ConfigType],
+    config: Dict[str, Any],
+) -> None:
+    # Recursively expand any `LocalPath` type field values in the configuration dictionary
+    # that are relative paths.
+    for key, field in model.__fields__.items():
+        if field.type_ is LocalPath:
+            path = Path(config[key])
+            config[key] = path if path.is_absolute() else get_absolute_path(config_dir / path)
+        elif issubclass(ConfigBase, field.type_):
+            _expand_relative_paths(config_dir=config_dir, model=field.type_, config=config[key])
 
 
 def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
