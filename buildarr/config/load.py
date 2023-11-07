@@ -21,7 +21,13 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Type,
+    cast,
+    get_args as get_type_args,
+    get_origin as get_type_origin,
+)
 
 import yaml
 
@@ -35,12 +41,13 @@ from .buildarr import BuildarrConfig
 from .models import ConfigType
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Set, Tuple
+    from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
     from .models import ConfigPlugin, ConfigPluginType
 
-
 logger = getLogger(__name__)
+
+OPTIONAL_TYPE_UNION_SIZE = 2
 
 
 def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
@@ -123,13 +130,13 @@ def _get_files_and_configs(
                 "Invalid configuration object type "
                 f"(got '{type(config).__name__}', expected 'dict'): {config}",
             )
-        config_no_includes = {k: v for k, v in config.items() if k != "includes"}
-        _expand_relative_paths(
-            config_dir=path.parent,
-            model=model,
-            config=config_no_includes,
+        configs.append(
+            _expand_relative_paths(
+                config_dir=path.parent,
+                value_type=model,
+                value={k: v for k, v in config.items() if k != "includes"},
+            ),
         )
-        configs.append(config_no_includes)
 
     from pprint import pprint
 
@@ -158,30 +165,71 @@ def _get_files_and_configs(
 
 def _expand_relative_paths(
     config_dir: Path,
-    model: Type[ConfigType],
-    config: Dict[str, Any],
-) -> None:
+    value_type: Type[Any],
+    value: Any,
+) -> Any:
     # Recursively expand any `LocalPath` type field values in the configuration dictionary
-    # that are relative paths.
-    for key, field in model.__fields__.items():
-        if key not in config:
-            continue
-        print(f"key='{key}', type={field.type_}")
-        if field.type_ is LocalPath:
-            print(f"Key '{key}' is of type LocalType")
-            path = Path(config[key])
-            config[key] = path if path.is_absolute() else get_absolute_path(config_dir / path)
-        try:
-            is_subclass = issubclass(field.outer_type_, ConfigBase)
-        except TypeError:
-            is_subclass = False
-        if is_subclass:
-            print(f"Recursing to type {field.type_} for key '{key}'")
+    # that are relative paths, and return the modified configuration dictionary.
+    type_tree: List[Type[Any]] = [value_type]
+    while get_type_origin(type_tree[-1]) is not None:
+        origin_type = get_type_origin(type_tree[-1])
+        if origin_type is not None:
+            type_tree.append(origin_type)
+    if type_tree[-1] is LocalPath:
+        local_path = Path(value)
+        if local_path.is_absolute():
+            return value
+        else:
+            absolute_path = get_absolute_path(config_dir / local_path)
+            logger.debug("Expanding relative local path '%s' into '%s'", local_path, absolute_path)
+            return str(absolute_path)
+    elif type_tree[-1] is Union:
+        attr_union_types = get_type_args(type_tree[-2])
+        if (
+            len(attr_union_types) == OPTIONAL_TYPE_UNION_SIZE
+            and type(None) in attr_union_types
+            and value is not None
+        ):
+            return _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=next(t for t in attr_union_types if t is not type(None)),
+                value=value,
+            )
+    if type_tree[-1] in (list, set):
+        element_type = get_type_args(type_tree[-2])[0]
+        return [
             _expand_relative_paths(
                 config_dir=config_dir,
-                model=field.type_,
-                config=config[key],
+                value_type=element_type,
+                value=v,
             )
+            for v in value
+        ]
+    if type_tree[-1] is dict:
+        dict_key_type, dict_value_type = get_type_args(type_tree[-2])
+        return {
+            _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=dict_key_type,
+                value=dict_key,
+            ): _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=dict_value_type,
+                value=dict_value,
+            )
+            for dict_key, dict_value in value.items()
+        }
+    try:
+        is_subclass = issubclass(type_tree[-1], ConfigBase)
+    except TypeError:
+        is_subclass = False
+    if is_subclass:
+        return _expand_relative_paths(
+            config_dir=config_dir,
+            value_type=type_tree[-1],
+            value=value,
+        )
+    return value
 
 
 def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
