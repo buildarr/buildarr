@@ -426,7 +426,6 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
     def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
         """
         Pass class validation functions to Pydantic.
-
         Yields:
             Validation class functions
         """
@@ -436,10 +435,8 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
     def validate(cls, value: Any) -> Self:
         """
         Validate the local path value, and return an absolute path.
-
         Args:
             value (Any): Object to validate and coerce
-
         Returns:
             Absolute local path
         """

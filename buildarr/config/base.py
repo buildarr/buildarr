@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 
 from logging import getLogger
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import (
     Any,
     Callable,
@@ -824,19 +824,11 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         pass
 
 
-def _validate_pure_posix_path(v: Any) -> PurePosixPath:
-    """
-    PurePosixPath default object validator for Pydantic.
-
-    Args:
-        v (Any): Value to validate
-
-    Returns:
-        PurePosixPath object
-    """
-
-    return PurePosixPath(v)
-
-
-# Add the PurePosixPath validator to the list of Pyadantic validators.
-_VALIDATORS.append((PurePosixPath, [_validate_pure_posix_path]))
+# Add custom validators which are not provided by Pydantic.
+_VALIDATORS.extend(
+    [
+        (PurePath, [lambda v: PurePath(v)]),
+        (PurePosixPath, [lambda v: PurePosixPath(v)]),
+        (PureWindowsPath, [lambda v: PureWindowsPath(v)]),
+    ],
+)

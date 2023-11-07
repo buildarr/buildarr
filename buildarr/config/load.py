@@ -21,13 +21,21 @@ from __future__ import annotations
 
 from logging import getLogger
 from pathlib import Path
-from typing import TYPE_CHECKING, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Type,
+    Union,
+    cast,
+    get_args as get_type_args,
+    get_origin as get_type_origin,
+)
 
 import yaml
 
 from pydantic import create_model
 
 from ..state import state
+from ..types import LocalPath
 from ..util import get_absolute_path, merge_dicts
 from .base import ConfigBase
 from .buildarr import BuildarrConfig
@@ -38,8 +46,9 @@ if TYPE_CHECKING:
 
     from .models import ConfigPlugin, ConfigPluginType
 
-
 logger = getLogger(__name__)
+
+OPTIONAL_TYPE_UNION_SIZE = 2
 
 
 def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
@@ -101,30 +110,33 @@ def _get_files_and_configs(
     files = [path]
     configs: List[Dict[str, Any]] = []
 
-    # First, parse and validate the current configuration file.
+    # First, read the YAML configuration file into an object.
     #
-    # An initial validation pass is done before any merging is done,
-    # so any relative `LocalPath` type attributes are evaluated into
-    # absolute paths relative to the actual folder the configuration file is in.
-    #
-    # After creating the configuration object, turn it back into a dictionary
-    # so it can be merged with other loaded configuration files.
-    #
+    # Initial validation is done to make sure the object is the correct type (a dictionary).
     # If None is returned by the YAML parser when parsing the file,
     # it means the file is empty, so treat it as an empty configuration.
+    #
+    # The dictionary is then recursively compared against the configuration model,
+    # so any LocalPath type attributes can be expanded into absolute paths,
+    # relative to the actual configuration file the value was loaded from.
+    #
+    # Once processing is done, add it to the list of configuration dictionaries to merge.
     with path.open(mode="r") as f:
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
             config = {}
-        with state._with_current_dir(path.parent):
-            config_obj = model(**{k: v for k, v in config.items() if k != "includes"})
-        configs.append(config_obj.dict(exclude_unset=True))
-
-    # Check if the YAML object loaded is the correct type.
-    if not isinstance(config, dict):
-        raise ValueError(
-            "Invalid configuration object type "
-            f"(got '{type(config).__name__}', expected 'dict'): {config}",
+        if not isinstance(config, dict):
+            raise ValueError(
+                f"Error while loading configuration file '{path}': "
+                "Invalid configuration object type "
+                f"(got '{type(config).__name__}', expected 'dict'): {config}",
+            )
+        configs.append(
+            _expand_relative_paths(
+                config_dir=path.parent,
+                value_type=model,
+                value={k: v for k, v in config.items() if k != "includes"},
+            ),
         )
 
     # If other files were included using the `includes` list structure,
@@ -134,17 +146,125 @@ def _get_files_and_configs(
         includes = config["includes"]
         if not isinstance(includes, list):
             raise ValueError(
+                f"Error while loading configuration file '{path}': "
                 "Invalid value type for 'includes' "
                 f"(got '{type(includes).__name__}', expected 'list'): {includes}",
             )
         for include in includes:
             ip = Path(include)
-            include_path = get_absolute_path(ip if ip.is_absolute() else (path.parent / ip))
+            if ip.is_absolute():
+                include_path = ip
+            else:
+                include_path = get_absolute_path(path.parent / ip)
+                logger.debug("Expanding relative local path '%s' into '%s'", ip, include_path)
             _files, _configs = _get_files_and_configs(model, include_path)
             files.extend(_files)
             configs.extend(_configs)
 
     return (files, configs)
+
+
+def _expand_relative_paths(
+    config_dir: Path,
+    value_type: Type[Any],
+    value: Any,
+) -> Any:
+    # Recursively expand any `LocalPath` type field values in the configuration dictionary
+    # that are relative paths, and return the modified configuration dictionary.
+    type_tree = _get_type_tree(value_type)
+    if type_tree[-1] is LocalPath:
+        local_path = Path(value)
+        if local_path.is_absolute():
+            return value
+        else:
+            absolute_path = get_absolute_path(config_dir / local_path)
+            logger.debug("Expanding relative local path '%s' into '%s'", local_path, absolute_path)
+            return str(absolute_path)
+    if type_tree[-1] is Union:
+        union_types = get_type_args(type_tree[-2])
+        if len(union_types) == OPTIONAL_TYPE_UNION_SIZE and type(None) in union_types:
+            return (
+                _expand_relative_paths(
+                    config_dir=config_dir,
+                    value_type=next(t for t in union_types if t is not type(None)),
+                    value=value,
+                )
+                if value is not None
+                else None
+            )
+        # Tricky case to handle.
+        # This is more for models that have LocalPaths inside nested models
+        # that have multiple possible model types via Union.
+        # LocalPath itself being in a Union with another type is not supported.
+        else:
+            for union_type in union_types:
+                union_type_tree = _get_type_tree(union_type)
+                if (
+                    isinstance(value, dict)
+                    and (
+                        union_type_tree[-1] is dict or _is_subclass(union_type_tree[-1], ConfigBase)
+                    )
+                ) or (isinstance(value, list) and union_type_tree[-1] in (list, set)):
+                    return _expand_relative_paths(
+                        config_dir=config_dir,
+                        value_type=union_type,
+                        value=value,
+                    )
+            return value
+    if type_tree[-1] in (list, set):
+        element_type = get_type_args(type_tree[-2])[0]
+        return [
+            _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=element_type,
+                value=v,
+            )
+            for v in value
+        ]
+    if type_tree[-1] is dict:
+        dict_key_type, dict_value_type = get_type_args(type_tree[-2])
+        return {
+            _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=dict_key_type,
+                value=dict_key,
+            ): _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=dict_value_type,
+                value=dict_value,
+            )
+            for dict_key, dict_value in value.items()
+        }
+    if _is_subclass(type_tree[-1], ConfigBase):
+        return {
+            key: _expand_relative_paths(
+                config_dir=config_dir,
+                value_type=field.outer_type_,
+                value=value[key],
+            )
+            for key, field in type_tree[-1].__fields__.items()
+            if key in value
+        }
+    return value
+
+
+def _get_type_tree(type_obj: Type[Any]) -> List[Type[Any]]:
+    # Generate the full type tree of a type hint, or actual type.
+    type_tree: List[Type[Any]] = [type_obj]
+    while get_type_origin(type_tree[-1]) is not None:
+        origin_type = get_type_origin(type_tree[-1])
+        if origin_type is not None:
+            type_tree.append(origin_type)
+    return type_tree
+
+
+def _is_subclass(type_obj: Type[Any], classes: Union[Type[Any], Tuple[Type[Any]]]) -> bool:
+    # The issubclass built-in function, but returns False instead of raising TypeError
+    # when an unsupported type is passed.
+    try:
+        return issubclass(type_obj, classes)
+    except TypeError:
+        return False
 
 
 def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:

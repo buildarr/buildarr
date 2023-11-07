@@ -116,7 +116,7 @@ class BuildarrConfig(ConfigBase):
     This configuration option can be overridden using the `--update-times` command line argument.
     """
 
-    secrets_file_path: LocalPath = LocalPath("secrets.json")
+    secrets_file_path: LocalPath = "secrets.json"  # type: ignore[assignment]
     """
     Path to store the Buildarr instance secrets file.
 
@@ -149,7 +149,7 @@ class BuildarrConfig(ConfigBase):
     URL to download the latest TRaSH-Guides metadata from.
     """
 
-    trash_metadata_dir_prefix: Path = Path("Guides-master")
+    trash_metadata_dir_prefix: Path = "Guides-master"  # type: ignore[assignment]
     """
     Metadata directory name within the downloaded ZIP file.
     """
