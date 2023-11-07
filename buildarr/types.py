@@ -422,31 +422,11 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
     `/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
     """
 
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
-        """
-        Pass class validation functions to Pydantic.
-
-        Yields:
-            Validation class functions
-        """
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: Any) -> Self:
-        """
-        Validate the local path value, and return an absolute path.
-
-        Args:
-            value (Any): Object to validate and coerce
-
-        Returns:
-            Absolute local path
-        """
-        path = cls(value)
-        if not path.is_absolute():
-            return cls(get_absolute_path(state._current_dir / path))
-        return path
+    def __init__(self, *args) -> None:  # noqa: N804
+        path = Path(*args)
+        super().__init__(
+            get_absolute_path(state._current_dir / path) if not path.is_absolute() else path,
+        )
 
 
 class ModelConfigBase:

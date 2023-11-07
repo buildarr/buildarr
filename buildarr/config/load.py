@@ -117,7 +117,7 @@ def _get_files_and_configs(
         if config is None:
             config = {}
         with state._with_current_dir(path.parent):
-            config_obj = model(**{k: v for k, v in config.items() if k != "includes"})
+            config_obj = model.construct(**{k: v for k, v in config.items() if k != "includes"})
         configs.append(config_obj.dict(exclude_unset=True))
 
     # Check if the YAML object loaded is the correct type.
