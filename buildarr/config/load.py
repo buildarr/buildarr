@@ -117,13 +117,13 @@ def _get_files_and_configs(
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
             config = {}
-        config = {k: v for k, v in config.items() if k != "includes"}
+        config_no_includes = {k: v for k, v in config.items() if k != "includes"}
         _expand_relative_paths(
             config_dir=path.parent,
             model=model,
-            config=config,
+            config=config_no_includes,
         )
-        configs.append(config)
+        configs.append(config_no_includes)
 
     from pprint import pprint
 
