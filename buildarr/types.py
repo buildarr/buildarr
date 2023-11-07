@@ -400,7 +400,7 @@ class InstanceName(str):
         return cls(value)
 
 
-class LocalPath(type(Path()), Path):  # type: ignore[misc]
+class LocalPath(Path):
     """
     Model type for a local path.
 
@@ -422,7 +422,10 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
     `/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
     """
 
-    def __init__(self, *args) -> None:  # noqa: N804
+    def __new__(cls, *args, **kwargs):
+        return Path.__new__(Path, *args, **kwargs)
+
+    def __init__(self, *args):
         path = Path(*args)
         super().__init__(
             get_absolute_path(state._current_dir / path) if not path.is_absolute() else path,
