@@ -120,6 +120,9 @@ def _get_files_and_configs(
             config_obj = model.construct(**{k: v for k, v in config.items() if k != "includes"})
         configs.append(config_obj.dict(exclude_unset=True))
 
+    from pprint import pprint
+    pprint(configs)
+
     # Check if the YAML object loaded is the correct type.
     if not isinstance(config, dict):
         raise ValueError(

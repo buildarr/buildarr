@@ -25,7 +25,7 @@ from datetime import time
 from pathlib import Path
 from typing import Set
 
-from pydantic import AnyHttpUrl, PositiveFloat
+from pydantic import AnyHttpUrl, Field, PositiveFloat
 
 from ..types import DayOfWeek, LocalPath, NonEmptyStr
 from .base import ConfigBase
@@ -116,7 +116,7 @@ class BuildarrConfig(ConfigBase):
     This configuration option can be overridden using the `--update-times` command line argument.
     """
 
-    secrets_file_path: LocalPath = LocalPath("secrets.json")
+    secrets_file_path: LocalPath = Field(default_factory=lambda: LocalPath("secrets.json"))
     """
     Path to store the Buildarr instance secrets file.
 
