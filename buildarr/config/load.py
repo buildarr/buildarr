@@ -175,11 +175,7 @@ def _expand_relative_paths(
 ) -> Any:
     # Recursively expand any `LocalPath` type field values in the configuration dictionary
     # that are relative paths, and return the modified configuration dictionary.
-    type_tree: List[Type[Any]] = [value_type]
-    while get_type_origin(type_tree[-1]) is not None:
-        origin_type = get_type_origin(type_tree[-1])
-        if origin_type is not None:
-            type_tree.append(origin_type)
+    type_tree = _get_type_tree(value_type)
     if type_tree[-1] is LocalPath:
         local_path = Path(value)
         if local_path.is_absolute():
@@ -206,10 +202,13 @@ def _expand_relative_paths(
         # LocalPath itself being in a Union with another type is not supported.
         else:
             for union_type in union_types:
+                union_type_tree = _get_type_tree(union_type)
                 if (
                     isinstance(value, dict)
-                    and (union_type is dict or _is_subclass(union_type, ConfigBase))
-                ) or (isinstance(value, list) and union_type in (list, set)):
+                    and (
+                        union_type_tree[-1] is dict or _is_subclass(union_type_tree[-1], ConfigBase)
+                    )
+                ) or (isinstance(value, list) and union_type_tree[-1] in (list, set)):
                     return _expand_relative_paths(
                         config_dir=config_dir,
                         value_type=union_type,
@@ -253,7 +252,17 @@ def _expand_relative_paths(
     return value
 
 
-def _is_subclass(type_obj, classes) -> bool:
+def _get_type_tree(type_obj: Type[Any]) -> List[Type[Any]]:
+    # Generate the full type tree of a type hint, or actual type.
+    type_tree: List[Type[Any]] = [type_obj]
+    while get_type_origin(type_tree[-1]) is not None:
+        origin_type = get_type_origin(type_tree[-1])
+        if origin_type is not None:
+            type_tree.append(origin_type)
+    return type_tree
+
+
+def _is_subclass(type_obj: Type[Any], classes: Union[Type[Any], Tuple[Type[Any]]]) -> bool:
     # The issubclass built-in function, but returns False instead of raising TypeError
     # when an unsupported type is passed.
     try:
