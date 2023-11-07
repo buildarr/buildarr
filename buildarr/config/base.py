@@ -22,7 +22,7 @@ from __future__ import annotations
 import json
 
 from logging import getLogger
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
 from typing import (
     Any,
     Callable,
@@ -825,4 +825,10 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
 
 # Add custom validators which are not provided by Pydantic.
-_VALIDATORS.append((PurePath, [lambda v: PurePath(v)]))
+_VALIDATORS.extend(
+    [
+        (PurePath, [lambda v: PurePath(v)]),
+        (PurePosixPath, [lambda v: PurePosixPath(v)]),
+        (PureWindowsPath, [lambda v: PureWindowsPath(v)]),
+    ],
+)
