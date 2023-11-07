@@ -7,7 +7,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "buildarr"
-version = "0.6.1"
+version = "0.6.2"
 description = "Constructs and configures Arr PVR stacks"
 authors = ["Callum Dickinson <callum.dickinson.nz@gmail.com>"]
 license = "GPL-3.0-or-later"
