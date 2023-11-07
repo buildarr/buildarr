@@ -164,6 +164,7 @@ def _expand_relative_paths(
     # Recursively expand any `LocalPath` type field values in the configuration dictionary
     # that are relative paths.
     for key, field in model.__fields__.items():
+        print(f"key='{key}', type={field.type_}")
         if field.type_ is LocalPath:
             print(f"Key '{key}' is of type LocalType")
             path = Path(config[key])
