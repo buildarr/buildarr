@@ -190,10 +190,7 @@ def _expand_relative_paths(
             return str(absolute_path)
     if type_tree[-1] is Union:
         union_types = get_type_args(type_tree[-2])
-        if (
-            len(union_types) == OPTIONAL_TYPE_UNION_SIZE
-            and type(None) in union_types
-        ):
+        if len(union_types) == OPTIONAL_TYPE_UNION_SIZE and type(None) in union_types:
             return (
                 _expand_relative_paths(
                     config_dir=config_dir,
@@ -203,6 +200,22 @@ def _expand_relative_paths(
                 if value is not None
                 else None
             )
+        # Tricky case to handle.
+        # This is more for models that have LocalPaths inside nested models
+        # that have multiple possible model types via Union.
+        # LocalPath itself being in a Union with another type is not supported.
+        else:
+            for union_type in union_types:
+                if (
+                    isinstance(value, dict)
+                    and (union_type is dict or _is_subclass(union_type, ConfigBase))
+                ) or (isinstance(value, list) and union_type in (list, set)):
+                    return _expand_relative_paths(
+                        config_dir=config_dir,
+                        value_type=union_type,
+                        value=value,
+                    )
+            return value
     if type_tree[-1] in (list, set):
         element_type = get_type_args(type_tree[-2])[0]
         return [
@@ -227,11 +240,7 @@ def _expand_relative_paths(
             )
             for dict_key, dict_value in value.items()
         }
-    try:
-        is_subclass = issubclass(type_tree[-1], ConfigBase)
-    except TypeError:
-        is_subclass = False
-    if is_subclass:
+    if _is_subclass(type_tree[-1], ConfigBase):
         return {
             key: _expand_relative_paths(
                 config_dir=config_dir,
@@ -242,6 +251,15 @@ def _expand_relative_paths(
             if key in value
         }
     return value
+
+
+def _is_subclass(type_obj, classes) -> bool:
+    # The issubclass built-in function, but returns False instead of raising TypeError
+    # when an unsupported type is passed.
+    try:
+        return issubclass(type_obj, classes)
+    except TypeError:
+        return False
 
 
 def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
