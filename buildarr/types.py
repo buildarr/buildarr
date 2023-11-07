@@ -422,7 +422,7 @@ class LocalPath(Path):
     """
 
     def __new__(cls, *args, **kwargs):
-        return Path.__new__(Path, *args, **args)
+        return Path.__new__(Path, *args, **kwargs)
 
 
 class ModelConfigBase:
