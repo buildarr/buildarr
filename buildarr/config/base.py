@@ -27,6 +27,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     Generic,
     Iterable,
     List,
@@ -43,12 +44,13 @@ from uuid import UUID
 
 import yaml
 
-from pydantic import AnyUrl, BaseModel, NameEmail, SecretStr
+from pydantic import AnyUrl, BaseModel, NameEmail, SecretStr, root_validator
 from pydantic.validators import _VALIDATORS
 from typing_extensions import Self
 
 from ..plugins import Secrets
-from ..types import BaseEnum, ModelConfigBase
+from ..state import state
+from ..types import BaseEnum, LocalPath, ModelConfigBase
 from .types import RemoteMapEntry
 
 logger = getLogger(__name__)
@@ -789,6 +791,37 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             json.loads(self.json(*args, **kwargs)),
             **{**(yaml_kwargs or {}), "sort_keys": sort_keys},
         )
+
+    @root_validator
+    def _validate_localpaths(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set the default value for `hostname` on instance-specific configurations.
+
+        The `instances` value on the global (default instance) configuration is left alone.
+
+        Args:
+            values (Dict[str, Any]): Input values for all local fields
+
+        Returns:
+            Dict[str, Any]: Changed field structure
+        """
+        for key, value in values.items():
+            if cls.__fields__[key].type_ is LocalPath:
+                values[key] = LocalPath(value)
+        return values
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
+        """
+        Pass class validation functions to Pydantic.
+
+        Yields:
+            Validation class functions
+        """
+        if state._only_validate_localpaths:
+            yield cls._validate_localpaths
+        else:
+            yield from super().__get_validators__()
 
     class Config(ModelConfigBase):
         """

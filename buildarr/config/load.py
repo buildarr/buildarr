@@ -117,10 +117,15 @@ def _get_files_and_configs(
         if config is None:
             config = {}
         with state._with_current_dir(path.parent):
-            config_obj = model.construct(**{k: v for k, v in config.items() if k != "includes"})
+            try:
+                state._only_validate_localpaths = True
+                config_obj = model(**{k: v for k, v in config.items() if k != "includes"})
+            finally:
+                state._only_validate_localpaths = False
         configs.append(config_obj.dict(exclude_unset=True))
 
     from pprint import pprint
+
     pprint(configs)
 
     # Check if the YAML object loaded is the correct type.
