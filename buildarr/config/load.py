@@ -117,6 +117,12 @@ def _get_files_and_configs(
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
             config = {}
+        if not isinstance(config, dict):
+            raise ValueError(
+                f"Error while loading configuration file '{path}': "
+                "Invalid configuration object type "
+                f"(got '{type(config).__name__}', expected 'dict'): {config}",
+            )
         config_no_includes = {k: v for k, v in config.items() if k != "includes"}
         _expand_relative_paths(
             config_dir=path.parent,
@@ -129,13 +135,6 @@ def _get_files_and_configs(
 
     pprint(configs)
 
-    # Check if the YAML object loaded is the correct type.
-    if not isinstance(config, dict):
-        raise ValueError(
-            "Invalid configuration object type "
-            f"(got '{type(config).__name__}', expected 'dict'): {config}",
-        )
-
     # If other files were included using the `includes` list structure,
     # recursively load them and add them to the list of files and objects.
     # Make sure the `includes` structure is removed from the config objects.
@@ -143,6 +142,7 @@ def _get_files_and_configs(
         includes = config["includes"]
         if not isinstance(includes, list):
             raise ValueError(
+                f"Error while loading configuration file '{path}': "
                 "Invalid value type for 'includes' "
                 f"(got '{type(includes).__name__}', expected 'list'): {includes}",
             )
@@ -165,9 +165,11 @@ def _expand_relative_paths(
     # that are relative paths.
     for key, field in model.__fields__.items():
         if field.type_ is LocalPath:
+            print(f"Key '{key}' is of type LocalType")
             path = Path(config[key])
             config[key] = path if path.is_absolute() else get_absolute_path(config_dir / path)
         elif issubclass(ConfigBase, field.type_):
+            print(f"Recursing to type {field.type_} for key '{key}'")
             _expand_relative_paths(config_dir=config_dir, model=field.type_, config=config[key])
 
 
