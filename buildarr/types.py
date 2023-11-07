@@ -31,6 +31,7 @@ from pydantic.fields import ModelField
 from typing_extensions import Annotated, Self
 
 from .state import state
+from .util import get_absolute_path
 
 if TYPE_CHECKING:
     from .config.models import ConfigPlugin
@@ -399,7 +400,7 @@ class InstanceName(str):
         return cls(value)
 
 
-class LocalPath(Path):
+class LocalPath(type(Path()), Path):  # type: ignore[misc]
     """
     Model type for a local path.
 
@@ -421,8 +422,28 @@ class LocalPath(Path):
     `/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
     """
 
-    def __new__(cls, *args, **kwargs):
-        return Path.__new__(Path, *args, **kwargs)
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
+        """
+        Pass class validation functions to Pydantic.
+        Yields:
+            Validation class functions
+        """
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value: Any) -> Self:
+        """
+        Validate the local path value, and return an absolute path.
+        Args:
+            value (Any): Object to validate and coerce
+        Returns:
+            Absolute local path
+        """
+        path = cls(value)
+        if not path.is_absolute():
+            return cls(get_absolute_path(state._current_dir / path))
+        return path
 
 
 class ModelConfigBase:

@@ -90,7 +90,8 @@ def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     logger.debug("Finished merging configuration objects")
 
     logger.debug("Parsing and validating configuration")
-    state.config = model(**config)
+    with state._with_current_dir(path.parent):
+        state.config = model(**config)
     logger.debug("Finished parsing and validating configuration")
 
     state.config_files = files
