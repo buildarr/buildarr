@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Type,
+    Union,
     cast,
     get_args as get_type_args,
     get_origin as get_type_origin,
@@ -41,7 +42,7 @@ from .buildarr import BuildarrConfig
 from .models import ConfigType
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, List, Optional, Set, Tuple, Union
+    from typing import Any, Dict, List, Optional, Set, Tuple
 
     from .models import ConfigPlugin, ConfigPluginType
 
@@ -155,7 +156,11 @@ def _get_files_and_configs(
             )
         for include in includes:
             ip = Path(include)
-            include_path = get_absolute_path(ip if ip.is_absolute() else (path.parent / ip))
+            if ip.is_absolute():
+                include_path = ip
+            else:
+                include_path = get_absolute_path(path.parent / ip)
+                logger.debug("Expanding relative local path '%s' into '%s'", ip, include_path)
             _files, _configs = _get_files_and_configs(model, include_path)
             files.extend(_files)
             configs.extend(_configs)
