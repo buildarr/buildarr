@@ -188,17 +188,20 @@ def _expand_relative_paths(
             absolute_path = get_absolute_path(config_dir / local_path)
             logger.debug("Expanding relative local path '%s' into '%s'", local_path, absolute_path)
             return str(absolute_path)
-    elif type_tree[-1] is Union:
-        attr_union_types = get_type_args(type_tree[-2])
+    if type_tree[-1] is Union:
+        union_types = get_type_args(type_tree[-2])
         if (
-            len(attr_union_types) == OPTIONAL_TYPE_UNION_SIZE
-            and type(None) in attr_union_types
-            and value is not None
+            len(union_types) == OPTIONAL_TYPE_UNION_SIZE
+            and type(None) in union_types
         ):
-            return _expand_relative_paths(
-                config_dir=config_dir,
-                value_type=next(t for t in attr_union_types if t is not type(None)),
-                value=value,
+            return (
+                _expand_relative_paths(
+                    config_dir=config_dir,
+                    value_type=next(t for t in union_types if t is not type(None)),
+                    value=value,
+                )
+                if value is not None
+                else None
             )
     if type_tree[-1] in (list, set):
         element_type = get_type_args(type_tree[-2])[0]
