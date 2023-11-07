@@ -90,8 +90,7 @@ def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
     logger.debug("Finished merging configuration objects")
 
     logger.debug("Parsing and validating configuration")
-    with state._with_current_dir(path.parent):
-        state.config = model(**config)
+    state.config = model(**config)
     logger.debug("Finished parsing and validating configuration")
 
     state.config_files = files
@@ -110,17 +109,17 @@ def _get_files_and_configs(
     files = [path]
     configs: List[Dict[str, Any]] = []
 
-    # First, parse and validate the current configuration file.
+    # First, read the YAML configuration file into an object.
     #
-    # An initial validation pass is done before any merging is done,
-    # so any relative `LocalPath` type attributes are evaluated into
-    # absolute paths relative to the actual folder the configuration file is in.
-    #
-    # After creating the configuration object, turn it back into a dictionary
-    # so it can be merged with other loaded configuration files.
-    #
+    # Initial validation is done to make sure the object is the correct type (a dictionary).
     # If None is returned by the YAML parser when parsing the file,
     # it means the file is empty, so treat it as an empty configuration.
+    #
+    # The dictionary is then recursively compared against the configuration model,
+    # so any LocalPath type attributes can be expanded into absolute paths,
+    # relative to the actual configuration file the value was loaded from.
+    #
+    # Once processing is done, add it to the list of configuration dictionaries to merge.
     with path.open(mode="r") as f:
         config: Optional[Dict[str, Any]] = yaml.safe_load(f)
         if config is None:
@@ -138,10 +137,6 @@ def _get_files_and_configs(
                 value={k: v for k, v in config.items() if k != "includes"},
             ),
         )
-
-    from pprint import pprint
-
-    pprint(configs)
 
     # If other files were included using the `includes` list structure,
     # recursively load them and add them to the list of files and objects.

@@ -126,13 +126,6 @@ class State:
     Currently loaded instance secrets.
     """
 
-    _current_dir: Path = Path.cwd()
-    """
-    Current working directory for relative path resolution.
-
-    This state attribute is internal, and shouldn't be accessed by plugins.
-    """
-
     _current_plugin: str
     """
     The plugin being processed in the current context.
@@ -187,26 +180,10 @@ class State:
         self.active_plugins = None  # type: ignore[assignment]
         self.trash_metadata_dir = None  # type: ignore[assignment]
         self.secrets = None  # type: ignore[assignment]
-        self._current_dir = Path.cwd()
         self._current_plugin = None  # type: ignore[assignment]
         self._current_instance = None  # type: ignore[assignment]
         self._instance_dependencies = defaultdict(set)  # type: ignore[assignment]
         self._execution_order = None  # type: ignore[assignment]
-
-    @contextmanager
-    def _with_current_dir(self, current_dir: Path) -> Generator[None, None, None]:
-        """
-        Set the current directory context within a code block.
-
-        This state function is internal, and shouldn't be used by plugins.
-
-        Args:
-            current_dir (Path): Path to use as the current directory.
-        """
-        old_current_dir = self._current_dir
-        self._current_dir = current_dir
-        yield
-        self._current_dir = old_current_dir
 
     @contextmanager
     def _with_context(
