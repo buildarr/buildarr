@@ -423,11 +423,9 @@ class LocalPath(Path):
     """
 
     def __new__(cls, *args, **kwargs):
-        return Path.__new__(Path, *args, **kwargs)
-
-    def __init__(self, *args):
         path = Path(*args)
-        super().__init__(
+        return Path.__new__(
+            Path,
             get_absolute_path(state._current_dir / path) if not path.is_absolute() else path,
         )
 
