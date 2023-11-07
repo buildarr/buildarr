@@ -34,28 +34,84 @@ sonarr:
 
 Using the `includes` block, multiple configuration files can be included and read from one `buildarr.yml` file.
 
-Nested inclusion is allowed (included files can include other files). All the loaded configuration files are merged into a single structure in a [breadth-first](https://en.wikipedia.org/wiki/Breadth-first_search) fashion.
+This is useful for logical seperation of configuration structures, for example:
 
-If any configuration attributes in files overlap, the last-read value will take precedence. Note that any overlapping attributes that are lists will be overwritten, rather than combined.
+* By instance type (Sonarr, Radarr, and so on)
+* Defining secrets (API keys and passwords) in separate, encrypted configuration files (e.g. for secrets management in Kubernetes)
+
+Nested inclusion is allowed (included files can include other files). All the loaded configuration files are merged into a single structure using [breadth-first search](https://en.wikipedia.org/wiki/Breadth-first_search).
+
+Each configuration file will be combined according to the following rules:
+
+* If there are any overlapping configuration attributes defined in multiple files, the value in the last-read file will take precedence.
+* Overlapping `list`-type attributes will be overwritten, rather than combined.
+* If a local path attribute defined in the configuration file (e.g. [`secrets_file_path`](#buildarr.config.buildarr.BuildarrConfig.secrets_file_path)) is a relative path, that path will be resolved relative to the parent directory of the configuration file it is defined in. If they are not defined in *any* file, the default value will be resolved relative to the parent directory of the *first* configuration file loaded.
 
 !!! note
 
-    In order to evaluate per-file relative paths, configuration files will be parsed and validated individually first, and then validated again as a combined configuration structure.
+    To make troubleshooting easier and to ensure readability, overly complicated include structures in configuration files should be avoided, if possible.
 
-    Take care to ensure that the individual configuration files do not depend on each other being combined to become valid.
 
-    Instances that depend on other instances via e.g. `instance_name` are not subject to this limitation, and can freely be defined in separate files.
+### Separating by instance type
 
-    To make troubleshooting easier and to ensure readability, overly complicated include structures in configuration files should be avoided.
-
-Here is an example of a global `buildarr.yml` configuration file including two Sonarr instance configuration from separate files in the same directory as `buildarr.yml`:
+Here is an example where Sonarr and Radarr instances are configured in separate files.
 
 `buildarr.yml`:
 ```yaml
 ---
+
 includes:
-  - sonarr1.yml
-  - sonarr2.yml
+  - sonarr.yml
+  - radarr.yml
+
+buildarr:
+  watch_config: true
+  update_days:
+    - "monday"
+    - "tuesday"
+    - "wednesday"
+    - "thursday"
+    - "friday"
+    - "saturday"
+    - "sunday"
+  update_times:
+    - "03:00"
+```
+
+`sonarr.yml`:
+```yaml
+---
+
+sonarr:
+  host: "sonarr.example.com"
+  port: 8989
+  protocol: "http"
+  settings:
+    ...
+```
+
+`radarr.yml`:
+```yaml
+---
+
+radarr:
+  host: "radarr.example.com"
+  port: 7878
+  protocol: "http"
+  settings:
+    ...
+```
+
+### Separating secret and non-secret configuration
+
+Here is an example where Sonarr instance API keys are configured in a separate file from the standard (non-secret) settings.
+
+`buildarr.yml`:
+```yaml
+---
+
+includes:
+  - buildarr-secret.yml
 
 buildarr:
   watch_config: true
@@ -71,39 +127,19 @@ buildarr:
     - "03:00"
 
 sonarr:
-  # Configuration common to all Sonarr instances.
+  host: "sonarr.example.com"
+  port: 8989
+  protocol: "http"
   settings:
     ...
 ```
 
-`sonarr1.yml`:
+`buildarr-secret.yml`:
 ```yaml
 ---
 
 sonarr:
-  instances:
-    # Sonarr instance 1 connection information and configuration.
-    sonarr1:
-      host: "sonarr1.example.com"
-      port: 8989
-      protocol: "http"
-      settings:
-        ...
-```
-
-`sonarr2.yml`:
-```yaml
----
-
-sonarr:
-  instances:
-    # Sonarr instance 2 connection information and configuration.
-    sonarr2:
-      host: "sonarr2.example.com"
-      port: 8989
-      protocol: "http"
-      settings:
-        ...
+  api_key: 1a2b3c4d5e1a2b3c4d5e1a
 ```
 
 ## Multiple instances of the same type
