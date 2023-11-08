@@ -39,7 +39,7 @@ This is useful for logical seperation of configuration structures, for example:
 * By instance type (Sonarr, Radarr, and so on)
 * Defining secrets (API keys and passwords) in separate, encrypted configuration files (e.g. for secrets management in Kubernetes)
 
-Nested inclusion is allowed (included files can include other files). All the loaded configuration files are merged into a single structure using [breadth-first search](https://en.wikipedia.org/wiki/Breadth-first_search).
+Nested inclusion is allowed (included files can include other files). All the loaded configuration files are combined into a single structure using [depth-first search](https://en.wikipedia.org/wiki/Depth-first_search).
 
 Each configuration file will be combined according to the following rules:
 
