@@ -224,9 +224,13 @@ class Daemon:
         logger.info("Applying initial configuration")
         try:
             run_apply(secrets_file_path=self._secrets_file_path)
-        finally:
+        except Exception as err:
+            logger.exception("An error occurred while applying initial configuration: %s", err)
             state._reset()
-        logger.info("Finished applying initial configuration")
+            logger.warning("Aborted applying initial configuration")
+        else:
+            state._reset()
+            logger.info("Finished applying initial configuration")
 
     def _setup_update_schedule(self) -> None:
         """
@@ -256,9 +260,16 @@ class Daemon:
             logger.info("Running scheduled update of remote instances")
             try:
                 run_apply(secrets_file_path=self._secrets_file_path)
-            finally:
+            except Exception as err:
+                logger.exception(
+                    "An error occurred while running scheduled update of remote instances: %s",
+                    err,
+                )
                 state._reset()
-            logger.info("Finished running scheduled update of remote instances")
+                logger.warning("Aborted running scheduled update of remote instances")
+            else:
+                state._reset()
+                logger.info("Finished running scheduled update of remote instances")
             self._log_next_run()
             logger.info("Buildarr ready.")
 
