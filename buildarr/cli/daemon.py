@@ -277,10 +277,15 @@ class Daemon:
         """
         Print a log alerting the user to the next scheduled run time.
         """
-        logger.info(
-            "The next run will be at %s",
-            self._scheduler.next_run.strftime("%Y-%m-%d %H:%M"),
-        )
+        now = datetime.now()
+        for job in sorted(self._scheduler.jobs):
+            if not job.next_run or (job.next_run - now).total_seconds() < 0:
+                continue
+            logger.info(
+                "The next run will be at %s",
+                job.next_run.strftime("%Y-%m-%d %H:%M"),
+            )
+            return
 
     def _setup_watch_config(self) -> None:
         """
