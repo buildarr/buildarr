@@ -104,12 +104,89 @@ class NonEmptyStr(ConstrainedStr):
     When validated in a Buildarr configuration, empty strings
     or strings composed only of whitespace will fail validation.
 
+    Values are also stripped of whitespace at the start and the end
+    of the strings.
+
     ```python
     from buildarr.config import ConfigBase, NonEmptyStr, Port
 
     class ExampleConfig(ConfigBase):
         host: NonEmptyStr
         port: Port
+    ```
+    """
+
+    min_length = 1
+    strip_whitespace = True
+
+
+class LowerCaseStr(ConstrainedStr):
+    """
+    Constrained string type for lower-case strings.
+
+    When validated in a Buildarr configuration,
+    all upper-case characters in the value will be converted to lower-case.
+
+    ```python
+    from buildarr.config import LowerCaseStr
+
+    class ExampleConfig(ConfigBase):
+        lowercase_name: LowerCaseStr
+    ```
+    """
+
+    to_lower = True
+
+
+class LowerCaseNonEmptyStr(LowerCaseStr):
+    """
+    Constrained string type for non-empty lower-case strings.
+
+    This is a combination of `LowerCaseStr` and `NonEmptyStr`,
+    with the validations of both types applying to the value.
+
+    ```python
+    from buildarr.config import LowerCaseNonEmptyStr
+
+    class ExampleConfig(ConfigBase):
+        lowercase_name: LowerCaseNonEmptyStr
+    ```
+    """
+
+    min_length = 1
+    strip_whitespace = True
+
+
+class UpperCaseStr(ConstrainedStr):
+    """
+    Constrained string type for upper-case strings.
+
+    When validated in a Buildarr configuration,
+    all lower-case characters in the value will be converted to upper-case.
+
+    ```python
+    from buildarr.config import UpperCaseStr
+
+    class ExampleConfig(ConfigBase):
+        uppercase_name: UpperCaseStr
+    ```
+    """
+
+    to_upper = True
+
+
+class UpperCaseNonEmptyStr(UpperCaseStr):
+    """
+    Constrained string type for non-empty lower-case strings.
+
+    This is a combination of `UpperCaseStr` and `NonEmptyStr`,
+    with the validations of both types applying to the value.
+
+    ```python
+    from buildarr.config import UpperCaseNonEmptyStr
+
+    class ExampleConfig(ConfigBase):
+        uppercase_name: UpperCaseNonEmptyStr
     ```
     """
 
