@@ -670,6 +670,35 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 changed = True
         return changed
 
+    def log_delete_remote_attrs(
+        self,
+        tree: str,
+        remote_map: Iterable[RemoteMapEntry],
+        delete: bool,
+    ) -> None:
+        """
+        Log whether or not the resource this configuration object represents was deleted
+        from the remote instance.
+
+        Supported `RemoteMapEntry` optional parameters:
+
+        * `formatter` (`Callable[[Any], str]`, default: (use internal function))
+            * Function to convert the local value to a string, used in logging
+
+        Args:
+            tree (str): Configuration tree represented as a string.
+            remote_map (Iterable[RemoteMapEntry]): Remote map entries for the fields to parse.
+            delete (bool): `true` if this resource will be deleted, `false` if not.
+        """
+        for attr_name, _, attr_metadata in remote_map:
+            formatted_value = repr(
+                attr_metadata.get("formatter", self._format_attr)(getattr(self, attr_name)),
+            )
+            if delete:
+                logger.info("%s.%s: %s -> (deleted)", tree, attr_name, formatted_value)
+            else:
+                logger.debug("%s.%s: %s (unmanaged)", tree, attr_name, formatted_value)
+
     @classmethod
     def _format_attr(cls, value: Any) -> Any:
         """
