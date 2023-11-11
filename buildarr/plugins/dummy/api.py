@@ -20,13 +20,11 @@ Dummy plugin API functions.
 from __future__ import annotations
 
 import json
-import re
 
 from http import HTTPStatus
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-import json5  # type: ignore[import]
 import requests
 
 from buildarr.state import state
@@ -34,60 +32,12 @@ from buildarr.state import state
 from .exceptions import DummyAPIError
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Optional, Union
+    from typing import Any, Optional, Union
 
     from .secrets import DummySecrets
 
 
 logger = getLogger(__name__)
-
-INITIALIZE_JS_RES_PATTERN = re.compile(r"(?s)^window\.Dummy = ({.*});$")
-
-
-def get_initialize_js(host_url: str, api_key: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Get the Dummy session initialisation metadata, including the API key.
-
-    Args:
-        host_url (str): Dummy instance URL.
-        api_key (str): Dummy instance API key, if required. Defaults to `None`.
-
-    Returns:
-        Session initialisation metadata
-    """
-
-    url = f"{host_url}/initialize.js"
-
-    logger.debug("GET %s", url)
-
-    res = requests.get(
-        url,
-        headers={"X-Api-Key": api_key} if api_key else None,
-        timeout=state.config.buildarr.request_timeout,
-        allow_redirects=False,
-    )
-
-    if res.status_code != HTTPStatus.OK:
-        logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, res.text)
-        if res.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FOUND):
-            status_code: int = HTTPStatus.UNAUTHORIZED
-            error_message = "Unauthorized"
-        else:
-            status_code = res.status_code
-            error_message = f"Unexpected response with error code {res.status_code}: {res.text}"
-        raise DummyAPIError(
-            f"Unable to retrieve 'initialize.js': {error_message}",
-            status_code=status_code,
-        )
-
-    res_match = re.match(INITIALIZE_JS_RES_PATTERN, res.text)
-    if not res_match:
-        raise RuntimeError(f"No matches for 'initialize.js' parsing: {res.text}")
-    res_json = json5.loads(res_match.group(1))
-
-    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
-
-    return res_json
 
 
 def api_get(

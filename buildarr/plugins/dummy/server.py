@@ -91,30 +91,26 @@ def unauthorized(error: Unauthorized) -> Tuple[Response, int]:
     return (jsonify({"message": "Unauthorized", "description": error.description}), 401)
 
 
-@app.get("/initialize.js")
-def get_initialize_js() -> Tuple[str, int]:
+@app.get("/initialize.json")
+def get_initialize_json() -> Tuple[Response, int]:
     """
-    Return the Dummy API initialisation JavaScript code.
+    Return the Dummy API access metadata.
 
     ```bash
-    $ curl http://localhost:5000/initialize.js
-    window.Dummy = {
-    apiRoot: '/api/v1',
-    apiKey: '1a2b3c4d5e',
-    version: '0.1.0'
-    };
+    $ curl http://localhost:5000/initialize.json
+    {"apiRoot":"/api/v1","apiKey":"1a2b3c4d5e","version":"0.1.0"}
     ```
 
     Returns:
-        `initialize.js`
+        Dummy API access metadata
     """
 
-    res = f"window.Dummy = {{\n  apiRoot: {app.config['API_ROOT']!r}"
+    res = {"apiRoot": app.config["API_ROOT"]}
     if "API_KEY" in app.config and app.config["API_KEY"]:
-        res += f",\n  apiKey: {app.config['API_KEY']!r}"
-    res += f",\n  version: {__version__!r}\n}};"
+        res["apiKey"] = app.config["API_KEY"]
+    res["version"] = __version__
 
-    return (res, 200)
+    return (jsonify(res), 200)
 
 
 @app.get(f"{app.config['API_ROOT']}/status")

@@ -26,7 +26,7 @@ from urllib.parse import urlparse
 from buildarr.secrets import SecretsPlugin
 from buildarr.types import NonEmptyStr, Port
 
-from .api import api_get, get_initialize_js
+from .api import api_get
 from .exceptions import DummyAPIError, DummySecretsUnauthorizedError
 from .types import DummyApiKey, DummyProtocol
 
@@ -106,7 +106,7 @@ class DummySecrets(_DummySecrets):
                 api_key=(
                     config.api_key
                     if config.api_key
-                    else get_initialize_js(config.host_url)["apiKey"]
+                    else api_get(config.host_url, "/initialize.json")["apiKey"]
                 ),
             )
         except DummyAPIError as err:
