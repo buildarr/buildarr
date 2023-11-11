@@ -94,19 +94,15 @@ def unauthorized(error: Unauthorized) -> Tuple[Response, int]:
 @app.get("/initialize.json")
 def get_initialize_json() -> Tuple[Response, int]:
     """
-    Return the Dummy API initialisation JavaScript code.
+    Return the Dummy API access metadata.
 
     ```bash
-    $ curl http://localhost:5000/initialize.js
-    window.Dummy = {
-    apiRoot: '/api/v1',
-    apiKey: '1a2b3c4d5e',
-    version: '0.1.0'
-    };
+    $ curl http://localhost:5000/initialize.json
+    {"apiRoot":"/api/v1","apiKey":"1a2b3c4d5e","version":"0.1.0"}
     ```
 
     Returns:
-        `initialize.js`
+        Dummy API access metadata
     """
 
     res = {"apiRoot": app.config["API_ROOT"]}
