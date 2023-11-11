@@ -674,7 +674,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         self,
         tree: str,
         remote_map: Iterable[RemoteMapEntry],
-        deleted: bool,
+        delete: bool,
     ) -> None:
         """
         Log whether or not the resource this configuration object represents was deleted
@@ -688,13 +688,13 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Args:
             tree (str): Configuration tree represented as a string.
             remote_map (Iterable[RemoteMapEntry]): Remote map entries for the fields to parse.
-            deleted (bool): `true` if this resource was deleted, `false` if not.
+            delete (bool): `true` if this resource will be deleted, `false` if not.
         """
         for attr_name, _, attr_metadata in remote_map:
             formatted_value = repr(
                 attr_metadata.get("formatter", self._format_attr)(getattr(self, attr_name)),
             )
-            if deleted:
+            if delete:
                 logger.info("%s.%s: %s -> (deleted)", tree, attr_name, formatted_value)
             else:
                 logger.debug("%s.%s: %s (unmanaged)", tree, attr_name, formatted_value)
