@@ -22,7 +22,7 @@ from __future__ import annotations
 from logging import getLogger
 from pathlib import Path
 from textwrap import indent
-from typing import TYPE_CHECKING
+from typing import Dict, Optional, Set, cast
 
 import click
 
@@ -36,17 +36,12 @@ from ..config import (
 )
 from ..logging import get_log_level
 from ..manager import load_managers
-from ..secrets import load_secrets
+from ..secrets import SecretsPlugin
 from ..state import state
 from ..trash import cleanup_trash_metadata, fetch_trash_metadata, trash_metadata_used
 from ..util import get_resolved_path
 from . import cli
 from .exceptions import RunInstanceConnectionTestFailedError, RunNoPluginsDefinedError
-
-if TYPE_CHECKING:
-    from typing import Dict, Optional, Set
-
-    from ..secrets import SecretsPlugin
 
 logger = getLogger(__name__)
 
@@ -72,27 +67,6 @@ logger = getLogger(__name__)
     callback=lambda ctx, params, path: get_resolved_path(path),
 )
 @click.option(
-    "-s",
-    "--secrets-file",
-    "secrets_file_path",
-    metavar="SECRETS-JSON",
-    type=click.Path(
-        # The secrets file does not need to exist (it will be created in that case).
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        path_type=Path,
-    ),
-    default=None,
-    # Get absolute path and resolve symlinks in ad-hoc runs.
-    callback=lambda ctx, params, path: get_resolved_path(path) if path else None,
-    help=(
-        "Read secrets metadata from (and write back to) the specified JSON file. "
-        "If unspecified, use the value from the configuration file, "
-        "and if undefined there, default to `secrets.json'."
-    ),
-)
-@click.option(
     "-p",
     "--plugin",
     "use_plugins",
@@ -107,7 +81,6 @@ logger = getLogger(__name__)
 )
 def run(
     config_path: Path,
-    secrets_file_path: Optional[Path],
     use_plugins: Set[str],
 ) -> None:
     """
@@ -124,18 +97,15 @@ def run(
     load_config(path=config_path, use_plugins=use_plugins)
     logger.info("Finished loading configuration file")
 
-    if not secrets_file_path:
-        secrets_file_path = state.config.buildarr.secrets_file_path
-
     # Run the instance update main function.
-    _run(secrets_file_path, use_plugins)
+    _run(use_plugins)
 
 
-def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> None:
+def _run(use_plugins: Optional[Set[str]] = None) -> None:
     """
     Buildarr instance update routine.
 
-    For each defined instance, cache required secrets, get the active remote configuration
+    For each defined instance, get the active remote configuration
     and push updates as required according to the current local configuration.
 
     Args:
@@ -224,52 +194,30 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
                 )
                 logger.info("Finished initialising instance")
 
-    # Load the secrets file if it exists, and initialise the secrets metadata.
-    # If `use_plugins` is undefined, load using all plugins available
-    # to preserve cached secrets metadata that isn't used.
-    logger.info("Loading secrets file from '%s'", secrets_file_path)
-    if load_secrets(path=secrets_file_path, use_plugins=use_plugins):
-        logger.info("Finished loading secrets file")
-    else:
-        logger.info("Secrets file does not exist, will create new file")
-
     # Generate the secrets structure for each plugin and instance,
     # using the old structure cached from file as a base, and
     # fetching them from the remote instance if they don't exist.
     for plugin_name in state.active_plugins:
-        plugin_secrets: Dict[str, SecretsPlugin] = getattr(state.secrets, plugin_name)
+        plugin_secrets: Dict[str, SecretsPlugin] = cast(
+            Dict[str, SecretsPlugin],
+            state.instance_secrets[plugin_name],
+        )
         for instance_name, instance_config in state.instance_configs[plugin_name].items():
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-                logger.info("Checking secrets")
-                try:
-                    try_instance_secrets = plugin_secrets[instance_name]
-                except KeyError:
-                    try_instance_secrets = None
-                if try_instance_secrets and try_instance_secrets.test():
-                    logger.info("Connection test successful using cached secrets")
-                    plugin_secrets[instance_name] = try_instance_secrets
+                logger.info("Fetching instance secrets")
+                instance_secrets: SecretsPlugin = state.plugins[plugin_name].secrets.get(
+                    instance_config,
+                )
+                logger.info("Finished fetching instance secrets")
+                logger.info("Running connection test")
+                if instance_secrets.test():
+                    logger.info("Connection test successful")
+                    plugin_secrets[instance_name] = instance_secrets
                 else:
-                    logger.info(
-                        "Connection test failed using cached secrets (or not cached), "
-                        "fetching secrets",
+                    raise RunInstanceConnectionTestFailedError(
+                        f"Connection test failed for instance '{instance_name}': "
+                        f"{instance_secrets}",
                     )
-                    instance_secrets: SecretsPlugin = state.plugins[plugin_name].secrets.get(
-                        instance_config,
-                    )
-                    if instance_secrets.test():
-                        logger.info("Connection test successful using fetched secrets")
-                        plugin_secrets[instance_name] = instance_secrets
-                    else:
-                        raise RunInstanceConnectionTestFailedError(
-                            "Connection test failed using fetched secrets "
-                            f"for instance '{instance_name}': {instance_secrets}",
-                        )
-                logger.info("Finished checking secrets")
-
-    # Save the latest secrets file to disk.
-    logger.info("Saving updated secrets file to '%s'", secrets_file_path)
-    state.secrets.write(secrets_file_path)
-    logger.info("Finished saving updated secrets file")
 
     # Do post-initialisation rendering of instance configuration, if any instance requires it.
     logger.info("Performing post-initialisation configuration render")
@@ -282,7 +230,7 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
         manager = state.managers[plugin_name]
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-            instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+            instance_secrets = state.instance_secrets[plugin_name][instance_name]
             logger.info("Fetching remote configuration to check if updates are required")
             remote_instance_config = manager.from_remote(instance_config, instance_secrets)
             logger.info("Finished fetching remote configuration")
@@ -320,7 +268,7 @@ def _run(secrets_file_path: Path, use_plugins: Optional[Set[str]] = None) -> Non
         manager = state.managers[plugin_name]
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-            instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+            instance_secrets = state.instance_secrets[plugin_name][instance_name]
             logger.info("Refetching remote configuration to delete unused resources")
             remote_instance_config = manager.from_remote(instance_config, instance_secrets)
             logger.info("Finished refetching remote configuration")

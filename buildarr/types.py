@@ -414,6 +414,7 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
     ---
 
     buildarr:
+      # Removed in v0.7.0, but still useful as an example in developer docs.
       secrets_file_path: "../secrets/buildarr.json"
     ```
 

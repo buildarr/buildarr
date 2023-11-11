@@ -27,7 +27,7 @@ from typing import Set
 
 from pydantic import AnyHttpUrl, PositiveFloat
 
-from ..types import DayOfWeek, LocalPath, NonEmptyStr
+from ..types import DayOfWeek, NonEmptyStr
 from .base import ConfigBase
 
 
@@ -57,7 +57,6 @@ class BuildarrConfig(ConfigBase):
         - "sunday"
       update_times:
         - "03:00"
-      secrets_file_path: "secrets.json"
     ```
     """
 
@@ -114,23 +113,6 @@ class BuildarrConfig(ConfigBase):
     ```
 
     This configuration option can be overridden using the `--update-times` command line argument.
-    """
-
-    secrets_file_path: LocalPath = "secrets.json"  # type: ignore[assignment]
-    """
-    Path to store the Buildarr instance secrets file.
-
-    By default, this will create a file called `secrets.json` in the same folder
-    the first loaded configuration file is located.
-
-    *New in version 0.4.0*: This configuration option can now be overridden
-    using the `--secrets-file` command line argument.
-
-    *Changed in version 0.4.0*: Relative file paths are now evaluated relative
-    to the directory the configuration file that defined the attribute is located,
-    not the current working directory of the Buildarr process. If the attribute
-    is undefined, the secrets file will be created in the directory the
-    originally loaded configuration file is located.
     """
 
     request_timeout: PositiveFloat = 30  # seconds

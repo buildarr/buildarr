@@ -20,7 +20,6 @@ Buildarr secrets metadata interface.
 from __future__ import annotations
 
 from .base import SecretsBase
-from .load import load_secrets
-from .models import SecretsPlugin, SecretsType
+from .models import SecretsPlugin
 
-__all__ = ["SecretsBase", "SecretsPlugin", "SecretsType", "load_secrets"]
+__all__ = ["SecretsBase", "SecretsPlugin"]

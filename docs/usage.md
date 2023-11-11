@@ -11,16 +11,6 @@ The following commands are available for Buildarr:
 * `buildarr compose` - Generate a Docker Compose file from Buildarr configuration (*New in version 0.4.0*)
 * `buildarr <plugin-name> <command...>` - Ad-hoc commands defined by any loaded plugins
 
-!!! note
-
-    Every time Buildarr performs an update run, a file named `secrets.json` is created in the folder the configuration file is located. This file caches secrets metadata for every configured instance.
-
-    Ensure that the Buildarr configuration is located in a folder that is not world-viewable, to avoid exposing secrets.
-
-    If you are using Docker, ensure that the folder mounted as `/config` into the container has appropriately secure permissions.
-
-    The location of `secrets.json` can be configured using the `--secrets-file` command line option, or the [`buildarr.secrets_file_path` attribute](configuration.md#buildarr.config.buildarr.BuildarrConfig.secrets_file_path) in the configuration file.
-
 The verbosity of Buildarr logging output can be adjusted using the `--log-level` option.
 This option can also be set using the `$BUILDARR_LOG_LEVEL` environment variable.
 

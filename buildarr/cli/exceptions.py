@@ -101,8 +101,7 @@ class RunNoPluginsDefinedError(RunError):
 
 class RunInstanceConnectionTestFailedError(RunError):
     """
-    Exception raised when a connection test to an instance
-    using Buildarr-fetched secrets failed.
+    Exception raised when a connection test to an instance failed.
     """
 
     pass

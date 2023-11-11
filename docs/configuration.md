@@ -45,7 +45,7 @@ Each configuration file will be combined according to the following rules:
 
 * If there are any overlapping configuration attributes defined in multiple files, the value in the last-read file will take precedence.
 * Overlapping `list`-type attributes will be overwritten, rather than combined.
-* If a local path attribute defined in the configuration file (e.g. [`secrets_file_path`](#buildarr.config.buildarr.BuildarrConfig.secrets_file_path)) is a relative path, that path will be resolved relative to the parent directory of the configuration file it is defined in. If they are not defined in *any* file, the default value will be resolved relative to the parent directory of the *first* configuration file loaded.
+* If a local path attribute defined in the configuration file is a relative path, that path will be resolved relative to the parent directory of the configuration file it is defined in. If they are not defined in *any* file, the default value will be resolved relative to the parent directory of the *first* configuration file loaded.
 
 !!! note
 
@@ -187,7 +187,6 @@ Buildarr operates on a principle of "don't touch what is not explicitly defined"
         - watch_config
         - update_days
         - update_times
-        - secrets_file_path
         - request_timeout
         - trash_metadata_download_url
         - trash_metadata_dir_prefix

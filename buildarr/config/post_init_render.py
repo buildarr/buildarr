@@ -49,7 +49,7 @@ def post_init_render() -> None:
         manager = state.managers[plugin_name]
         instance_config = state.instance_configs[plugin_name][instance_name]
         with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
-            instance_secrets = getattr(state.secrets, plugin_name)[instance_name]
+            instance_secrets = state.instance_secrets[plugin_name][instance_name]
             logger.debug("Performing post-initialisation configuration rendering")
             try:
                 instance_configs[plugin_name][instance_name] = manager.post_init_render(
