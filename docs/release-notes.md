@@ -8,7 +8,7 @@ From a user perspective, the main change in this release is that `secrets.json` 
 
 When Buildarr was originally designed, it was normal for Sonarr and Radarr to expose their API keys on their `initialize.js[on]` endpoints, allowing them to be dynamically fetched. To avoid doing this every time, the `secrets.json` file was used to cache them.
 
-However, since become, a few issues have become glaringly obvious:
+However, since then, a few issues have become glaringly obvious:
 
 * The `secrets.json` file is difficult to manage from a security standpoint, as it is unencrypted and is not created using a secure `umask` by Buildarr by default at the moment.
 * Whenever plugins have a major update and have no means of migrating older secrets model objects, older `secrets.json` files will cause validation errors when running the updated versions.
