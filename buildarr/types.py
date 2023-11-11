@@ -26,9 +26,9 @@ from functools import total_ordering
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping
 
-from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, Field, SecretStr
+from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, SecretStr
 from pydantic.fields import ModelField
-from typing_extensions import Annotated, Self
+from typing_extensions import Self
 
 from .state import state
 from .util import get_absolute_path
@@ -37,10 +37,12 @@ if TYPE_CHECKING:
     from .config.models import ConfigPlugin
 
 
-Password = Annotated[SecretStr, Field(min_length=1)]
-"""
-Constrained secrets string type for password fields. Required to be non-empty.
-"""
+class Password(SecretStr):
+    """
+    Constrained secrets string type for password fields. Required to be non-empty.
+    """
+
+    min_length = 1
 
 
 class RssUrl(AnyUrl):
