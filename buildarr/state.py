@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from .config import ConfigPlugin, ConfigType
     from .manager import ManagerPlugin
     from .plugins import Plugin
-    from .secrets import SecretsPlugin, SecretsType
+    from .secrets import SecretsPlugin
 
 
 __all__ = ["state"]
@@ -121,9 +121,9 @@ class State:
     during the render stage of a Buildarr run.
     """
 
-    secrets: SecretsType
+    instance_secrets: Mapping[str, Mapping[str, SecretsPlugin]]
     """
-    Currently loaded instance secrets.
+    Secrets metadata for each instance, under each plugin.
     """
 
     _current_dir: Path = Path.cwd()
@@ -185,7 +185,7 @@ class State:
         self.instance_configs = None  # type: ignore[assignment]
         self.active_plugins = None  # type: ignore[assignment]
         self.trash_metadata_dir = None  # type: ignore[assignment]
-        self.secrets = None  # type: ignore[assignment]
+        self.instance_secrets = defaultdict(dict)
         self._current_dir = Path.cwd()
         self._current_plugin = None  # type: ignore[assignment]
         self._current_instance = None  # type: ignore[assignment]

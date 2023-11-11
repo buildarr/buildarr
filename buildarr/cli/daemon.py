@@ -66,7 +66,6 @@ class Daemon:
     def __init__(
         self,
         config_path: Path,
-        secrets_file_path: Optional[Path],
         watch_config: Optional[bool],
         update_days: Iterable[DayOfWeek],
         update_times: Iterable[time],
@@ -85,19 +84,16 @@ class Daemon:
         """
         # Set static configuration and override field values.
         self.config_path = config_path
-        self.default_secrets_file_path = secrets_file_path
         self.default_watch_config = watch_config
         self.default_update_days = set(update_days)
         self.default_update_times = set(update_times)
         # Internal variables for tracking daemon state.
         self._stopped = False
         self._lock = Lock()
-        self._secrets_file_path: Path = None  # type: ignore[assignment]
         self._watch_config = False
         self._update_days: Set[DayOfWeek] = set()
         self._update_times: Set[time] = set()
         self._update_daytimes: List[Tuple[DayOfWeek, time]] = []
-        self._old_secrets_file_path: Optional[Path] = None
         self._old_watch_config = False
         self._old_update_days: Set[DayOfWeek] = set()
         self._old_update_times: Set[time] = set()
@@ -162,11 +158,6 @@ class Daemon:
         # Fetch the new configuration values, from the command line overrides,
         # then the Buildarr configuration, in that order.
         buildarr_config = state.config.buildarr
-        secrets_file_path = (
-            self.default_secrets_file_path
-            if self.default_secrets_file_path
-            else buildarr_config.secrets_file_path
-        )
         watch_config = (
             self.default_watch_config
             if self.default_watch_config is not None
@@ -179,13 +170,11 @@ class Daemon:
             self.default_update_times if self.default_update_times else buildarr_config.update_times
         )
         # Record whether or not the values were updated.
-        self._old_secrets_file_path = self._secrets_file_path
         self._old_watch_config = self._watch_config
         self._old_update_days = self._update_days
         self._old_update_times = self._update_times
         self._old_update_daytimes = self._update_daytimes
         # Set the new values.
-        self._secrets_file_path = secrets_file_path
         self._watch_config = watch_config
         self._update_days = update_days
         self._update_times = update_times
@@ -223,7 +212,7 @@ class Daemon:
         # Apply initial configuration to all defined remote instances.
         logger.info("Applying initial configuration")
         try:
-            run_apply(secrets_file_path=self._secrets_file_path)
+            run_apply()
         except Exception as err:
             logger.exception("An error occurred while applying initial configuration: %s", err)
             state._reset()
@@ -259,7 +248,7 @@ class Daemon:
         with self._run_lock():
             logger.info("Running scheduled update of remote instances")
             try:
-                run_apply(secrets_file_path=self._secrets_file_path)
+                run_apply()
             except Exception as err:
                 logger.exception(
                     "An error occurred while running scheduled update of remote instances: %s",
@@ -498,27 +487,6 @@ def parse_time(
     callback=lambda ctx, params, path: get_absolute_path(path),
 )
 @click.option(
-    "-s",
-    "--secrets-file",
-    "secrets_file_path",
-    metavar="SECRETS-JSON",
-    type=click.Path(
-        # The secrets file does not need to exist (it will be created in that case).
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        path_type=Path,
-    ),
-    default=None,
-    # Get absolute path, but do NOT resolve symlinks in daemon mode.
-    callback=lambda ctx, params, path: get_absolute_path(path) if path else None,
-    help=(
-        "Read secrets metadata from (and write back to) the specified JSON file. "
-        "If unspecified, use the value from the configuration file, "
-        "and if undefined there, default to `secrets.json'."
-    ),
-)
-@click.option(
     "-w/-W",
     "--watch/--no-watch",
     "watch_config",
@@ -558,7 +526,6 @@ def parse_time(
 )
 def daemon(
     config_path: Path,
-    secrets_file_path: Optional[Path],
     watch_config: Optional[bool],
     update_days: Tuple[DayOfWeek, ...],
     update_times: Tuple[time, ...],
@@ -577,7 +544,6 @@ def daemon(
 
     Daemon(
         config_path=config_path,
-        secrets_file_path=secrets_file_path,
         watch_config=watch_config,
         update_days=update_days,
         update_times=update_times,

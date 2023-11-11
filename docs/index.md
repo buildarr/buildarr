@@ -130,53 +130,62 @@ $ buildarr daemon
 On startup, Buildarr daemon will do an initial sync with the defined instances, updating their configuration immediately.
 After this initial run, Buildarr will wake up at the scheduled times to periodically run updates as required.
 
-```txt
-2023-03-29 20:40:39,958 buildarr:1 buildarr.cli.daemon [INFO] Buildarr version 0.4.0 (log level: INFO)
-2023-03-29 20:40:39,958 buildarr:1 buildarr.cli.daemon [INFO] Loading configuration file '/config/buildarr.yml'
-2023-03-29 20:40:39,977 buildarr:1 buildarr.cli.daemon [INFO] Finished loading configuration file
-2023-03-29 20:40:39,977 buildarr:1 buildarr.cli.daemon [INFO] Daemon configuration:
-2023-03-29 20:40:39,978 buildarr:1 buildarr.cli.daemon [INFO]  - Watch configuration files: Yes
-2023-03-29 20:40:39,978 buildarr:1 buildarr.cli.daemon [INFO]  - Configuration files to watch:
-2023-03-29 20:40:39,978 buildarr:1 buildarr.cli.daemon [INFO]    - /config/buildarr.yml
-2023-03-29 20:40:39,978 buildarr:1 buildarr.cli.daemon [INFO]  - Update at:
-2023-03-29 20:40:39,978 buildarr:1 buildarr.cli.daemon [INFO]    - Monday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO]    - Tuesday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO]    - Wednesday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO]    - Thursday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO]    - Friday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO]    - Saturday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO]    - Sunday 03:00
-2023-03-29 20:40:39,979 buildarr:1 buildarr.cli.daemon [INFO] Applying initial configuration
-2023-03-29 20:40:39,981 buildarr:1 buildarr.cli.run [INFO] Loaded plugins: sonarr (0.4.0)
-2023-03-29 20:40:39,981 buildarr:1 buildarr.cli.run [INFO] Loading instance configurations
-2023-03-29 20:40:39,983 buildarr:1 buildarr.cli.run [INFO] Finished loading instance configurations
-2023-03-29 20:40:39,983 buildarr:1 buildarr.cli.run [INFO] Running with plugins: sonarr
-2023-03-29 20:40:39,983 buildarr:1 buildarr.cli.run [INFO] Resolving instance dependencies
-2023-03-29 20:40:39,984 buildarr:1 buildarr.cli.run [INFO] Finished resolving instance dependencies
-2023-03-29 20:40:39,984 buildarr:1 buildarr.cli.run [INFO] Loading secrets file from '/config/secrets.json'
-2023-03-29 20:40:39,989 buildarr:1 buildarr.cli.run [INFO] Finished loading secrets file
-2023-03-29 20:40:39,989 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Checking secrets
-2023-03-29 20:40:40,015 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Connection test successful using cached secrets
-2023-03-29 20:40:40,015 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished checking secrets
-2023-03-29 20:40:40,015 buildarr:1 buildarr.cli.run [INFO] Saving updated secrets file to '/config/secrets.json'
-2023-03-29 20:40:40,017 buildarr:1 buildarr.cli.run [INFO] Finished saving updated secrets file
-2023-03-29 20:40:40,017 buildarr:1 buildarr.cli.run [INFO] Updating configuration on remote instances
-2023-03-29 20:40:40,017 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Getting remote configuration
-2023-03-29 20:40:40,599 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished getting remote configuration
-2023-03-29 20:40:40,662 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Updating remote configuration
-2023-03-29 20:40:41,129 buildarr:1 buildarr.config.base [INFO] <sonarr> (default) sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
-2023-03-29 20:40:41,204 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Remote configuration successfully updated
-2023-03-29 20:40:41,204 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished updating remote configuration
-2023-03-29 20:40:41,205 buildarr:1 buildarr.cli.run [INFO] Finished updating configuration on remote instances
-2023-03-29 20:40:41,205 buildarr:1 buildarr.cli.daemon [INFO] Finished applying initial configuration
-2023-03-29 20:40:41,205 buildarr:1 buildarr.cli.daemon [INFO] Scheduling update jobs
-2023-03-29 20:40:41,206 buildarr:1 buildarr.cli.daemon [INFO] Finished scheduling update jobs
-2023-03-29 20:40:41,206 buildarr:1 buildarr.cli.daemon [INFO] The next run will be at 2023-03-30 03:00
-2023-03-29 20:40:41,206 buildarr:1 buildarr.cli.daemon [INFO] Setting up config file monitoring
-2023-03-29 20:40:41,216 buildarr:1 buildarr.cli.daemon [INFO] Finished setting up config file monitoring
-2023-03-29 20:40:41,216 buildarr:1 buildarr.cli.daemon [INFO] Setting up signal handlers
-2023-03-29 20:40:41,216 buildarr:1 buildarr.cli.daemon [INFO] Finished setting up signal handlers
-2023-03-29 20:40:41,216 buildarr:1 buildarr.cli.daemon [INFO] Buildarr ready.
+```text
+2023-11-12 10:00:29,220 buildarr:1 buildarr.cli.daemon [INFO] Buildarr version 0.7.0 (log level: INFO)
+2023-11-12 10:00:29,220 buildarr:1 buildarr.cli.daemon [INFO] Loading configuration file '/config/buildarr.yml'
+2023-11-12 10:00:29,775 buildarr:1 buildarr.cli.daemon [INFO] Finished loading configuration file
+2023-11-12 10:00:29,775 buildarr:1 buildarr.cli.daemon [INFO] Daemon configuration:
+2023-11-12 10:00:29,776 buildarr:1 buildarr.cli.daemon [INFO]  - Watch configuration files: No
+2023-11-12 10:00:29,776 buildarr:1 buildarr.cli.daemon [INFO]  - Update at:
+2023-11-12 10:00:29,776 buildarr:1 buildarr.cli.daemon [INFO]    - Monday 03:00
+2023-11-12 10:00:29,776 buildarr:1 buildarr.cli.daemon [INFO]    - Tuesday 03:00
+2023-11-12 10:00:29,777 buildarr:1 buildarr.cli.daemon [INFO]    - Wednesday 03:00
+2023-11-12 10:00:29,777 buildarr:1 buildarr.cli.daemon [INFO]    - Thursday 03:00
+2023-11-12 10:00:29,778 buildarr:1 buildarr.cli.daemon [INFO]    - Friday 03:00
+2023-11-12 10:00:29,778 buildarr:1 buildarr.cli.daemon [INFO]    - Saturday 03:00
+2023-11-12 10:00:29,778 buildarr:1 buildarr.cli.daemon [INFO]    - Sunday 03:00
+2023-11-12 10:00:29,778 buildarr:1 buildarr.cli.daemon [INFO] Scheduling update jobs
+2023-11-12 10:00:29,779 buildarr:1 buildarr.cli.daemon [INFO] Finished scheduling update jobs
+2023-11-12 10:00:29,779 buildarr:1 buildarr.cli.daemon [INFO] Config file monitoring is already disabled
+2023-11-12 10:00:29,779 buildarr:1 buildarr.cli.daemon [INFO] Applying initial configuration
+2023-11-12 10:00:29,932 buildarr:1 buildarr.cli.run [INFO] Loaded plugins: jellyseerr (0.3.0), prowlarr (0.5.0), radarr (0.2.0), sonarr (0.6.0)
+2023-11-12 10:00:29,932 buildarr:1 buildarr.cli.run [INFO] Loading instance configurations
+2023-11-12 10:00:29,973 buildarr:1 buildarr.cli.run [INFO] Finished loading instance configurations
+2023-11-12 10:00:29,973 buildarr:1 buildarr.cli.run [INFO] Running with plugins: sonarr
+2023-11-12 10:00:29,973 buildarr:1 buildarr.cli.run [INFO] Resolving instance dependencies
+2023-11-12 10:00:29,973 buildarr:1 buildarr.cli.run [INFO] Finished resolving instance dependencies
+2023-11-12 10:00:29,973 buildarr:1 buildarr.cli.run [INFO] Fetching TRaSH metadata
+2023-11-12 10:00:36,723 buildarr:1 buildarr.cli.run [INFO] Finished fetching TRaSH metadata
+2023-11-12 10:00:36,723 buildarr:1 buildarr.cli.run [INFO] Rendering instance configuration dynamic attributes
+2023-11-12 10:00:36,739 buildarr:1 buildarr.cli.run [INFO] Finished rendering instance configuration dynamic attributes
+2023-11-12 10:00:37,273 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Fetching instance secrets
+2023-11-12 10:00:37,273 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished fetching instance secrets
+2023-11-12 10:00:37,273 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Running connection test
+2023-11-12 10:00:37,343 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Connection test successful
+2023-11-12 10:00:38,112 buildarr:1 buildarr.cli.run [INFO] Performing post-initialisation configuration render
+2023-11-12 10:00:39,292 buildarr:1 buildarr.cli.run [INFO] Finished performing post-initialisation configuration render
+2023-11-12 10:00:39,292 buildarr:1 buildarr.cli.run [INFO] Updating configuration on remote instances
+2023-11-12 10:00:39,292 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Fetching remote configuration to check if updates are required
+2023-11-12 10:00:39,738 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished fetching remote configuration
+2023-11-12 10:00:39,810 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Updating remote configuration
+2023-11-12 10:00:39,850 buildarr:1 buildarr.config.base [INFO] <sonarr> (default) sonarr.settings.general.host.instance_name: 'Sonarr' -> 'Sonarr (Buildarr Example)'
+2023-11-12 10:00:39,933 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Remote configuration successfully updated
+2023-11-12 10:00:40,574 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished updating remote configuration
+2023-11-12 10:00:49,722 buildarr:1 buildarr.cli.run [INFO] Finished updating configuration on remote instances
+2023-11-12 10:00:49,722 buildarr:1 buildarr.cli.run [INFO] Deleting unmanaged/unused resources on remote instances
+2023-11-12 10:00:52,579 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Refetching remote configuration to delete unused resources
+2023-11-12 10:00:52,714 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished refetching remote configuration
+2023-11-12 10:00:52,771 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Deleting unmanaged/unused resources on the remote instance
+2023-11-12 10:00:52,843 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Remote configuration is clean
+2023-11-12 10:00:52,843 buildarr:1 buildarr.cli.run [INFO] <sonarr> (default) Finished deleting unmanaged/unused resources on the remote instance
+2023-11-12 10:00:52,843 buildarr:1 buildarr.cli.run [INFO] Finished deleting unmanaged/unused resources on remote instances
+2023-11-12 10:00:52,843 buildarr:1 buildarr.cli.run [INFO] Deleting downloaded TRaSH metadata
+2023-11-12 10:00:52,873 buildarr:1 buildarr.cli.run [INFO] Finished deleting downloaded TRaSH metadata
+2023-11-12 10:00:52,874 buildarr:1 buildarr.cli.daemon [INFO] Finished applying initial configuration
+2023-11-12 10:00:52,874 buildarr:1 buildarr.cli.daemon [INFO] Setting up signal handlers
+2023-11-12 10:00:52,875 buildarr:1 buildarr.cli.daemon [INFO] Finished setting up signal handlers
+2023-11-12 10:00:52,875 buildarr:1 buildarr.cli.daemon [INFO] The next run will be at 2023-11-13 03:00
+2023-11-12 10:00:52,875 buildarr:1 buildarr.cli.daemon [INFO] Buildarr ready.
 ```
 
 For more information on how to interfact with Buildarr, check the [usage documentation](usage.md).
@@ -188,8 +197,9 @@ For more information on how to interfact with Buildarr, check the [usage documen
 * Split Sonarr plugin to its own repository (completed in [version 0.4.0](release-notes.md#v040-2023-03-31))
 * Create plugins for the following applications:
     * Sonarr V4
-    * Radarr
+    * Radarr (now available as [`buildarr-radarr`](https://buildarr.github.io/plugins/radarr))
     * Prowlarr (now available as [`buildarr-prowlarr`](https://buildarr.github.io/plugins/prowlarr))
+    * Jellyseerr (now available as [`buildarr-jellyseerr`](https://buildarr.github.io/plugins/jellyseerr))
     * Bazarr
     * Unmanic
     * Tdarr (maybe)

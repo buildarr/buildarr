@@ -19,17 +19,12 @@ Buildarr secrets metadata base class.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic
+from typing import Generic
 
 from pydantic import BaseModel
 
 from ..plugins import Config
 from ..types import ModelConfigBase
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from typing_extensions import Self
 
 
 class SecretsBase(BaseModel, Generic[Config]):
@@ -38,28 +33,6 @@ class SecretsBase(BaseModel, Generic[Config]):
 
     When implementing nested sections in a secrets plugin, this class should be used.
     """
-
-    @classmethod
-    def read(cls, path: Path) -> Self:
-        """
-        Load the secrets metadata from a JSON file, and return the corresponding object.
-
-        Args:
-            path (Path): Secrets JSON file to read from
-
-        Returns:
-            Secrets metadata object
-        """
-        return cls.parse_file(path, content_type="json")
-
-    def write(self, path: Path) -> None:
-        """
-        Serialise the secrets metadata object and write it to a JSON file.
-
-        Args:
-            path (Path): Secrets JSON file to write to
-        """
-        path.write_text(self.json())
 
     class Config(ModelConfigBase):
         """

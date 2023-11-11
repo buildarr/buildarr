@@ -159,7 +159,7 @@ class DummySettingsConfig(DummyConfigBase):
         """
         if not self.instance_name:
             return self
-        secrets = cast(DummySecrets, state.secrets.dummy[self.instance_name])
+        secrets = cast(DummySecrets, state.instance_secrets["dummy"][self.instance_name])
         return self.copy(
             update={
                 "instance_name": self.instance_name,

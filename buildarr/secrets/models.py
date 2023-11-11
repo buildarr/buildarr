@@ -25,8 +25,6 @@ from ..plugins import Config
 from .base import SecretsBase
 
 if TYPE_CHECKING:
-    from typing import Dict
-
     from typing_extensions import Self
 
 
@@ -104,23 +102,5 @@ class SecretsPlugin(SecretsBase[Config]):
 
         Returns:
             `True` if the test was successful, otherwise `False`
-        """
-        raise NotImplementedError()
-
-
-class SecretsType(SecretsBase):
-    """
-    Type hint for interacting with a dynamically generated secrets metadata model.
-    """
-
-    def __getattr__(self, name: str) -> Dict[str, SecretsPlugin]:
-        """
-        Plugin-specific secrets metadata.
-        """
-        raise NotImplementedError()
-
-    def __setattr__(self, name: str, value: Dict[str, SecretsPlugin]) -> None:
-        """
-        Plugin-specific secrets metadata.
         """
         raise NotImplementedError()
