@@ -265,7 +265,12 @@ def compose(
         "image": f"{state.config.buildarr.docker_image_uri}:{__version__}",
         "command": ["daemon", f"/config/{state.config_files[0].name}"],
         "volumes": [
-            {"type": "bind", "source": str(state.config_files[0].parent), "target": "/config"},
+            {
+                "type": "bind",
+                "source": str(state.config_files[0].parent),
+                "target": "/config",
+                "read_only": True,
+            },
         ],
         "restart": compose_restart,
         "depends_on": [
