@@ -1,5 +1,58 @@
 # Release Notes (Buildarr Core)
 
+## [v0.7.0](https://github.com/buildarr/buildarr/releases/tag/v0.7.0) - 2023-11-12
+
+This is a **backwards-incompatible** feature and bugfix release.
+
+From a user perspective, the main change in this release is that `secrets.json` is no longer generated, and no longer used by Buildarr.
+
+When Buildarr was originally designed, it was normal for Sonarr and Radarr to expose their API keys on their `initialize.js[on]` endpoints, allowing them to be dynamically fetched. To avoid doing this every time, the `secrets.json` file was used to cache them.
+
+However, since become, a few issues have become glaringly obvious:
+
+* The `secrets.json` file is difficult to manage from a security standpoint, as it is unencrypted and is not created using a secure `umask` by Buildarr by default at the moment.
+* Whenever plugins have a major update and have no means of migrating older secrets model objects, older `secrets.json` files will cause validation errors when running the updated versions.
+* With new versions of Arr suite applications moving to a forced-authentication model, where the API key must be provided by the client, there is simply no need to cache these credentials in a separate file anymore.
+
+After upgrading Buildarr, it is recommended to:
+
+* Remove any existing copies of `secrets.json` from your Buildarr deployment.
+* If using Buildarr in Docker, change your `/config` bind mount to be read-only for better security.
+
+A couple of other issues have also been addressed in this release.
+
+* When an error occurs during update runs in daemon mode, instead of quitting Buildarr, catch the error, log it and schedule following update runs as normal.
+    * This makes it easier to troubleshoot issues, as Buildarr will not continually try to execute update runs when configured to re-run after it quits unexpectedly.
+* Fix a bug where after the first scheduled update run finishes in daemon mode, the "next update run" as reported by Buildarr is the same run that just executed.
+
+The plugin API has been updated with the following changes.
+
+* Add the following commonly used constrained string types to Buildarr Core:
+    * `LowerCaseNonEmptyStr`
+    * `LowerCaseStr`
+    * `UpperCaseNonEmptyStr`
+    * `UpperCaseStr`
+* Add the new `ConfigBase.log_delete_remote_attrs` method, for more verbose logging of deleted resources.
+* Reimplement the `Password` attribute type as a subclass of `SecretStr` (instead of using `Annotated`), to allow it to be subclassed and used itself in `Annotated` statements.
+* Remove `json5` as a dependency of Buildarr Core. If a plugin requires this dependency, it should specify it explicitly.
+
+### Added
+
+* Add new constrained string types ([#157](https://github.com/buildarr/buildarr/pull/157))
+* Add the `ConfigBase.log_delete_remote_attrs` method ([#158](https://github.com/buildarr/buildarr/pull/158))
+
+### Changed
+
+* Log errors during daemon update runs without exiting ([#151](https://github.com/buildarr/buildarr/pull/151))
+* Fix the next run time after scheduled runs ([#152](https://github.com/buildarr/buildarr/pull/152))
+* Change `Password` to be an actual subclass of `SecretStr` ([#156](https://github.com/buildarr/buildarr/pull/156))
+* Update dependencies ([#159](https://github.com/buildarr/buildarr/pull/159))
+
+### Removed
+
+* Remove `secrets.json` ([#155](https://github.com/buildarr/buildarr/pull/155))
+
+
 ## [v0.6.2](https://github.com/buildarr/buildarr/releases/tag/v0.6.2) - 2023-11-07
 
 This is a backwards-compatible feature release that makes using multiple configuration files more flexible.
