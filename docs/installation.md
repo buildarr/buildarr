@@ -114,6 +114,7 @@ services:
       - type: bind
         source: ./buildarr
         target: /config
+        read_only: true
     environment:
       TZ: Pacific/Auckland
       PUID: "1000"
