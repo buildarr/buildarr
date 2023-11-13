@@ -1,5 +1,21 @@
 # Release Notes (Buildarr Core)
 
+## [v0.7.1](https://github.com/buildarr/buildarr/releases/tag/v0.7.1) - 2023-11-13
+
+This is a backwards-compatible release that improves the Buildarr plugin API.
+
+When using the `BaseEnum` attribute type, plugins are now able to specify multiple possible values for an enumeration by setting a `tuple` with all values defined in it.
+
+This allows more flexibility in the range of values users can define in the Buildarr configuration file, and makes it possible to control how those values are serialised when dumping remote instance configurations.
+
+It also makes it possible to add JSON/YAML encoders for custom types in the Buildarr configuration model from the plugin side, when custom types that are not appropriate to add to Buildarr Core directly are required.
+
+### Changed
+
+* Configuration encoding and type improvements ([#164](https://github.com/buildarr/buildarr/pull/164))
+* Fix bugs in multi-value `BaseEnum` ([#165](https://github.com/buildarr/buildarr/pull/165))
+
+
 ## [v0.7.0](https://github.com/buildarr/buildarr/releases/tag/v0.7.0) - 2023-11-12
 
 This is a **backwards-incompatible** feature and bugfix release.
