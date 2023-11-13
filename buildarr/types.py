@@ -322,7 +322,7 @@ class BaseEnum(MultiValueEnum):
             for value in obj.values:
                 if (
                     isinstance(value, str)
-                    and obj.values[1].lower().replace("/", "_").replace("-", "_") == name
+                    and value.lower().replace("/", "_").replace("-", "_") == name
                 ):
                     return obj
         raise KeyError(repr(name))
