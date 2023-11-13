@@ -21,10 +21,9 @@ from __future__ import annotations
 
 import re
 
-from enum import Enum
 from functools import total_ordering
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import TYPE_CHECKING, Any, Callable, Generator, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, Mapping, Sequence, Type
 
 from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, SecretStr
 from pydantic.fields import ModelField
@@ -34,7 +33,17 @@ from .state import state
 from .util import get_absolute_path
 
 if TYPE_CHECKING:
+    from enum import Enum
+
     from .config.models import ConfigPlugin
+
+    # Trickery to make Mypy work properly with MultiValueEnum. Not actually used.
+    class MultiValueEnum(Enum):
+        values: Sequence[Any]
+
+else:
+    # This gets imported when actually running.
+    from aenum import MultiValueEnum  # type: ignore[import-untyped]
 
 
 class Password(SecretStr):
@@ -224,12 +233,72 @@ class TrashID(ConstrainedStr):
     to_lower = True
 
 
-class BaseEnum(Enum):
+class BaseEnum(MultiValueEnum):
     """
     Enumeration base class for use in Buildarr configurations.
 
-    In the Buildarr configurations, either the enumeration's value or
-    the corresponding name can be specified. The name parsing is case-insensitive.
+    When configurating an enumeration-type attribute in the Buildarr configuration,
+    the user will be able to specify either the name of the enumeration,
+    or any of the possible values. Parsing of enumerations is case-insensitive.
+
+    For example, given the following example:
+
+    ```python
+    from buildarr.config import ConfigBase
+    from buildarr.types import BaseEnum
+
+    class Animal(BaseEnum):
+        value_1 = 0
+        value_2 = 1
+
+    class ExampleConfig(ConfigBase):
+        animal: Animal
+    ```
+
+    The user would be able to configure it in the Buildarr configuration like so:
+
+    ```yaml
+    ---
+
+    example:
+      animal: value-1  # value-1, VALUE_1 or 0 can also be specified here.
+    ```
+
+    This class also supports specifying multiple values for an enumeration,
+    by passing a `tuple` containing all the possible values.
+
+    ```python
+    from buildarr.types import BaseEnum
+
+    class Animal(BaseEnum):
+        value_1 = (0, "dog")
+        value_2 = (1, "cat")
+    ```
+
+    When an enumeration is serialised for a remote instance,
+    the first provided value will be used. In the above examples,
+    the remote instance API will receive `0` and `1` as the values.
+
+    When exporting the Buildarr configuration to a file, the first `str`-type value
+    will be used when serialising multi-value enumerations.
+
+    ```yaml
+    ---
+
+    example:
+      animal: dog
+    ```
+
+    If the numeration is a single-value enumeration, or there are no
+    `str`-type values in the multi-value enumeration, the enumeration name
+    itself is used.
+
+    ```yaml
+    ---
+
+    example:
+      animal: value-1
+    ```
     """
 
     @classmethod
@@ -238,7 +307,7 @@ class BaseEnum(Enum):
         Get the enumeration object corresponding to the given name case-insensitively.
 
         Args:
-            name_str (str): Name of the enumeration value (case insensitive).
+            name_str (str): Name of the enumeration value, or its remote representation.
 
         Raises:
             KeyError: When the enumeration name is invalid (does not exist).
@@ -246,10 +315,16 @@ class BaseEnum(Enum):
         Returns:
             The enumeration object for the given name
         """
-        name = name_str.lower().replace("-", "_")
-        for obj in cls:
+        name = name_str.lower().replace("/", "_").replace("-", "_")
+        for obj in cls:  # type: ignore[attr-defined]
             if obj.name.lower() == name:
                 return obj
+            for value in obj.values:
+                if (
+                    isinstance(value, str)
+                    and obj.values[1].lower().replace("/", "_").replace("-", "_") == name
+                ):
+                    return obj
         raise KeyError(repr(name))
 
     def to_name_str(self) -> str:
@@ -257,8 +332,13 @@ class BaseEnum(Enum):
         Return the name for this enumaration object.
 
         Returns:
-            Enumeration name
+            First `str`-type value in list of values (if available),
+            otherwise the enumeration name.
         """
+        if len(self.values) > 1:
+            for value in self.values:
+                if isinstance(value, str):
+                    return value
         return self.name.replace("_", "-")
 
     @classmethod
@@ -289,10 +369,7 @@ class BaseEnum(Enum):
             return cls(value)
         except ValueError:
             try:
-                try:
-                    return cls(str(value))
-                except ValueError:
-                    return cls.from_name_str(value)
+                return cls.from_name_str(value)
             except (TypeError, KeyError):
                 raise ValueError(f"Invalid {cls.__name__} name or value: {value}") from None
 
@@ -526,6 +603,32 @@ class LocalPath(type(Path()), Path):  # type: ignore[misc]
         return path
 
 
+config_encoders: Dict[Type[Any], Callable[[Any], Any]] = {
+    BaseEnum: lambda v: v.to_name_str(),
+    PurePosixPath: str,
+    PureWindowsPath: str,
+    SecretStr: lambda v: v.get_secret_value(),
+}
+"""
+The canonical data structure Buildarr uses to serialise custom Python types
+to a type serialisable into JSON and YAML.
+
+When using a custom type that Buildarr does not automatically support
+in plugins, add the required type to this structure, as shown in this example:
+
+```python
+from buildarr.types import config_encoders
+
+class CustomType:
+    ...
+    def __str__(self) -> str:
+        ...
+
+config_encoders[CustomType] = lambda v: str(v)
+```
+"""
+
+
 class ModelConfigBase:
     """
     Buildarr model configuration base class.
@@ -534,17 +637,11 @@ class ModelConfigBase:
     serialisation, parsing and validation to work correctly.
     """
 
-    # Add default JSON encoders for custom, non-default and otherwise non-specified
-    # classes so serialisation can work.
-    # Note that subclasses of types already handled by Python's built-in JSON encoder
-    # will *not* be read using this structure, so there are limitations as to
-    # what will work when defined here.
-    json_encoders = {
-        BaseEnum: lambda v: v.to_name_str(),
-        PurePosixPath: str,
-        PureWindowsPath: str,
-        SecretStr: lambda v: v.get_secret_value(),
-    }
+    # Mapping between custom type and encoding function to pass to `json.dumps`.
+    # When adding custom types to encode, **do not override this attribute**,
+    # as it will have no effect.
+    # Instead, add the custom type to `buildarr.types:config_encoders`.
+    json_encoders = config_encoders
 
     # Required to avoid coersion with same-name but different-typed fields
     # in objects for which there are multiple types that can be defined.

@@ -49,6 +49,7 @@ click-params = ">=0.4.1"
 watchdog = ">=3.0.0"
 schedule = ">=1.1.0"
 importlib-metadata = ">=4.6.0"
+aenum = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "23.11.0"
