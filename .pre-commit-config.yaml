@@ -36,7 +36,7 @@ repos:
     hooks:
       - id: poetry-check
       - id: poetry-lock
-        args: ["--no-update"]
+        args: ["--no-update", "--no-cache"]
       - id: poetry-export
         additional_dependencies:
           - poetry-plugin-export==1.6.0
