@@ -32,7 +32,7 @@ repos:
           - types-pyyaml==6.0.12.12
           - types-requests==2.31.0.10
   - repo: https://github.com/python-poetry/poetry
-    rev: "1.7.0"
+    rev: "1.8.1"
     hooks:
       - id: poetry-check
       - id: poetry-lock
