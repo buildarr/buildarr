@@ -99,7 +99,7 @@ sonarr:
   settings:
     # General settings (all options supported except for changing the API key)
     general:
-      host:
+      hostname:
         instance_name: "Sonarr (Buildarr Example)"
 ```
 

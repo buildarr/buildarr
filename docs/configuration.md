@@ -23,7 +23,7 @@ buildarr:
     - "03:00"
 
 sonarr:
-  host: "sonarr.example.com"
+  hostname: "sonarr.example.com"
   port: 8989
   protocol: "http"
   settings:
@@ -83,7 +83,7 @@ buildarr:
 ---
 
 sonarr:
-  host: "sonarr.example.com"
+  hostname: "sonarr.example.com"
   port: 8989
   protocol: "http"
   settings:
@@ -95,7 +95,7 @@ sonarr:
 ---
 
 radarr:
-  host: "radarr.example.com"
+  hostname: "radarr.example.com"
   port: 7878
   protocol: "http"
   settings:
@@ -127,7 +127,7 @@ buildarr:
     - "03:00"
 
 sonarr:
-  host: "sonarr.example.com"
+  hostname: "sonarr.example.com"
   port: 8989
   protocol: "http"
   settings:
@@ -155,7 +155,7 @@ sonarr:
   instances:
     # Sonarr instance 1 connection information and configuration.
     sonarr1:
-      host: "sonarr1.example.com"
+      hostname: "sonarr1.example.com"
       port: 8989
       protocol: "http"
       settings:
@@ -163,7 +163,7 @@ sonarr:
 
     # Sonarr instance 1 connection information and configuration.
     sonarr2:
-      host: "sonarr2.example.com"
+      hostname: "sonarr2.example.com"
       port: 8989
       protocol: "http"
       settings:
