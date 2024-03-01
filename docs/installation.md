@@ -149,7 +149,7 @@ sonarr:
     # Name of the instance as referred to by Buildarr.
     # Assign instance-specific configuration to it.
     sonarr:
-      host: "sonarr"
+      hostname: "sonarr"
       port: 8989
       protocol: "http"
       # Define instance-specific Sonarr settings here.
