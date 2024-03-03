@@ -120,7 +120,14 @@ select = [
     "W",
     "YTT",
 ]
-extend-select = ["COM812", "COM818", "UP009"]
+extend-select = [
+    # COM012 is currently disabled due to a conflict with the Ruff formatter.
+    # https://github.com/astral-sh/ruff/issues/9216
+    # TODO: Decide whether to enable or remove.
+    # "COM812",
+    "COM818",
+    "UP009",
+]
 extend-ignore = [
     "A003",
     "B023",
