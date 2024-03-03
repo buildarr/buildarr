@@ -43,6 +43,9 @@ def str_to_bool(val: str) -> bool:
     Args:
         val (str): Value to convert to a boolean.
 
+    Returns:
+        `True` if the value represents a truthy value, otherwise `False`.
+
     Raises:
         ValueError: If `val` is anything other than the allowed values.
     """
