@@ -16,7 +16,6 @@
 Buildarr plugin models.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -43,6 +42,7 @@ class Plugin:
     from buildarr_example.cli import example
     from buildarr_example.config import ExampleConfig
     from buildarr_example.secrets import ExampleSecrets
+
 
     class ExamplePlugin(Plugin):
         cli = example

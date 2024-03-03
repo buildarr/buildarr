@@ -16,7 +16,6 @@
 Buildarr configuration base class.
 """
 
-
 from __future__ import annotations
 
 import json
@@ -113,11 +112,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
         if TYPE_CHECKING:
             from .secrets import ExampleSecrets
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-                ...
+
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
         else:
-            class ExampleConfigBase(ConfigBase):
-                ...
+
+            class ExampleConfigBase(ConfigBase): ...
+
 
         class ExampleConfig(ExampleConfigBase):
             local_attr_1: bool
@@ -137,8 +137,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             ]
 
             @classmethod
-            def _api_get(cls, secrets: ExampleSecrets) -> Dict[str, Any]:
-                ...
+            def _api_get(cls, secrets: ExampleSecrets) -> Dict[str, Any]: ...
 
             @classmethod
             def from_remote(cls, secrets: ExampleSecrets) -> Self:
@@ -304,11 +303,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
         if TYPE_CHECKING:
             from .secrets import ExampleSecrets
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-                ...
+
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
         else:
-            class ExampleConfigBase(ConfigBase):
-                ...
+
+            class ExampleConfigBase(ConfigBase): ...
+
 
         class ExampleObj(ExampleConfigBase):
             obj_attr1: int
@@ -328,11 +328,9 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             ]
 
             @classmethod
-            def _api_post(cls, secrets: ExampleSecrets, obj: Mapping[str, Any]) -> None:
-                ...
+            def _api_post(cls, secrets: ExampleSecrets, obj: Mapping[str, Any]) -> None: ...
 
-            def _exists_on_remote(self, secrets: ExampleSecrets) -> bool:
-                ...
+            def _exists_on_remote(self, secrets: ExampleSecrets) -> bool: ...
 
             def _create_remote(self, secrets: ExampleSecrets) -> None:
                 self._api_post(
@@ -342,6 +340,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                         remote_map=self._remote_map,
                     ),
                 )
+
 
         class ExampleConfig(ExampleConfigBase):
             local_objs: Dict[str, ExampleObj]
@@ -466,11 +465,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
         if TYPE_CHECKING:
             from .secrets import ExampleSecrets
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-                ...
+
+            class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
         else:
-            class ExampleConfigBase(ConfigBase):
-                ...
+
+            class ExampleConfigBase(ConfigBase): ...
+
 
         class ExampleConfig(ExampleConfigBase):
             local_attr_1: bool
@@ -490,8 +490,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             ]
 
             @classmethod
-            def _api_put(cls, secrets: Secrets, obj: Mapping[str, Any]) -> None:
-                ...
+            def _api_put(cls, secrets: Secrets, obj: Mapping[str, Any]) -> None: ...
 
             def update_remote(
                 self,
@@ -836,17 +835,17 @@ class ConfigBase(BaseModel, Generic[Secrets]):
 
         if TYPE_CHECKING:
             from .secrets import ExampleSecrets
-            class _ExampleConfig(ConfigBase[ExampleSecrets]):
-                ...
+
+            class _ExampleConfig(ConfigBase[ExampleSecrets]): ...
         else:
-            class _ExampleConfig(ConfigBase):
-                ...
+
+            class _ExampleConfig(ConfigBase): ...
+
 
         class ExampleConfig(_ExampleConfig):
             ...
 
-            class Config(_ExampleConfig.Config):
-                ...  # Add model configuration attributes here.
+            class Config(_ExampleConfig.Config): ...  # Add model configuration attributes here.
         ```
         """
 

@@ -16,7 +16,6 @@
 Buildarr manager interface.
 """
 
-
 from __future__ import annotations
 
 from logging import getLogger
@@ -52,6 +51,7 @@ class ManagerPlugin(Generic[Config, Secrets]):
     from buildarr.manager import ManagerPlugin
     from .config import ExampleConfig
     from .secrets import ExampleSecrets
+
 
     class ExampleManager(ManagerPlugin[ExampleConfig, ExampleSecrets]):
         pass

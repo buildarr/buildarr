@@ -16,7 +16,6 @@
 Buildarr root module.
 """
 
-
 from __future__ import annotations
 
 from importlib_metadata import PackageNotFoundError, version as package_version

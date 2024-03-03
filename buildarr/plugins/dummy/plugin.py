@@ -16,7 +16,6 @@
 Dummy plugin interface.
 """
 
-
 from __future__ import annotations
 
 from buildarr import __version__

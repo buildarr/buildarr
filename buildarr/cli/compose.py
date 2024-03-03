@@ -16,7 +16,6 @@
 `buildarr compose` CLI command.
 """
 
-
 from __future__ import annotations
 
 from ipaddress import ip_address

@@ -16,7 +16,6 @@
 Buildarr secrets metadata interface.
 """
 
-
 from __future__ import annotations
 
 from .base import SecretsBase

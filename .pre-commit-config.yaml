@@ -14,16 +14,11 @@ repos:
       - id: detect-private-key
       - id: check-added-large-files
       - id: check-merge-conflict
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.1.5"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.3.0"
     hooks:
       - id: ruff
-        args:
-          - --exit-non-zero-on-fix
-  - repo: https://github.com/psf/black
-    rev: "23.11.0"
-    hooks:
-      - id: black
+      - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: "v1.7.0"
     hooks:

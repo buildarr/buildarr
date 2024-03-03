@@ -16,7 +16,6 @@
 Buildarr global runtime state.
 """
 
-
 from __future__ import annotations
 
 import os

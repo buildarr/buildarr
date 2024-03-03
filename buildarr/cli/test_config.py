@@ -16,7 +16,6 @@
 `buildarr test-config` CLI command.
 """
 
-
 from __future__ import annotations
 
 from logging import getLogger

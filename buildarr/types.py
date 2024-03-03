@@ -16,7 +16,6 @@
 Buildarr general purpose type hints, used in plugin models.
 """
 
-
 from __future__ import annotations
 
 import re
@@ -64,11 +63,12 @@ class RssUrl(AnyUrl):
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-            ...
+
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
     else:
-        class ExampleConfigBase(ConfigBase):
-            ...
+
+        class ExampleConfigBase(ConfigBase): ...
+
 
     class ExampleConfig(ExampleConfigBase):
         rss_url: RssUrl
@@ -90,11 +90,12 @@ class Port(ConstrainedInt):
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-            ...
+
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
     else:
-        class ExampleConfigBase(ConfigBase):
-            ...
+
+        class ExampleConfigBase(ConfigBase): ...
+
 
     class ExampleConfig(ExampleConfigBase):
         host: NonEmptyStr
@@ -119,6 +120,7 @@ class NonEmptyStr(ConstrainedStr):
     ```python
     from buildarr.config import ConfigBase, NonEmptyStr, Port
 
+
     class ExampleConfig(ConfigBase):
         host: NonEmptyStr
         port: Port
@@ -139,6 +141,7 @@ class LowerCaseStr(ConstrainedStr):
     ```python
     from buildarr.config import LowerCaseStr
 
+
     class ExampleConfig(ConfigBase):
         lowercase_name: LowerCaseStr
     ```
@@ -156,6 +159,7 @@ class LowerCaseNonEmptyStr(LowerCaseStr):
 
     ```python
     from buildarr.config import LowerCaseNonEmptyStr
+
 
     class ExampleConfig(ConfigBase):
         lowercase_name: LowerCaseNonEmptyStr
@@ -176,6 +180,7 @@ class UpperCaseStr(ConstrainedStr):
     ```python
     from buildarr.config import UpperCaseStr
 
+
     class ExampleConfig(ConfigBase):
         uppercase_name: UpperCaseStr
     ```
@@ -193,6 +198,7 @@ class UpperCaseNonEmptyStr(UpperCaseStr):
 
     ```python
     from buildarr.config import UpperCaseNonEmptyStr
+
 
     class ExampleConfig(ConfigBase):
         uppercase_name: UpperCaseNonEmptyStr
@@ -216,11 +222,12 @@ class TrashID(ConstrainedStr):
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-            ...
+
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
     else:
-        class ExampleConfigBase(ConfigBase):
-            ...
+
+        class ExampleConfigBase(ConfigBase): ...
+
 
     class ExampleConfig(ExampleConfigBase):
         trash_id: TrashID
@@ -247,9 +254,11 @@ class BaseEnum(MultiValueEnum):
     from buildarr.config import ConfigBase
     from buildarr.types import BaseEnum
 
+
     class Animal(BaseEnum):
         value_1 = 0
         value_2 = 1
+
 
     class ExampleConfig(ConfigBase):
         animal: Animal
@@ -467,11 +476,12 @@ class InstanceName(str):
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-            ...
+
+        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
     else:
-        class ExampleConfigBase(ConfigBase):
-            ...
+
+        class ExampleConfigBase(ConfigBase): ...
+
 
     class ExampleConfig(ExampleConfigBase):
         instance_name: Optional[InstanceName] = Field(None, plugin="example")

@@ -16,7 +16,6 @@
 Buildarr TRaSH-Guides metadata functions.
 """
 
-
 from __future__ import annotations
 
 from logging import getLogger

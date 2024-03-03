@@ -16,7 +16,6 @@
 Buildarr plugin secrets metadata models.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -52,12 +51,13 @@ class SecretsPlugin(SecretsBase[Config]):
 
     if TYPE_CHECKING:
         from typing import Self
-        from  .config import ExampleConfig
-        class _ExampleSecrets(SecretsPlugin[ExampleConfig]):
-            ...
+        from .config import ExampleConfig
+
+        class _ExampleSecrets(SecretsPlugin[ExampleConfig]): ...
     else:
-        class _ExampleSecrets(SecretsPlugin):
-            ...
+
+        class _ExampleSecrets(SecretsPlugin): ...
+
 
     class ExampleSecrets(_ExampleSecrets):
         hostname: NonEmptyStr

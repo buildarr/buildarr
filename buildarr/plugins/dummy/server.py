@@ -29,7 +29,6 @@ This is simply for convenience when testing, to give the Dummy plugin something
 to communicate with for testing purposes.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Mapping, cast
@@ -106,7 +105,7 @@ def get_initialize_json() -> Tuple[Response, int]:
     """
 
     res = {"apiRoot": app.config["API_ROOT"]}
-    if "API_KEY" in app.config and app.config["API_KEY"]:
+    if app.config.get("API_KEY"):
         res["apiKey"] = app.config["API_KEY"]
     res["version"] = __version__
 
