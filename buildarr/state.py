@@ -22,9 +22,10 @@ import os
 
 from collections import defaultdict
 from contextlib import contextmanager
-from distutils.util import strtobool
 from pathlib import Path
 from typing import TYPE_CHECKING, Tuple
+
+from buildarr.util import str_to_bool
 
 if TYPE_CHECKING:
     from typing import DefaultDict, FrozenSet, Generator, Mapping, Optional, Sequence, Set
@@ -53,7 +54,7 @@ class State:
     over the life of an update run, generally it goes here.
     """
 
-    testing: bool = bool(strtobool(os.environ.get("BUILDARR_TESTING", "false")))
+    testing: bool = str_to_bool(os.environ.get("BUILDARR_TESTING", "false"))
     """
     Whether Buildarr is in testing mode or not.
     """

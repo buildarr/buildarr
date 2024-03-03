@@ -33,6 +33,29 @@ if TYPE_CHECKING:
 __all__ = ["get_absolute_path", "merge_dicts"]
 
 
+def str_to_bool(val: str) -> bool:
+    """
+    Convert a string representation of truth to `True` or `False`.
+
+    `True` values are `y`, `yes`, `t`, `true`, `on`, and `1`.
+    `False` values are `n`, `no`, `f`, `false`, `off`, and `0`.
+
+    Args:
+        val (str): Value to convert to a boolean.
+
+    Raises:
+        ValueError: If `val` is anything other than the allowed values.
+    """
+
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError(f"Invalid truth value {val!r}")
+
+
 def get_absolute_path(path: Union[str, os.PathLike]) -> Path:
     """
     Return the absolute version of the given path, *without* resolving symbolic links.

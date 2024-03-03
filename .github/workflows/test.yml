@@ -23,6 +23,7 @@ jobs:
   test:
     needs: pre-commit
     strategy:
+      fail-fast: false
       matrix:
           python_version:
             - "3.8"
