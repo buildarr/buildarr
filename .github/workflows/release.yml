@@ -9,15 +9,18 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone full tree, and checkout tag
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: pdm-project/setup-pdm@v4
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.11"
-      - name: Build source distribution and wheels
+      - name: Build source dist and wheels
         run: pdm build --verbose
-      - uses: actions/upload-artifact@v4
+      - name: Upload source dist and wheels to artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
@@ -31,14 +34,19 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Clone full tree, and checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download source dist and wheels from artifacts
+        uses: actions/download-artifact@v4
         with:
           name: dist
-      - uses: pdm-project/setup-pdm@v4
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.11"
-      - name: Publish to PyPI
+      - name: Publish source dist and wheels to PyPI
         run: pdm publish --no-build --verbose
 
   publish-github-release:
@@ -47,11 +55,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Clone and checkout tag
+        uses: actions/checkout@v4
+      - name: Download source dist and wheels from artifacts
+        uses: actions/download-artifact@v4
         with:
           name: dist
-      - uses: xresloader/upload-to-github-release@v1
+      - name: Publish source dist and wheels to GitHub Release
+        uses: xresloader/upload-to-github-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

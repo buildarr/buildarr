@@ -10,26 +10,32 @@ jobs:
   pre-commit:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Clone and checkout branch
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
-      - uses: pre-commit/action@v3.0.1
+      - name: Run pre-commit hooks
+        uses: pre-commit/action@v3.0.1
 
   build:
     needs: pre-commit
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone full tree, and checkout branch
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: pdm-project/setup-pdm@v4
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.11"
-      - name: Build source distribution and wheels
+      - name: Build source dist and wheels
         run: pdm build --verbose
-      - uses: actions/upload-artifact@v4
+      - name: Upload source dist and wheels to artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
