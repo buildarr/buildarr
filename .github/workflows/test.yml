@@ -20,6 +20,29 @@ jobs:
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
 
+  test:
+    needs: pre-commit
+    strategy:
+      matrix:
+          python_version:
+            - "3.8"
+            - "3.9"
+            - "3.10"
+            - "3.11"
+            - "3.12"
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone full tree, and checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: ${{ matrix.python_version }}
+      - name: Run tests
+        run: pdm run test
+
   build:
     needs: pre-commit
     runs-on: ubuntu-22.04

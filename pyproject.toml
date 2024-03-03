@@ -23,10 +23,10 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: Pydantic",
     "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -78,8 +78,31 @@ lint = [
     "types-requests==2.31.0.10",
 ]
 test = [
-    "flask==3.0.0",
-    "werkzeug==3.0.1",
+    "Flask>=3.0.2",
+    "pytest>=8.0.2",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "Werkzeug>=3.0.1",
+]
+
+[tool.pdm.scripts]
+lint = {cmd = "ruff check --force-exclude"}
+format = {cmd = "ruff format --force-exclude"}
+test = {cmd = "pytest"}
+coverage = {cmd = "coverage report"}
+dummy-server = {cmd = "flask --app buildarr.plugins.dummy.server:app run --debug"}
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-r A --verbosity=3 --junit-xml=rspec.xml --cov=buildarr --cov-report=term --cov-report=xml:coverage.xml"
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "buildarr/plugins/dummy/*",
 ]
 
 [tool.ruff]
@@ -121,7 +144,7 @@ select = [
     "YTT",
 ]
 extend-select = [
-    # COM012 is currently disabled due to a conflict with the Ruff formatter.
+    # COM812 is currently disabled due to a conflict with the Ruff formatter.
     # https://github.com/astral-sh/ruff/issues/9216
     # TODO: Decide whether to enable or remove.
     # "COM812",
@@ -147,6 +170,7 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "buildarr/cli/main.py" = ["F401"]
+"tests/*" = ["S101"]
 
 [tool.mypy]
 python_version = "3.8"
