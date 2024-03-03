@@ -46,6 +46,8 @@ jobs:
         uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.11"
+      - name: Create virtual environment
+        run: pdm install
       - name: Publish source dist and wheels to PyPI
         run: pdm publish --no-build --verbose
 

@@ -42,7 +42,7 @@ def buildarr_yml_factory(tmp_path) -> Callable[..., Path]:
     ) -> Path:
         buildarr_yml: Path = tmp_path / file_name
         with buildarr_yml.open("w") as f:
-            yaml.safe_dump(config, f, default_flow_style=True)
+            yaml.safe_dump(config, f, default_flow_style=False)
         return buildarr_yml
 
     return _buildarr_yml_factory
