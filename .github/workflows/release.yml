@@ -6,14 +6,66 @@ on:
       - published
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - name: Build and publish to PyPI
-        uses: JRubics/poetry-publish@v1.16
+      - name: Clone full tree, and checkout tag
+        uses: actions/checkout@v4
         with:
-          python_version: "3.11"
-          poetry_version: "==1.8.1"
-          ignore_dev_requirements: "yes"
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
+          fetch-depth: 0
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: "3.11"
+      - name: Build source dist and wheels
+        run: pdm build --verbose
+      - name: Upload source dist and wheels to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 5
+          if-no-files-found: error
+
+  publish-pypi:
+    needs: build
+    runs-on: ubuntu-22.04
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Clone full tree, and checkout tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download source dist and wheels from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: "3.11"
+      - name: Publish source dist and wheels to PyPI
+        run: pdm publish --no-build --verbose
+
+  publish-github-release:
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Clone and checkout tag
+        uses: actions/checkout@v4
+      - name: Download source dist and wheels from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+      - name: Publish source dist and wheels to GitHub Release
+        uses: xresloader/upload-to-github-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          file: dist/*
+          release_id: ${{ github.event.release.id }}
+          overwrite: true
