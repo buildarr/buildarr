@@ -16,7 +16,6 @@
 Buildarr configuration rendering function.
 """
 
-
 from __future__ import annotations
 
 from collections import defaultdict

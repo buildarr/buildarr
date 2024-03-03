@@ -17,7 +17,6 @@ buildarr/cli/__init__.py
 Buildarr command line interface (CLI) global group.
 """
 
-
 from __future__ import annotations
 
 import os

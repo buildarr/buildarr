@@ -67,23 +67,37 @@ dummy = "buildarr.plugins.dummy.plugin:DummyPlugin"
 [tool.setuptools_scm]
 
 [tool.pdm.dev-dependencies]
-dev = [
-    "black==23.11.0",
-    "mypy==1.7.0",
-    "types-pyyaml==6.0.12.12",
-    "types-requests==2.31.0.10",
+docs = [
     "mkdocs==1.5.3",
     "mkdocstrings[python]==0.23.0",
+]
+lint = [
+    "mypy==1.7.0",
+    "ruff==0.3.0",
+    "types-pyyaml==6.0.12.12",
+    "types-requests==2.31.0.10",
+]
+test = [
     "flask==3.0.0",
     "werkzeug==3.0.1",
-    "ruff==0.1.5",
 ]
 
 [tool.ruff]
 fix = true
+indent-width = 4
+line-length = 100
 output-format = "grouped"
 target-version = "py38"
-line-length = 100
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+indent-style = "space"
+line-ending = "auto"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
 select = [
     "A",
     "B",
@@ -106,7 +120,14 @@ select = [
     "W",
     "YTT",
 ]
-extend-select = ["COM812", "COM818", "UP009"]
+extend-select = [
+    # COM012 is currently disabled due to a conflict with the Ruff formatter.
+    # https://github.com/astral-sh/ruff/issues/9216
+    # TODO: Decide whether to enable or remove.
+    # "COM812",
+    "COM818",
+    "UP009",
+]
 extend-ignore = [
     "A003",
     "B023",
@@ -119,16 +140,13 @@ extend-ignore = [
     "RUF012",
 ]
 
-[tool.ruff.per-file-ignores]
-"buildarr/cli/main.py" = ["F401"]
-
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 lines-between-types = 1
 combine-as-imports = true
 required-imports = ["from __future__ import annotations"]
 
-[tool.black]
-line_length = 100
+[tool.ruff.lint.per-file-ignores]
+"buildarr/cli/main.py" = ["F401"]
 
 [tool.mypy]
 python_version = "3.8"

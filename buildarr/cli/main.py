@@ -18,7 +18,6 @@
 Buildarr CLI main routine.
 """
 
-
 from __future__ import annotations
 
 from ..plugins import load as load_plugins

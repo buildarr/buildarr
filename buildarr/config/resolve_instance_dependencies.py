@@ -16,7 +16,6 @@
 Buildarr configuration instance-to-instance dependency resolution functions.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

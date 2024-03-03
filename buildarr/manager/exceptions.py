@@ -16,7 +16,6 @@
 Buildarr manager exception classes.
 """
 
-
 from __future__ import annotations
 
 from ..exceptions import BuildarrError

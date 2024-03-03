@@ -16,7 +16,6 @@
 Buildarr secrets metadata base class.
 """
 
-
 from __future__ import annotations
 
 from typing import Generic
@@ -51,17 +50,17 @@ class SecretsBase(BaseModel, Generic[Config]):
 
         if TYPE_CHECKING:
             from .config import ExampleConfig
-            class _ExampleSecrets(SecretsBase[ExampleSecrets]):
-                ...
+
+            class _ExampleSecrets(SecretsBase[ExampleSecrets]): ...
         else:
-            class _ExampleSecrets(SecretsBase):
-                ...
+
+            class _ExampleSecrets(SecretsBase): ...
+
 
         class ExampleSecrets(_ExampleSecrets):
             ...
 
-            class Config(_ExampleSecrets.Config):
-                ...  # Add model configuration attributes here.
+            class Config(_ExampleSecrets.Config): ...  # Add model configuration attributes here.
         ```
         """
 

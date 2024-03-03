@@ -16,7 +16,6 @@
 Dummy plugin configuration.
 """
 
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Dict, Optional
@@ -34,13 +33,11 @@ from .settings import DummySettingsConfig
 # Allow Mypy to properly resolve secrets type declarations in configuration classes.
 if TYPE_CHECKING:
 
-    class _DummyInstanceConfig(ConfigPlugin[DummySecrets]):
-        ...
+    class _DummyInstanceConfig(ConfigPlugin[DummySecrets]): ...
 
 else:
 
-    class _DummyInstanceConfig(ConfigPlugin):
-        ...
+    class _DummyInstanceConfig(ConfigPlugin): ...
 
 
 class DummyInstanceConfig(_DummyInstanceConfig):

@@ -16,7 +16,6 @@
 Buildarr plugin configuration object models.
 """
 
-
 from __future__ import annotations
 
 from typing import Any, Dict, Type, cast
@@ -50,11 +49,12 @@ class ConfigPlugin(ConfigBase[Secrets]):
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
-        class _ExampleInstanceConfig(ConfigPlugin[ExampleSecrets]):
-            ...
+
+        class _ExampleInstanceConfig(ConfigPlugin[ExampleSecrets]): ...
     else:
-        class _ExampleInstanceConfig(ConfigPlugin):
-            ...
+
+        class _ExampleInstanceConfig(ConfigPlugin): ...
+
 
     class ExampleInstanceConfig(_ExampleInstanceConfig):
         # Required configuration overrides from `ConfigPlugin`
@@ -65,6 +65,7 @@ class ConfigPlugin(ConfigBase[Secrets]):
         # Custom configuration options go here
         local_value_1: bool = False
         local_value_2: str = "local"
+
 
     class ExampleConfig(ExampleInstanceConfig):
         # Inherit all configuration attributes from the instance-specific config.

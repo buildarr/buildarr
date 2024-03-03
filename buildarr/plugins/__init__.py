@@ -16,7 +16,6 @@
 Buildarr plugin specification.
 """
 
-
 from __future__ import annotations
 
 from .load import load
