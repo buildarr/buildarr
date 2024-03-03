@@ -17,7 +17,7 @@ jobs:
           cache: "pip"
       - uses: pre-commit/action@v3.0.1
 
-  test-build:
+  build:
     needs: pre-commit
     runs-on: ubuntu-22.04
     steps:
@@ -31,3 +31,5 @@ jobs:
         with:
           name: dist
           path: dist/
+          retention-days: 5
+          if-no-files-found: error
