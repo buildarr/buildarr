@@ -99,9 +99,6 @@ class BuildarrConfig(ConfigBase):
     Times are specified in the `HH:MM` format, in 24-hour time.
     The times do not need to be in order.
 
-    Days are specified as a list of case-insensitive strings, in English.
-    The days do not need to be in order.
-
     ```yaml
     buildarr:
       update_times:
