@@ -169,7 +169,6 @@ def test_api_key_in_config(
 def test_api_key_in_config_incorrect(
     httpserver: HTTPServer,
     api_key,
-    instance_value,
     buildarr_yml_factory,
     buildarr_run,
 ) -> None:
@@ -192,7 +191,6 @@ def test_api_key_in_config_incorrect(
                     "hostname": "localhost",
                     "port": port,
                     "api_key": api_key,
-                    "settings": {"instance_value": instance_value},
                 },
             },
         ),
@@ -210,7 +208,6 @@ def test_api_key_in_config_incorrect(
 def test_api_key_test_fail(
     httpserver: HTTPServer,
     api_key,
-    instance_value,
     buildarr_yml_factory,
     buildarr_run,
 ) -> None:
@@ -242,7 +239,6 @@ def test_api_key_test_fail(
                     "hostname": "localhost",
                     "port": port,
                     "api_key": incorrect_api_key,
-                    "settings": {"instance_value": instance_value},
                 },
             },
         ),
