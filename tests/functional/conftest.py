@@ -57,7 +57,7 @@ def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             args=[BUILDARR_COMMAND, *opts],
-            env={**os.environ, **env},
+            env={**os.environ, "BUILDARR_TESTING": "true", **env},
             check=check,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

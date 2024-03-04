@@ -63,7 +63,7 @@ def api_get(
         api_key = None
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key else None
+        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("GET %s", url)
@@ -75,12 +75,13 @@ def api_get(
         headers={"X-Api-Key": api_key} if api_key else None,
         timeout=state.request_timeout,
     )
-    res_json = res.json()
-
-    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     if res.status_code != expected_status_code:
         api_error(method="GET", url=url, response=res)
+
+    res_json = res.json()
+
+    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     return res_json
 
@@ -111,7 +112,7 @@ def api_post(
         api_key = None
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key else None
+        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("POST %s <- req=%s", url, repr(req))
@@ -124,12 +125,13 @@ def api_post(
         timeout=state.request_timeout,
         **({"json": req} if req is not None else {}),
     )
-    res_json = res.json()
-
-    logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     if res.status_code != expected_status_code:
         api_error(method="POST", url=url, response=res)
+
+    res_json = res.json()
+
+    logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     return res_json
 
@@ -160,7 +162,7 @@ def api_put(
         api_key = None
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key else None
+        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("PUT %s <- req=%s", url, repr(req))
@@ -173,12 +175,13 @@ def api_put(
         json=req,
         timeout=state.request_timeout,
     )
-    res_json = res.json()
-
-    logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     if res.status_code != expected_status_code:
         api_error(method="PUT", url=url, response=res)
+
+    res_json = res.json()
+
+    logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     return res_json
 
@@ -204,7 +207,7 @@ def api_delete(
         api_key = None
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key else None
+        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("DELETE %s", url)
@@ -217,10 +220,10 @@ def api_delete(
         timeout=state.request_timeout,
     )
 
-    logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
-
     if res.status_code != expected_status_code:
         api_error(method="DELETE", url=url, response=res, parse_response=False)
+
+    logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
 
 
 def api_error(
@@ -260,7 +263,7 @@ def api_error(
                         error_message += res_json["error"]
                     except KeyError:
                         error_message += f"(Unsupported error JSON format) {res_json}"
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, requests.exceptions.JSONDecodeError):
             f"(Non-JSON error response)\n{response.text}"
 
     raise DummyAPIError(error_message, status_code=response.status_code)

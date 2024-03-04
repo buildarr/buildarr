@@ -25,7 +25,6 @@ from typing_extensions import Self
 from buildarr.config import ConfigPlugin
 from buildarr.types import NonEmptyStr, Port
 
-from ..api import api_get
 from ..secrets import DummySecrets
 from ..types import DummyApiKey, DummyProtocol
 from .settings import DummySettingsConfig
@@ -179,7 +178,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
             port=secrets.port,
             protocol=secrets.protocol,
             api_key=secrets.api_key,
-            version=api_get(secrets, "/api/v1/status")["version"],
+            version=secrets.version,
             settings=DummySettingsConfig.from_remote(secrets),
         )
 

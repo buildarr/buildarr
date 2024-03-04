@@ -19,7 +19,7 @@ Dummy plugin secrets file model.
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse
 
 from buildarr.secrets import SecretsPlugin
@@ -52,8 +52,8 @@ class DummySecrets(_DummySecrets):
     hostname: NonEmptyStr
     port: Port
     protocol: DummyProtocol
-
-    api_key: DummyApiKey
+    api_key: Optional[DummyApiKey]
+    version: NonEmptyStr
 
     @property
     def host_url(self) -> str:
@@ -98,15 +98,13 @@ class DummySecrets(_DummySecrets):
             Secrets object
         """
         try:
+            initialize_json = api_get(config.host_url, "/initialize.json")
             return cls(
                 hostname=config.hostname,
                 port=config.port,
                 protocol=config.protocol,
-                api_key=(
-                    config.api_key
-                    if config.api_key
-                    else api_get(config.host_url, "/initialize.json")["apiKey"]
-                ),
+                api_key=(config.api_key if config.api_key else initialize_json.get("apiKey")),
+                version=initialize_json["version"],
             )
         except DummyAPIError as err:
             if err.status_code == HTTPStatus.UNAUTHORIZED:
@@ -125,7 +123,7 @@ class DummySecrets(_DummySecrets):
             `True` if the test was successful, otherwise `False`
         """
         try:
-            api_get(self, "/api/v1/settings")
+            api_get(self, "/api/v1/status")
             return True
         except DummyAPIError as err:
             if err.status_code == HTTPStatus.UNAUTHORIZED:

@@ -81,6 +81,7 @@ test = [
     "Flask>=3.0.2",
     "pytest>=8.0.2",
     "pytest-cov>=4.1.0",
+    "pytest-httpserver>=1.0.10",
     "pytest-mock>=3.12.0",
     "Werkzeug>=3.0.1",
 ]
@@ -94,7 +95,7 @@ dummy-server = {cmd = "flask --app buildarr.plugins.dummy.server:app run --debug
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-r A --verbosity=3 --junit-xml=rspec.xml --cov=buildarr --cov-report=term --cov-report=xml:coverage.xml"
+addopts = "-r A --showlocals --verbosity=3 --junit-xml=rspec.xml --cov=buildarr --cov-report=term --cov-report=xml:coverage.xml"
 testpaths = [
     "tests",
 ]
@@ -102,7 +103,7 @@ testpaths = [
 [tool.coverage.run]
 branch = true
 omit = [
-    "buildarr/plugins/dummy/*",
+    "buildarr/plugins/dummy/server.py",
 ]
 
 [tool.ruff]
