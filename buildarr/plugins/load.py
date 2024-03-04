@@ -51,9 +51,9 @@ def load(namespace: str = "buildarr.plugins") -> None:
         invoke_on_load=True,
         on_load_failure_callback=_on_plugin_failure,
     ):
-        # Do not load the built-in `buildarr-dummy` plugin
+        # Do not load the built-in dummy plugins
         # if Buildarr was not started in testing mode.
-        if not state.testing and plugin.name == "dummy":
+        if not state.testing and plugin.name in ("dummy", "dummy2"):
             continue
         if plugin.name not in plugins:
             plugins[plugin.name] = plugin.entry_point.load()

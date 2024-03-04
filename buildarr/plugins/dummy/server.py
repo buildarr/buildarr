@@ -49,6 +49,8 @@ app = Flask("buildarr-dummy-server")
 app.config.from_prefixed_env(prefix="BUILDARR_DUMMY")
 if "API_ROOT" not in app.config:
     app.config["API_ROOT"] = "/api/v1"
+if "API_FORCE_AUTH" not in app.config:
+    app.config["API_FORCE_AUTH"] = False
 
 _settings: Dict[str, Any] = {
     "isUpdated": False,  # bool
@@ -103,6 +105,9 @@ def get_initialize_json() -> Tuple[Response, int]:
     Returns:
         Dummy API access metadata
     """
+
+    if app.config["API_FORCE_AUTH"]:
+        check_api_key()
 
     res = {"apiRoot": app.config["API_ROOT"]}
     if app.config.get("API_KEY"):

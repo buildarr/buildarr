@@ -62,7 +62,9 @@ Changelog = "https://buildarr.github.io/release-notes"
 buildarr = "buildarr.cli.main:main"
 
 [project.entry-points."buildarr.plugins"]
+# Used during unit testing.
 dummy = "buildarr.plugins.dummy.plugin:DummyPlugin"
+dummy2 = "buildarr.plugins.dummy.plugin:DummyPlugin"
 
 [tool.setuptools_scm]
 
@@ -87,21 +89,22 @@ test = [
 ]
 
 [tool.pdm.scripts]
-lint = {cmd = "ruff check --force-exclude"}
-format = {cmd = "ruff format --force-exclude"}
+lint = {cmd = "ruff check"}
+format = {cmd = "ruff format"}
 test = {cmd = "pytest"}
 coverage = {cmd = "coverage report"}
 dummy-server = {cmd = "flask --app buildarr.plugins.dummy.server:app run --debug"}
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-r A --showlocals --verbosity=3 --junit-xml=rspec.xml --cov=buildarr --cov-report=term --cov-report=xml:coverage.xml"
+addopts = "-r A --showlocals --verbosity=3 --junit-xml=rspec.xml --cov=buildarr --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:cover"
 testpaths = [
     "tests",
 ]
 
 [tool.coverage.run]
 branch = true
+disable_warnings = ["no-data-collected"]
 omit = [
     "buildarr/plugins/dummy/server.py",
 ]
@@ -111,7 +114,6 @@ fix = true
 indent-width = 4
 line-length = 100
 output-format = "grouped"
-target-version = "py38"
 
 [tool.ruff.format]
 docstring-code-format = true

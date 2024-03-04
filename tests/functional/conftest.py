@@ -15,8 +15,11 @@
 from __future__ import annotations
 
 import os
+import random
 import shutil
+import string
 import subprocess
+import uuid
 
 from typing import TYPE_CHECKING
 
@@ -25,7 +28,7 @@ import yaml
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, Mapping
+    from typing import Any, Callable, Mapping, Optional
 
 
 BUILDARR_COMMAND = shutil.which("buildarr") or ""
@@ -53,11 +56,19 @@ def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
     def _buildarr_command(
         *opts: str,
         check: bool = True,
+        testing: Optional[bool] = True,
+        log_level: Optional[str] = "DEBUG",
         **env: str,
     ) -> subprocess.CompletedProcess[str]:
+        _env = {**os.environ}
+        if testing is not None:
+            _env["BUILDARR_TESTING"] = str(testing).lower()
+        if log_level:
+            _env["BUILDARR_LOG_LEVEL"] = log_level
+        _env.update(env)
         return subprocess.run(
             args=[BUILDARR_COMMAND, *opts],
-            env={**os.environ, "BUILDARR_TESTING": "true", **env},
+            env=_env,
             check=check,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -73,3 +84,15 @@ def buildarr_run(buildarr_command) -> Callable[..., subprocess.CompletedProcess[
         return buildarr_command("run", *opts, **kwargs)
 
     return _buildarr_run
+
+
+@pytest.fixture
+def instance_value() -> str:
+    return str(uuid.uuid4())
+
+
+@pytest.fixture
+def api_key() -> str:
+    return "".join(
+        random.choices(string.ascii_lowercase + string.digits, k=32),  # noqa: S311
+    )

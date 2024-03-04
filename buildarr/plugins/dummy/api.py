@@ -42,16 +42,18 @@ logger = getLogger(__name__)
 def api_get(
     secrets: Union[DummySecrets, str],
     api_url: str,
-    session: Optional[requests.Session] = None,
+    *,
+    api_key: Optional[str] = None,
     use_api_key: bool = True,
     expected_status_code: HTTPStatus = HTTPStatus.OK,
+    session: Optional[requests.Session] = None,
 ) -> Any:
     """
-    Send a `GET` request to a Dummy instance.
+    Send an API `GET` request.
 
     Args:
-        secrets (Union[DummySecrets, str]): Dummy secrets metadata, or host URL.
-        api_url (str): Dummy API command.
+        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        api_url (str): API command.
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
 
     Returns:
@@ -60,10 +62,14 @@ def api_get(
 
     if isinstance(secrets, str):
         host_url = secrets
-        api_key = None
+        host_api_key = api_key
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
+        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
+
+    if not use_api_key:
+        host_api_key = None
+
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("GET %s", url)
@@ -72,16 +78,18 @@ def api_get(
         session = requests.Session()
     res = session.get(
         url,
-        headers={"X-Api-Key": api_key} if api_key else None,
+        headers={"X-Api-Key": host_api_key} if host_api_key else None,
         timeout=state.request_timeout,
     )
+    try:
+        res_json = res.json()
+    except requests.JSONDecodeError:
+        api_error(method="GET", url=url, response=res)
+
+    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     if res.status_code != expected_status_code:
         api_error(method="GET", url=url, response=res)
-
-    res_json = res.json()
-
-    logger.debug("GET %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     return res_json
 
@@ -89,17 +97,19 @@ def api_get(
 def api_post(
     secrets: Union[DummySecrets, str],
     api_url: str,
-    req: Any = None,
-    session: Optional[requests.Session] = None,
+    req: Any,
+    *,
+    api_key: Optional[str] = None,
     use_api_key: bool = True,
+    session: Optional[requests.Session] = None,
     expected_status_code: HTTPStatus = HTTPStatus.CREATED,
 ) -> Any:
     """
-    Send a `POST` request to a Dummy instance.
+    Send a `POST` request to a Sonarr instance.
 
     Args:
-        secrets (Union[DummySecrets, str]): Dummy secrets metadata, or host URL.
-        api_url (str): Dummy API command.
+        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        api_url (str): API command.
         req (Any): Request (JSON-serialisable).
         expected_status_code (HTTPStatus): Expected response status. Defaults to `201 Created`.
 
@@ -109,10 +119,14 @@ def api_post(
 
     if isinstance(secrets, str):
         host_url = secrets
-        api_key = None
+        host_api_key = api_key
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
+        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
+
+    if not use_api_key:
+        host_api_key = None
+
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("POST %s <- req=%s", url, repr(req))
@@ -121,17 +135,19 @@ def api_post(
         session = requests.Session()
     res = session.post(
         url,
-        headers={"X-Api-Key": api_key} if api_key else None,
+        headers={"X-Api-Key": host_api_key} if host_api_key else None,
         timeout=state.request_timeout,
         **({"json": req} if req is not None else {}),
     )
+    try:
+        res_json = res.json()
+    except requests.JSONDecodeError:
+        api_error(method="POST", url=url, response=res)
+
+    logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     if res.status_code != expected_status_code:
         api_error(method="POST", url=url, response=res)
-
-    res_json = res.json()
-
-    logger.debug("POST %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     return res_json
 
@@ -140,16 +156,18 @@ def api_put(
     secrets: Union[DummySecrets, str],
     api_url: str,
     req: Any,
-    session: Optional[requests.Session] = None,
+    *,
+    api_key: Optional[str] = None,
     use_api_key: bool = True,
-    expected_status_code: HTTPStatus = HTTPStatus.OK,
+    session: Optional[requests.Session] = None,
+    expected_status_code: HTTPStatus = HTTPStatus.ACCEPTED,
 ) -> Any:
     """
-    Send a `PUT` request to a Dummy instance.
+    Send a `PUT` request to a Sonarr instance.
 
     Args:
-        secrets (Union[DummySecrets, str]): Dummy secrets metadata, or host URL.
-        api_url (str): Dummy API command.
+        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        api_url (str): API command.
         req (Any): Request (JSON-serialisable).
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
 
@@ -159,10 +177,14 @@ def api_put(
 
     if isinstance(secrets, str):
         host_url = secrets
-        api_key = None
+        host_api_key = api_key
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
+        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
+
+    if not use_api_key:
+        host_api_key = None
+
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("PUT %s <- req=%s", url, repr(req))
@@ -171,17 +193,19 @@ def api_put(
         session = requests.Session()
     res = session.put(
         url,
-        headers={"X-Api-Key": api_key} if api_key else None,
+        headers={"X-Api-Key": host_api_key} if host_api_key else None,
         json=req,
         timeout=state.request_timeout,
     )
+    try:
+        res_json = res.json()
+    except requests.JSONDecodeError:
+        api_error(method="PUT", url=url, response=res)
+
+    logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     if res.status_code != expected_status_code:
         api_error(method="PUT", url=url, response=res)
-
-    res_json = res.json()
-
-    logger.debug("PUT %s -> status_code=%i res=%s", url, res.status_code, repr(res_json))
 
     return res_json
 
@@ -189,25 +213,31 @@ def api_put(
 def api_delete(
     secrets: Union[DummySecrets, str],
     api_url: str,
-    session: Optional[requests.Session] = None,
+    *,
+    api_key: Optional[str] = None,
     use_api_key: bool = True,
+    session: Optional[requests.Session] = None,
     expected_status_code: HTTPStatus = HTTPStatus.OK,
 ) -> None:
     """
-    Send a `DELETE` request to a Dummy instance.
+    Send a `DELETE` request to a Sonarr instance.
 
     Args:
-        secrets (Union[DummySecrets, str]): Dummy secrets metadata, or host URL.
-        api_url (str): Dummy API command.
+        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        api_url (str): API command.
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
     """
 
     if isinstance(secrets, str):
         host_url = secrets
-        api_key = None
+        host_api_key = api_key
     else:
         host_url = secrets.host_url
-        api_key = secrets.api_key.get_secret_value() if use_api_key and secrets.api_key else None
+        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
+
+    if not use_api_key:
+        host_api_key = None
+
     url = f"{host_url}/{api_url.lstrip('/')}"
 
     logger.debug("DELETE %s", url)
@@ -216,14 +246,14 @@ def api_delete(
         session = requests.Session()
     res = session.delete(
         url,
-        headers={"X-Api-Key": api_key} if api_key else None,
+        headers={"X-Api-Key": host_api_key} if host_api_key else None,
         timeout=state.request_timeout,
     )
 
+    logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
+
     if res.status_code != expected_status_code:
         api_error(method="DELETE", url=url, response=res, parse_response=False)
-
-    logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
 
 
 def api_error(

@@ -98,7 +98,11 @@ class DummySecrets(_DummySecrets):
             Secrets object
         """
         try:
-            initialize_json = api_get(config.host_url, "/initialize.json")
+            initialize_json = api_get(
+                config.host_url,
+                "/initialize.json",
+                api_key=config.api_key.get_secret_value() if config.api_key else None,
+            )
             return cls(
                 hostname=config.hostname,
                 port=config.port,
@@ -108,10 +112,20 @@ class DummySecrets(_DummySecrets):
             )
         except DummyAPIError as err:
             if err.status_code == HTTPStatus.UNAUTHORIZED:
-                raise DummySecretsUnauthorizedError(
-                    "Unable to retrieve the API key for the Dummy instance "
-                    f"at '{config.host_url}': Authentication is enabled",
-                ) from None
+                if config.api_key:
+                    raise DummySecretsUnauthorizedError(
+                        (
+                            "Unable to authenticate with the Dummy instance "
+                            f"at '{config.host_url}': Incorrect API key"
+                        ),
+                    ) from None
+                else:
+                    raise DummySecretsUnauthorizedError(
+                        (
+                            "Unable to retrieve the API key for the Dummy instance "
+                            f"at '{config.host_url}': Authentication is enabled"
+                        ),
+                    ) from None
             else:
                 raise
 

@@ -121,12 +121,14 @@ class DummySettingsConfig(DummyConfigBase):
         Render dynamic configuration attributes in place.
 
         Specifically, this function reads a value from the TRaSH-Guides metadata
-        and populates the `trash_value` attribute with it.
+        and populates the `trash_value` attribute with it (if not already defined).
 
         Set `trash_value` to the minimum data rate value for the
         `Bluray-1080p` quality definition in the profile.
         """
         if not self.trash_id:
+            return
+        if self.trash_value:
             return
         for quality_file in (
             state.trash_metadata_dir / "docs" / "json" / "sonarr" / "quality-size"
