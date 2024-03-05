@@ -109,6 +109,11 @@ omit = [
     "buildarr/plugins/dummy/server.py",
 ]
 
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+]
+
 [tool.ruff]
 fix = true
 indent-width = 4
