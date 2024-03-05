@@ -55,7 +55,7 @@ def buildarr_yml_factory(tmp_path) -> Callable[..., Path]:
 def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
     def _buildarr_command(
         *opts: str,
-        check: bool = True,
+        check: bool = False,
         testing: Optional[bool] = True,
         log_level: Optional[str] = "DEBUG",
         **env: str,

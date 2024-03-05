@@ -34,7 +34,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Mapping, cast
 
 from flask import Flask, Response, jsonify, request
-from werkzeug.exceptions import Unauthorized
+from werkzeug.exceptions import InternalServerError, NotFound, Unauthorized
 
 from buildarr import __version__
 
@@ -51,12 +51,66 @@ if "API_ROOT" not in app.config:
     app.config["API_ROOT"] = "/api/v1"
 if "API_FORCE_AUTH" not in app.config:
     app.config["API_FORCE_AUTH"] = False
+if "API_SUPPORTS_INIT" not in app.config:
+    app.config["API_SUPPORTS_INIT"] = False
+if "API_REQUIRES_INIT" not in app.config:
+    app.config["API_REQUIRES_INIT"] = False
+
+_is_initialized: bool = not app.config["API_REQUIRES_INIT"]
 
 _settings: Dict[str, Any] = {
     "isUpdated": False,  # bool
     "trashValue": None,  # Optional[float]
     "instanceValue": None,  # Optional[str] (UUID)
 }
+
+
+@app.errorhandler(401)
+def unauthorized(error: Unauthorized) -> Tuple[Response, int]:
+    """
+    Handle a `401 Unauthorized` error.
+
+    Args:
+        error (Unauthorized): Unauthorized exception object
+
+    Returns:
+        Error responses
+    """
+
+    return (jsonify({"message": "Unauthorized", "description": error.description}), 401)
+
+
+@app.errorhandler(404)
+def not_found(error: NotFound) -> Tuple[Response, int]:
+    """
+    Handle a `404 Not Found` error.
+
+    Args:
+        error (NotFound): Not found exception object
+
+    Returns:
+        Error responses
+    """
+
+    return (jsonify({"message": "Not Found", "description": error.description}), 404)
+
+
+@app.errorhandler(500)
+def internal_server_error(error: NotFound) -> Tuple[Response, int]:
+    """
+    Handle a `500 Internal Server Error` error.
+
+    Args:
+        error (InternalServerError): Internal server error exception object
+
+    Returns:
+        Error responses
+    """
+
+    return (
+        jsonify({"message": "Internal Server Error", "description": error.description}),
+        500,
+    )
 
 
 def check_api_key() -> None:
@@ -77,19 +131,15 @@ def check_api_key() -> None:
         raise Unauthorized(description="Incorrect API key")
 
 
-@app.errorhandler(401)
-def unauthorized(error: Unauthorized) -> Tuple[Response, int]:
+def check_initialised() -> None:
     """
-    Handle a `401 Unauthorized` error.
+    Check if the Dummy server has been initialised.
 
-    Args:
-        error (Unauthorized): Unauthorized exception object
-
-    Returns:
-        Error responses
+    If not, return a 500 Internal Server Error.
     """
 
-    return (jsonify({"message": "Unauthorized", "description": error.description}), 401)
+    if app.config["API_SUPPORTS_INIT"] and not _is_initialized:
+        raise InternalServerError()
 
 
 @app.get("/initialize.json")
@@ -106,15 +156,49 @@ def get_initialize_json() -> Tuple[Response, int]:
         Dummy API access metadata
     """
 
-    if app.config["API_FORCE_AUTH"]:
-        check_api_key()
-
     res = {"apiRoot": app.config["API_ROOT"]}
-    if app.config.get("API_KEY"):
-        res["apiKey"] = app.config["API_KEY"]
-    res["version"] = __version__
+
+    if app.config.get("API_SUPPORTS_INIT"):
+        res["initialized"] = _is_initialized
+
+    if _is_initialized:
+        if app.config["API_FORCE_AUTH"]:
+            check_api_key()
+        if app.config.get("API_KEY"):
+            res["apiKey"] = app.config["API_KEY"]
+        res["version"] = __version__
 
     return (jsonify(res), 200)
+
+
+@app.post(f"{app.config['API_ROOT']}/init")
+def init() -> Tuple[Response, int]:
+    """
+    Initialise the Dummy server.
+
+    If successful, the 200 OK status code will be set,
+    and the previous initialized status will be returned in the response.
+
+     ```bash
+    $ curl http://localhost:5000/api/v1/init
+    {"initialized":false}
+    ```
+
+    If initialisation is configured to not be supported, return a 404 Not Found error.
+
+    Returns:
+        Dummy server status
+    """
+
+    global _is_initialized  # noqa: PLW0603
+
+    if not app.config.get("API_SUPPORTS_INIT"):
+        raise NotFound()
+
+    _old_is_initialized = _is_initialized
+    _is_initialized = True
+
+    return (jsonify({"initialized": _old_is_initialized}), 200)
 
 
 @app.get(f"{app.config['API_ROOT']}/status")
@@ -132,6 +216,7 @@ def get_status() -> Tuple[Response, int]:
     """
 
     check_api_key()
+    check_initialised()
 
     return (jsonify({"version": __version__}), 200)
 
@@ -151,6 +236,7 @@ def get_settings() -> Tuple[Response, int]:
     """
 
     check_api_key()
+    check_initialised()
 
     return (jsonify(_settings), 200)
 
@@ -184,9 +270,10 @@ def update_settings() -> Tuple[Response, int]:
         Old Dummy server settings
     """
 
-    global _settings  # noqa: PLW0603 RUF100
+    global _settings  # noqa: PLW0603
 
     check_api_key()
+    check_initialised()
 
     old_settings = _settings
     _settings = merge_dicts(old_settings, cast(Mapping, request.json), {"isUpdated": True})

@@ -18,6 +18,7 @@ Dummy plugin configuration.
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Dict, Optional
 
 from typing_extensions import Self
@@ -25,6 +26,8 @@ from typing_extensions import Self
 from buildarr.config import ConfigPlugin
 from buildarr.types import NonEmptyStr, Port
 
+from ..api import api_get, api_post
+from ..exceptions import DummyAPIError
 from ..secrets import DummySecrets
 from ..types import DummyApiKey, DummyProtocol
 from .settings import DummySettingsConfig
@@ -161,6 +164,65 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         Render dynamic configuration attributes in place.
         """
         self.settings._render()
+
+    def is_initialized(self) -> bool:
+        """
+        Return whether or not this instance needs to be initialised.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Configuration plugins should implement this function if initialisation is required
+        for the application's API to become available.
+
+        Returns:
+            `True` if the instance is initialised, otherwise `False`
+
+        Raises:
+            NotImplementedError: When initialisation is not supported for the application type.
+        """
+        try:
+            initialize_json = api_get(self.host_url, "/initialize.json")
+            if "initialized" in initialize_json:
+                return initialize_json["initialized"]
+            else:
+                raise NotImplementedError()
+        except DummyAPIError as err:
+            if err.status_code == HTTPStatus.UNAUTHORIZED:
+                return True
+            else:
+                raise
+
+    def initialize(self, tree: str) -> None:
+        """
+        Initialise the instance, and make the main application API available for Buildarr
+        to query against.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Configuration plugins should implement this function if initialisation is required
+        for the application's API to become available.
+
+        Args:
+            tree (str): Configuration tree this instance falls under (for logging purposes).
+
+        Raises:
+            NotImplementedError: When initialisation is not supported for the application type.
+        """
+        try:
+            api_post(
+                self.host_url,
+                "/api/v1/init",
+                None,
+                api_key=self.api_key.get_secret_value() if self.api_key else None,
+                expected_status_code=HTTPStatus.OK,
+            )
+        except DummyAPIError as err:
+            if err.status_code == HTTPStatus.NOT_FOUND:
+                raise NotImplementedError() from None
+            else:
+                raise
 
     @classmethod
     def from_remote(cls, secrets: DummySecrets) -> Self:

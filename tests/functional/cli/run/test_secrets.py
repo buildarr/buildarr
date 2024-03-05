@@ -40,6 +40,11 @@ def test_api_key_fetch(
     api_root = "/api/v1"
     version = "1.0.0"
 
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "apiKey": api_key, "version": version},
+    )
+    # Fetch API key (if available).
     httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
         {"apiRoot": api_root, "apiKey": api_key, "version": version},
     )
@@ -86,11 +91,13 @@ def test_api_key_fetch(
         ),
     )
 
+    httpserver.check_assertions()
+    assert result.returncode == 0
     assert (
-        f"<dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
         in result.stdout
     )
-    assert "Remote configuration successfully updated" in result.stdout
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
 
 
 def test_api_key_in_config(
@@ -108,6 +115,12 @@ def test_api_key_in_config(
     api_root = "/api/v1"
     version = "1.0.0"
 
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"message": "Unauthorized", "description": "API key required but not provided"},
+        status=401,
+    )
+    # Fetch metadata required for Buildarr secrets.
     httpserver.expect_ordered_request(
         "/initialize.json",
         method="GET",
@@ -159,11 +172,13 @@ def test_api_key_in_config(
         ),
     )
 
+    httpserver.check_assertions()
+    assert result.returncode == 0
     assert (
-        f"<dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
         in result.stdout
     )
-    assert "Remote configuration successfully updated" in result.stdout
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
 
 
 def test_api_key_in_config_incorrect(
@@ -179,6 +194,12 @@ def test_api_key_in_config_incorrect(
 
     port = urlparse(httpserver.url_for("")).port
 
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"message": "Unauthorized", "description": "API key required but not provided"},
+        status=401,
+    )
+    # Fetch metadata required for Buildarr secrets.
     httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
         {"message": "Unauthorized", "description": "Incorrect API key"},
         status=401,
@@ -194,9 +215,9 @@ def test_api_key_in_config_incorrect(
                 },
             },
         ),
-        check=False,
     )
 
+    httpserver.check_assertions()
     assert result.returncode == 1
     assert result.stderr.splitlines()[-1] == (
         "buildarr.plugins.dummy.exceptions.DummySecretsUnauthorizedError: "
@@ -221,12 +242,18 @@ def test_api_key_test_fail(
     version = "1.0.0"
     incorrect_api_key = "foobar"
 
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "apiKey": api_key, "version": version},
+    )
+    # Fetch API key (if available).
     httpserver.expect_ordered_request(
         "/initialize.json",
         method="GET",
     ).respond_with_json(
         {"apiRoot": api_root, "apiKey": api_key, "version": version},
     )
+    # Get status in the connection test.
     httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
         {"message": "Unauthorized", "description": "Incorrect API key"},
         status=401,
@@ -242,9 +269,9 @@ def test_api_key_test_fail(
                 },
             },
         ),
-        check=False,
     )
 
+    httpserver.check_assertions()
     assert result.returncode == 1
     assert result.stderr.splitlines()[-1] == (
         "buildarr.cli.exceptions.RunInstanceConnectionTestFailedError: "

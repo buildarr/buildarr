@@ -32,21 +32,30 @@ def test_instance_value_changed(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run, and check that a value that is not up to date
-    on the remote instance is updated, with Buildarr reporting that the instance was updated.
+    Check that a value that is not up to date on the remote instance is updated,
+    with Buildarr reporting that the instance was updated.
     """
 
     api_root = "/api/v1"
     version = "1.0.0"
+
+    # Check if the server is initialised.
     httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
         {"apiRoot": api_root, "version": version},
     )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
     httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
         {"version": version},
     )
+    # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
         {"isUpdated": False, "trashValue": None, "instanceValue": None},
     )
+    # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
@@ -55,6 +64,7 @@ def test_instance_value_changed(
         {"isUpdated": False, "trashValue": None, "instanceValue": None},
         status=201,
     )
+    # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
         {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
     )
@@ -71,11 +81,13 @@ def test_instance_value_changed(
         ),
     )
 
+    httpserver.check_assertions()
+    assert result.returncode == 0
     assert (
-        f"<dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
         in result.stdout
     )
-    assert "Remote configuration successfully updated" in result.stdout
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
 
 
 def test_instance_value_unchanged(
@@ -85,16 +97,22 @@ def test_instance_value_unchanged(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run, and check that a value that already has the correct value
-    is not touched, with Buildarr reporting that the instance was already up to date.
+    Check that a value that already has the correct value is not touched,
+    with Buildarr reporting that the instance was already up to date.
     """
 
     api_root = "/api/v1"
     version = "1.0.0"
 
+    # Check if the server is initialised.
     httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
         {"apiRoot": api_root, "version": version},
     )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
     httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
         {"version": version},
     )
@@ -117,11 +135,13 @@ def test_instance_value_unchanged(
         ),
     )
 
+    httpserver.check_assertions()
+    assert result.returncode == 0
     assert (
-        f"<dummy> (default) dummy.settings.instance_value: {instance_value!r} (up to date)"
+        f"[DEBUG] <dummy> (default) dummy.settings.instance_value: {instance_value!r} (up to date)"
         in result.stderr
     )
-    assert "Remote configuration is up to date" in result.stdout
+    assert "[INFO] <dummy> (default) Remote configuration is up to date" in result.stdout
 
 
 def test_trash_value_changed(
@@ -131,8 +151,8 @@ def test_trash_value_changed(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run with a TRaSH-Guides ID defined, and check that
-    a value was fetched from the metadata, and used to set the correct value on a remote instance.
+    Check that a value was fetched from TRaSH-Guides metadata,
+    and used to set the correct value on a remote instance.
     """
 
     api_root = "/api/v1"
@@ -142,9 +162,15 @@ def test_trash_value_changed(
     # Bluray-1080p min value.
     trash_value = 5.0
 
+    # Check if the server is initialised.
     httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
         {"apiRoot": api_root, "version": version},
     )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
     httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
         {"version": version},
     )
@@ -175,8 +201,13 @@ def test_trash_value_changed(
         ),
     )
 
-    assert f"<dummy> (default) dummy.settings.trash_value: None -> {trash_value!r}" in result.stdout
-    assert "Remote configuration successfully updated" in result.stdout
+    httpserver.check_assertions()
+    assert result.returncode == 0
+    assert (
+        f"[INFO] <dummy> (default) dummy.settings.trash_value: None -> {trash_value!r}"
+        in result.stdout
+    )
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
 
 
 def test_trash_value_unchanged(
@@ -186,8 +217,8 @@ def test_trash_value_unchanged(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run with a TRaSH-Guides ID defined, and check that
-    a value was fetched from the metadata, and used to set the correct value on a remote instance.
+    Check that a value was fetched from TRaSH-Guides metadata,
+    and the value on the remote instance does not change if it is the same as this value.
     """
 
     api_root = "/api/v1"
@@ -197,9 +228,15 @@ def test_trash_value_unchanged(
     # Bluray-1080p min value.
     trash_value = 5.0
 
+    # Check if the server is initialised.
     httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
         {"apiRoot": api_root, "version": version},
     )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
     httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
         {"version": version},
     )
@@ -222,8 +259,10 @@ def test_trash_value_unchanged(
         ),
     )
 
+    httpserver.check_assertions()
+    assert result.returncode == 0
     assert (
-        f"<dummy> (default) dummy.settings.trash_value: {trash_value!r} (up to date)"
+        f"[DEBUG] <dummy> (default) dummy.settings.trash_value: {trash_value!r} (up to date)"
         in result.stderr
     )
-    assert "Remote configuration is up to date" in result.stdout
+    assert "[INFO] <dummy> (default) Remote configuration is up to date" in result.stdout
