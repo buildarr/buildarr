@@ -87,6 +87,14 @@ def buildarr_run(buildarr_command) -> Callable[..., subprocess.CompletedProcess[
 
 
 @pytest.fixture
+def buildarr_test_config(buildarr_command) -> Callable[..., subprocess.CompletedProcess[str]]:
+    def _buildarr_test_config(*opts: str, **kwargs) -> subprocess.CompletedProcess[str]:
+        return buildarr_command("test-config", *opts, **kwargs)
+
+    return _buildarr_test_config
+
+
+@pytest.fixture
 def instance_value() -> str:
     return str(uuid.uuid4())
 

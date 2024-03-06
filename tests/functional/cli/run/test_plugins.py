@@ -31,7 +31,7 @@ def test_no_plugins_configured(buildarr_yml_factory, buildarr_run) -> None:
     the appropriate error message is raised.
     """
 
-    result = buildarr_run(buildarr_yml_factory({}), testing=False)
+    result = buildarr_run(buildarr_yml_factory({}))
 
     assert result.returncode == 1
     assert result.stderr.splitlines()[-1] == (
