@@ -30,11 +30,11 @@ def test_no_plugins_configured(buildarr_yml_factory, buildarr_test_config) -> No
     result = buildarr_test_config(buildarr_yml)
 
     assert result.returncode == 1
-    assert f"[INFO] Testing configuration file: {buildarr_yml}\n" in result.stdout
-    assert "[INFO] Loading configuration: PASSED\n" in result.stdout
-    assert "[INFO] Loading plugin managers: PASSED\n" in result.stdout
-    assert "[INFO] Loading instance configurations: PASSED\n" in result.stdout
-    assert "[ERROR] Checking configured plugins: FAILED\n" in result.stderr
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "[ERROR] Checking configured plugins: FAILED" in result.stderr
     assert result.stderr.splitlines()[-1] == (
         "buildarr.cli.exceptions.TestConfigNoPluginsDefinedError: "
         "No configuration defined for any selected plugins"

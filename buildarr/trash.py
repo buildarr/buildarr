@@ -97,5 +97,6 @@ def cleanup_trash_metadata() -> None:
     and remove it from Buildarr global state.
     """
 
-    remove_dir(state.trash_metadata_dir)
+    if state.trash_metadata_dir:
+        remove_dir(state.trash_metadata_dir)
     state.trash_metadata_dir = None  # type: ignore[assignment]

@@ -102,7 +102,7 @@ def test_use_specific_plugin(
 
     httpserver.check_assertions()
     assert result.returncode == 0
-    assert "[INFO] Running with plugins: dummy\n" in result.stdout
+    assert "[INFO] Running with plugins: dummy" in result.stdout
     assert (
         f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
         in result.stdout
@@ -178,9 +178,9 @@ def test_initialize(
 
     httpserver.check_assertions()
     assert result.returncode == 0
-    assert "[INFO] <dummy> (default) Instance has not been initialised\n" in result.stdout
-    assert "[INFO] <dummy> (default) Initialising instance\n" in result.stdout
-    assert "[INFO] <dummy> (default) Finished initialising instance\n" in result.stdout
+    assert "[INFO] <dummy> (default) Instance has not been initialised" in result.stdout
+    assert "[INFO] <dummy> (default) Initialising instance" in result.stdout
+    assert "[INFO] <dummy> (default) Finished initialising instance" in result.stdout
     assert (
         f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
         in result.stdout
@@ -254,7 +254,7 @@ def test_already_initialized(
     httpserver.check_assertions()
     assert result.returncode == 0
     assert (
-        "[DEBUG] <dummy> (default) Instance is initialised and ready for configuration updates\n"
+        "[DEBUG] <dummy> (default) Instance is initialised and ready for configuration updates"
         in result.stderr
     )
     assert (

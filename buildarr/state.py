@@ -222,15 +222,19 @@ class State:
         """
         if plugin_name:
             old_current_plugin = self._current_plugin
-            self._current_plugin = plugin_name
         if instance_name:
             old_current_instance = self._current_instance
-            self._current_instance = instance_name
-        yield
-        if plugin_name:
-            self._current_plugin = old_current_plugin
-        if instance_name:
-            self._current_instance = old_current_instance
+        try:
+            if plugin_name:
+                self._current_plugin = plugin_name
+            if instance_name:
+                self._current_instance = instance_name
+            yield
+        finally:
+            if plugin_name:
+                self._current_plugin = old_current_plugin
+            if instance_name:
+                self._current_instance = old_current_instance
 
 
 state = State()
