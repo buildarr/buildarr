@@ -282,4 +282,4 @@ def compose(
     if volumes:
         compose_obj["volumes"] = list(volumes)
 
-    click.echo(yaml.safe_dump(compose_obj, explicit_start=True, sort_keys=False))
+    click.echo(yaml.safe_dump(compose_obj, explicit_start=True, sort_keys=False), nl=False)

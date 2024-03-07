@@ -64,7 +64,10 @@ buildarr = "buildarr.cli.main:main"
 [project.entry-points."buildarr.plugins"]
 # Used during unit testing.
 dummy = "buildarr.plugins.dummy.plugin:DummyPlugin"
-dummy2 = "buildarr.plugins.dummy.plugin:DummyPlugin"
+dummy2 = "buildarr.plugins.dummy2.plugin:Dummy2Plugin"
+
+[tool.setuptools]
+packages = ["buildarr"]
 
 [tool.setuptools_scm]
 

@@ -79,6 +79,14 @@ def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
 
 
 @pytest.fixture
+def buildarr_compose(buildarr_command) -> Callable[..., subprocess.CompletedProcess[str]]:
+    def _buildarr_compose(*opts: str, **kwargs) -> subprocess.CompletedProcess[str]:
+        return buildarr_command("compose", *opts, **kwargs)
+
+    return _buildarr_compose
+
+
+@pytest.fixture
 def buildarr_run(buildarr_command) -> Callable[..., subprocess.CompletedProcess[str]]:
     def _buildarr_run(*opts: str, **kwargs) -> subprocess.CompletedProcess[str]:
         return buildarr_command("run", *opts, **kwargs)

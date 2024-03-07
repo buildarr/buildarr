@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -13,47 +13,45 @@
 
 
 """
-Dummy plugin configuration.
+Dummy2 plugin configuration.
 """
 
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 from typing_extensions import Self
 
-from buildarr import __version__
 from buildarr.config import ConfigPlugin
-from buildarr.state import state
 from buildarr.types import NonEmptyStr, Port
 
 from ..api import api_get, api_post
-from ..exceptions import DummyAPIError
-from ..secrets import DummySecrets
-from ..types import DummyApiKey, DummyProtocol
-from .settings import DummySettingsConfig
+from ..exceptions import Dummy2APIError
+from ..secrets import Dummy2Secrets
+from ..types import Dummy2ApiKey, Dummy2Protocol
+from .settings import Dummy2SettingsConfig
 
 # Allow Mypy to properly resolve secrets type declarations in configuration classes.
 if TYPE_CHECKING:
 
-    class _DummyInstanceConfig(ConfigPlugin[DummySecrets]): ...
+    class _Dummy2InstanceConfig(ConfigPlugin[Dummy2Secrets]): ...
 
 else:
 
-    class _DummyInstanceConfig(ConfigPlugin): ...
+    class _Dummy2InstanceConfig(ConfigPlugin): ...
 
 
-class DummyInstanceConfig(_DummyInstanceConfig):
+class Dummy2InstanceConfig(_Dummy2InstanceConfig):
     """
-    By default, Buildarr will look for a single instance at `http://dummy:5000`.
+    By default, Buildarr will look for a single instance at `http://dummy2:5000`.
     Most configurations are different, and to accommodate those, you can configure
-    how Buildarr connects to individual Dummy instances.
+    how Buildarr connects to individual Dummy2 instances.
 
-    Configuration of a single Dummy instance:
+    Configuration of a single Dummy2 instance:
 
     ```yaml
-    dummy:
+    dummy2:
       hostname: "localhost"
       port: 5000
       protocol: "http"
@@ -64,20 +62,20 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     Configuration of multiple instances:
 
     ```yaml
-    dummy:
+    dummy2:
       # Configuration and settings common to all instances.
       hostname: "localhost"
       protocol: "http"
       settings:
         ...
       instances:
-        # Dummy instance 1-specific configuration.
-        dummy1:
+        # Dummy2 instance 1-specific configuration.
+        dummy2-1:
           port: 5000
           settings:
             ...
-        # Dummy instance 2-specific configuration.
-        dummy:
+        # Dummy2 instance 2-specific configuration.
+        dummy2-2:
           port: 5001
           api_key: "..." # Explicitly define API key
           settings:
@@ -85,58 +83,58 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     ```
     """
 
-    hostname: NonEmptyStr = "dummy"  # type: ignore[assignment]
+    hostname: NonEmptyStr = "dummy2"  # type: ignore[assignment]
     """
-    Hostname of the Dummy instance to connect to.
+    Hostname of the Dummy2 instance to connect to.
 
-    When defining a single instance using the global `dummy` configuration block,
-    the default hostname is `dummy`.
+    When defining a single instance using the global `dummy2` configuration block,
+    the default hostname is `dummy2`.
 
     When using multiple instance-specific configurations, the default hostname
     is the name given to the instance in the `instances` attribute.
 
     ```yaml
-    dummy:
+    dummy2:
       instances:
-        dummy1: # <--- This becomes the default hostname
+        dummy2-1: # <--- This becomes the default hostname
           ...
     ```
     """
 
     port: Port = 5000  # type: ignore[assignment]
     """
-    Port number of the Dummy instance to connect to.
+    Port number of the Dummy2 instance to connect to.
     """
 
-    protocol: DummyProtocol = "http"  # type: ignore[assignment]
+    protocol: Dummy2Protocol = "http"  # type: ignore[assignment]
     """
-    Communication protocol to use to connect to Dummy.
+    Communication protocol to use to connect to Dummy2.
 
     Values:
 
     * `http`
     """
 
-    api_key: Optional[DummyApiKey] = None
+    api_key: Optional[Dummy2ApiKey] = None
     """
-    API key to use to authenticate with the Dummy instance.
+    API key to use to authenticate with the Dummy2 instance.
 
     If undefined or set to `None`, automatically retrieve the API key.
-    This can only be done on Dummy instances with authentication disabled.
+    This can only be done on Dummy2 instances with authentication disabled.
     """
 
     version: Optional[str] = None
     """
-    The expected version of the Dummy instance.
+    The expected version of the Dummy2 instance.
     If undefined or set to `None`, the version is auto-detected.
 
     At the moment this attribute is unused, and there is likely no need to explicitly set it.
     """
 
-    settings: DummySettingsConfig = DummySettingsConfig()
+    settings: Dummy2SettingsConfig = Dummy2SettingsConfig()
     """
-    Dummy settings.
-    Configuration options for Dummy itself are set within this structure.
+    Dummy2 settings.
+    Configuration options for Dummy2 itself are set within this structure.
     """
 
     def uses_trash_metadata(self) -> bool:
@@ -189,7 +187,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
                 return initialize_json["initialized"]
             else:
                 raise NotImplementedError()
-        except DummyAPIError as err:
+        except Dummy2APIError as err:
             if err.status_code == HTTPStatus.UNAUTHORIZED:
                 return True
             else:
@@ -220,19 +218,19 @@ class DummyInstanceConfig(_DummyInstanceConfig):
                 api_key=self.api_key.get_secret_value() if self.api_key else None,
                 expected_status_code=HTTPStatus.OK,
             )
-        except DummyAPIError as err:
+        except Dummy2APIError as err:
             if err.status_code == HTTPStatus.NOT_FOUND:
                 raise NotImplementedError() from None
             else:
                 raise
 
     @classmethod
-    def from_remote(cls, secrets: DummySecrets) -> Self:
+    def from_remote(cls, secrets: Dummy2Secrets) -> Self:
         """
         Read configuration from a remote instance and return it as a configuration object.
 
         Args:
-            secrets (DummySecrets): Instance host and secrets information
+            secrets (Dummy2Secrets): Instance host and secrets information
 
         Returns:
             Configuration object for remote instance
@@ -243,43 +241,23 @@ class DummyInstanceConfig(_DummyInstanceConfig):
             protocol=secrets.protocol,
             api_key=secrets.api_key,
             version=secrets.version,
-            settings=DummySettingsConfig.from_remote(secrets),
+            settings=Dummy2SettingsConfig.from_remote(secrets),
         )
 
-    def to_compose_service(self, compose_version: str, service_name: str) -> Dict[str, Any]:
-        """
-        Generate a Docker Compose service definition corresponding to this instance configuration.
 
-        Plugins should implement this function to allow Docker Compose files to be generated from
-        Buildarr configuration using the `buildarr compose` command.
-
-        Args:
-            compose_version (str): Version of the Docker Compose file.
-            service_name (str): The unique name for the generated Docker Compose service.
-
-        Returns:
-            Docker Compose service definition dictionary
-        """
-        return {
-            "image": f"{state.config.buildarr.docker_image_uri}:{__version__}",
-            "entrypoint": ["flask"],
-            "command": ["--app", "buildarr.plugins.dummy.server:app", "run", "--debug"],
-        }
-
-
-class DummyConfig(DummyInstanceConfig):
+class Dummy2Config(Dummy2InstanceConfig):
     """
-    Dummy plugin global configuration class.
+    Dummy2 plugin global configuration class.
 
     Subclasses the instance-specific configuration to allow
     attributes common to all instances to be defined in one place.
     """
 
-    instances: Dict[str, DummyInstanceConfig] = {}
+    instances: Dict[str, Dummy2InstanceConfig] = {}
     """
-    Instance-specific Dummy configuration.
+    Instance-specific Dummy2 configuration.
 
-    Can only be defined on the global `dummy` configuration block.
+    Can only be defined on the global `dummy2` configuration block.
 
     Globally specified configuration values apply to all instances.
     Configuration values specified on an instance-level take precedence at runtime.
