@@ -19,7 +19,7 @@ Dummy plugin configuration.
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
 from typing_extensions import Self
 
@@ -137,6 +137,20 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     """
     Dummy settings.
     Configuration options for Dummy itself are set within this structure.
+    """
+
+    use_service_volumes: bool = False
+    """
+    Whether or not to configure volumes when generating the Docker Compose service definition.
+
+    Used in functional tests.
+    """
+
+    service_volumes_type: Literal["dict", "list-str", "list-dict"] = "list-dict"
+    """
+    The type to use for the service volumes when generating the Docker Compose service definition.
+
+    Used in functional tests.
     """
 
     def uses_trash_metadata(self) -> bool:
@@ -260,11 +274,38 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         Returns:
             Docker Compose service definition dictionary
         """
-        return {
+        service: Dict[str, Any] = {
             "image": f"{state.config.buildarr.docker_image_uri}:{__version__}",
             "entrypoint": ["flask"],
             "command": ["--app", "buildarr.plugins.dummy.server:app", "run", "--debug"],
         }
+        if self.use_service_volumes:
+            if self.service_volumes_type == "list-dict":
+                service["volumes"] = [
+                    {
+                        "type": "bind",
+                        "source": str(state.config_files[0].parent),
+                        "target": "/config",
+                        "read_only": True,
+                    },
+                    {
+                        "type": "volume",
+                        "source": service_name,
+                        "target": "/data",
+                        "read_only": False,
+                    },
+                ]
+            elif self.service_volumes_type == "list-str":
+                service["volumes"] = [
+                    f"{state.config_files[0].parent}:/config:ro",
+                    f"{service_name}:/data",
+                ]
+            else:
+                service["volumes"] = {
+                    str(state.config_files[0].parent): "/config",
+                    service_name: "/data",
+                }
+        return service
 
 
 class DummyConfig(DummyInstanceConfig):

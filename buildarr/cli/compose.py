@@ -41,7 +41,7 @@ from .exceptions import (
 )
 
 if TYPE_CHECKING:
-    from typing import Any, Dict, Set
+    from typing import Any, Dict, List, Set
 
 
 logger = getLogger(__name__)
@@ -177,7 +177,7 @@ def compose(
         logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
 
     compose_obj: Dict[str, Any] = {"version": compose_version, "services": {}}
-    hostnames: Dict[str, str] = {}
+    used_hostnames: Dict[str, Dict[str, str]] = {}
     volumes: Set[str] = set()
 
     for plugin_name, instance_name in state._execution_order:
@@ -204,30 +204,80 @@ def compose(
                     f"Invalid hostname '{hostname}' for {plugin_name} instance '{instance_name}': "
                     "Hostname must not be localhost for Docker Compose services",
                 )
-            if hostname in hostnames:
+            if hostname in used_hostnames:
+                used_by = used_hostnames[hostname]
                 raise ComposeInvalidHostnameError(
-                    f"Invalid hostname '{hostname}' for {plugin_name} instance '{instance_name}': "
-                    f"Hostname already used by service '{hostnames[hostname]}'",
-                )
-            hostnames[hostname] = service_name
-            logger.debug("Finished validating service hostname")
-            try:
-                logger.debug("Generating service-specific configuration")
-                service: Dict[str, Any] = {
-                    **manager.to_compose_service(
-                        instance_config=instance_config,
-                        compose_version=compose_version,
-                        service_name=service_name,
+                    (
+                        f"Invalid hostname '{hostname}' for "
+                        f"{plugin_name} instance '{instance_name}': "
+                        "Hostname already used by "
+                        f"{used_by['plugin_name']} instance '{used_by['instance_name']}'"
                     ),
-                    "hostname": hostname,
-                    "restart": compose_restart,
-                }
-                logger.debug("Finished generating service-specific configuration")
+                )
+            used_hostnames[hostname] = {"plugin_name": plugin_name, "instance_name": instance_name}
+            logger.debug("Finished validating service hostname")
+            logger.debug("Generating service-specific configuration")
+            try:
+                service_config = manager.to_compose_service(
+                    instance_config=instance_config,
+                    compose_version=compose_version,
+                    service_name=service_name,
+                )
             except NotImplementedError:
                 raise ComposeNotSupportedError(
                     f"Plugin '{plugin_name}' does not support Docker Compose "
                     "service generation from instance configurations",
                 ) from None
+            if "volumes" in service_config:
+                # Convert the old-style dictionary volume definitions
+                # to the new-style list structure with long-form syntax.
+                if isinstance(service_config["volumes"], dict):
+                    service_config["volumes"] = [
+                        {
+                            "type": (
+                                "volume" if "/" not in source and "\\" not in source else "bind"
+                            ),
+                            "source": source,
+                            "target": target,
+                        }
+                        for source, target in service_config["volumes"].items()
+                    ]
+                # Otherwise, assume the definition is a list structure.
+                # Convert old-style string volume definitions to long-form syntax.
+                else:
+                    new_volumes: List[Dict[str, Any]] = []
+                    for volume in service_config["volumes"]:
+                        if isinstance(volume, str):
+                            try:
+                                source, target, options_str = volume.split(":", maxsplit=3)
+                            except ValueError:
+                                source, target = volume.split(":", maxsplit=2)
+                                options_str = None
+                            options: Set[str] = (
+                                set(o.strip().lower() for o in options_str.split(","))
+                                if options_str
+                                else set()
+                            )
+                            new_volume = {
+                                "type": (
+                                    "volume" if "/" not in source and "\\" not in source else "bind"
+                                ),
+                                "source": source,
+                                "target": target,
+                                "read_only": "ro" in options and "rw" not in options,
+                            }
+                            if new_volume["type"] == "bind":
+                                new_volume["bind"] = {"create_host_path": True}
+                            new_volumes.append(new_volume)
+                        else:
+                            new_volumes.append(volume)
+                    service_config["volumes"] = new_volumes
+            service: Dict[str, Any] = {
+                **service_config,
+                "hostname": hostname,
+                "restart": compose_restart,
+            }
+            logger.debug("Finished generating service-specific configuration")
             if (plugin_name, instance_name) in state._instance_dependencies:
                 depends_on: Set[str] = set()
                 logger.debug("Generating service dependencies")
@@ -239,22 +289,21 @@ def compose(
                     depends_on.add(target_service)
                 service["depends_on"] = list(depends_on)
                 logger.debug("Finished generating service dependencies")
-            # TODO: Handle more types of volume definitions
-            # (e.g. volume lists, modern-style mount definitions).
-            for volume_name in service.get("volumes", {}).keys():
-                if "/" not in volume_name and "\\" not in volume_name:
+            for volume in service.get("volumes", []):
+                if volume["type"] == "volume":
                     logger.debug(
                         "Adding named volume '%s' to the list of internal volumes",
-                        volume_name,
+                        volume["source"],
                     )
-                    volumes.add(volume_name)
+                    volumes.add(volume["source"])
                 else:
                     logger.debug(
                         (
-                            "Volume '%s' determined to likely be a bind mount, "
+                            "Volume '%s:%s' is a bind mount, "
                             "not adding to the list of internal volumes"
                         ),
-                        volume_name,
+                        volume["source"],
+                        volume["target"],
                     )
             compose_obj["services"][service_name] = service
             logger.debug("Finished generating Docker Compose service configuration")

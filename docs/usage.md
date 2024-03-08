@@ -285,13 +285,17 @@ services:
   sonarr_sonarr-hd:
     image: lscr.io/linuxserver/sonarr:latest
     volumes:
-      sonarr_sonarr-hd: /config
+      - type: volume
+        source: sonarr_sonarr-hd
+        target: /config
     hostname: sonarr-hd
     restart: always
   sonarr_sonarr-4k:
     image: lscr.io/linuxserver/sonarr:latest
     volumes:
-      sonarr_sonarr-4k: /config
+      - type: volume
+        source: sonarr_sonarr-4k
+        target: /config
     hostname: sonarr-4k
     restart: always
     depends_on:
@@ -305,6 +309,7 @@ services:
     - type: bind
       source: /opt/buildarr
       target: /config
+      read_only: true
     restart: always
     depends_on:
     - sonarr_sonarr-hd
