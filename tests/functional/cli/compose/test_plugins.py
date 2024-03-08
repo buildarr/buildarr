@@ -27,9 +27,7 @@ def test_no_plugins_configured(buildarr_yml_factory, buildarr_compose) -> None:
     the appropriate error message is raised.
     """
 
-    buildarr_yml = buildarr_yml_factory({})
-
-    result = buildarr_compose(buildarr_yml)
+    result = buildarr_compose(buildarr_yml_factory({}))
 
     assert result.returncode == 1
     assert result.stderr.splitlines()[-1] == (
@@ -45,10 +43,7 @@ def test_use_specific_plugin(buildarr_yml_factory, buildarr_compose) -> None:
     """
 
     buildarr_yml = buildarr_yml_factory(
-        {
-            "dummy": {"hostname": "dummy", "port": 9999},
-            "dummy2": {"hostname": "dummy2", "port": 9999},
-        },
+        {"dummy": {"hostname": "dummy"}, "dummy2": {"hostname": "dummy2"}},
     )
 
     result = buildarr_compose(buildarr_yml, "--plugin", "dummy")
@@ -83,3 +78,19 @@ def test_use_specific_plugin(buildarr_yml_factory, buildarr_compose) -> None:
         "    depends_on:",
         "    - dummy_default",
     ]
+
+
+def test_not_supported_by_plugin(buildarr_yml_factory, buildarr_compose) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    result = buildarr_compose(buildarr_yml_factory({"dummy2": {"hostname": "dummy2"}}))
+
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-1] == (
+        "buildarr.cli.exceptions.ComposeNotSupportedError: "
+        "Plugin 'dummy2' does not support Docker Compose "
+        "service generation from instance configurations"
+    )
