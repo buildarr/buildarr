@@ -84,6 +84,7 @@ lint = [
 ]
 test = [
     "Flask>=3.0.2",
+    "pexpect>=4.9.0",
     "pytest>=8.0.2",
     "pytest-cov>=4.1.0",
     "pytest-httpserver>=1.0.10",

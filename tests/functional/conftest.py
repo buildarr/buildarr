@@ -23,12 +23,13 @@ import uuid
 
 from typing import TYPE_CHECKING
 
+import pexpect
 import pytest
 import yaml
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, Mapping, Optional
+    from typing import Any, Callable, Dict, Mapping, Optional
 
 
 BUILDARR_COMMAND = shutil.which("buildarr") or ""
@@ -55,27 +56,41 @@ def buildarr_yml_factory(tmp_path) -> Callable[..., Path]:
 def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
     def _buildarr_command(
         *opts: str,
+        stdin: Optional[str] = None,
         check: bool = False,
         testing: Optional[bool] = True,
         log_level: Optional[str] = "DEBUG",
         **env: str,
     ) -> subprocess.CompletedProcess[str]:
-        _env = {**os.environ}
-        if testing is not None:
-            _env["BUILDARR_TESTING"] = str(testing).lower()
-        if log_level:
-            _env["BUILDARR_LOG_LEVEL"] = log_level
-        _env.update(env)
+        _env = _get_env(env=env, testing=testing, log_level=log_level)
         return subprocess.run(
             args=[BUILDARR_COMMAND, *opts],
+            input=stdin,
             env=_env,
             check=check,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
+            capture_output=True,
+            text=True,
         )
 
     return _buildarr_command
+
+
+@pytest.fixture
+def buildarr_interactive_command() -> Callable[..., pexpect.spawn]:
+    def _buildarr_interactive_command(
+        *opts: str,
+        testing: Optional[bool] = True,
+        log_level: Optional[str] = "DEBUG",
+        **env: str,
+    ) -> pexpect.spawn:
+        _env = _get_env(env=env, testing=testing, log_level=log_level)
+        return pexpect.spawn(
+            BUILDARR_COMMAND,
+            args=list(opts),
+            env=_env,
+        )
+
+    return _buildarr_interactive_command
 
 
 @pytest.fixture
@@ -112,3 +127,17 @@ def api_key() -> str:
     return "".join(
         random.choices(string.ascii_lowercase + string.digits, k=32),  # noqa: S311
     )
+
+
+def _get_env(
+    env: Mapping[str, str],
+    testing: Optional[bool],
+    log_level: Optional[str],
+) -> Dict[str, str]:
+    _env = {**os.environ}
+    if testing is not None:
+        _env["BUILDARR_TESTING"] = str(testing).lower()
+    if log_level:
+        _env["BUILDARR_LOG_LEVEL"] = log_level
+    _env.update(env)
+    return _env

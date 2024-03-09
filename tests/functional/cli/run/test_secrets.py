@@ -279,6 +279,7 @@ def test_api_key_test_fail(
         "hostname='localhost'"
         f" port={port}"
         " protocol='http'"
+        " url_base=None"
         " api_key=SecretStr('**********')"
         f" version={version!r}"
     )

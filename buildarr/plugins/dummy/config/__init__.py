@@ -117,6 +117,16 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     * `http`
     """
 
+    url_base: Optional[str] = None
+    """
+    The URL path the Dummy instance API is available under, if behind a reverse proxy.
+
+    API URLs are rendered like this: `<protocol>://<hostname>:<port><url_base>/api/v3/...`
+
+    When unset, the URL root will be used as the API endpoint
+    (e.g. `<protocol>://<hostname>:<port>/api/v1/...`).
+    """
+
     api_key: Optional[DummyApiKey] = None
     """
     API key to use to authenticate with the Dummy instance.
@@ -252,11 +262,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
             Configuration object for remote instance
         """
         return cls(
-            hostname=secrets.hostname,
-            port=secrets.port,
-            protocol=secrets.protocol,
-            api_key=secrets.api_key,
-            version=secrets.version,
+            **{key: value for key, value in secrets},
             settings=DummySettingsConfig.from_remote(secrets),
         )
 

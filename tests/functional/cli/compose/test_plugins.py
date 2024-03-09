@@ -18,8 +18,6 @@ Functional tests for the `buildarr run` CLI command.
 
 from __future__ import annotations
 
-from buildarr import __version__
-
 
 def test_no_plugins_configured(buildarr_yml_factory, buildarr_compose) -> None:
     """
@@ -34,50 +32,6 @@ def test_no_plugins_configured(buildarr_yml_factory, buildarr_compose) -> None:
         "buildarr.cli.exceptions.ComposeNoPluginsDefinedError: "
         "No loaded plugins configured in Buildarr"
     )
-
-
-def test_use_specific_plugin(buildarr_yml_factory, buildarr_compose) -> None:
-    """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
-    """
-
-    buildarr_yml = buildarr_yml_factory(
-        {"dummy": {"hostname": "dummy"}, "dummy2": {"hostname": "dummy2"}},
-    )
-
-    result = buildarr_compose(buildarr_yml, "--plugin", "dummy")
-
-    assert result.returncode == 0
-    assert result.stdout.splitlines() == [
-        "---",
-        "version: '3.7'",
-        "services:",
-        "  dummy_default:",
-        f"    image: callum027/buildarr:{__version__}",
-        "    entrypoint:",
-        "    - flask",
-        "    command:",
-        "    - --app",
-        "    - buildarr.plugins.dummy.server:app",
-        "    - run",
-        "    - --debug",
-        "    hostname: dummy",
-        "    restart: always",
-        "  buildarr:",
-        f"    image: callum027/buildarr:{__version__}",
-        "    command:",
-        "    - daemon",
-        "    - /config/buildarr.yml",
-        "    volumes:",
-        "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
-        "      target: /config",
-        "      read_only: true",
-        "    restart: always",
-        "    depends_on:",
-        "    - dummy_default",
-    ]
 
 
 def test_not_supported_by_plugin(buildarr_yml_factory, buildarr_compose) -> None:

@@ -5,7 +5,7 @@
 groups = ["default", "docs", "lint", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:b4cade9b12a92ca4fe4f7c3f6626871ed92f55cdfc093bcafc1bac70b5f1027c"
+content_hash = "sha256:15ec9c1ffc5be26377b917372cae16db52f3b01ac8e9dc78f2e7329367a87888"
 
 [[package]]
 name = "aenum"
@@ -390,7 +390,7 @@ files = [
 
 [[package]]
 name = "griffe"
-version = "0.41.2"
+version = "0.41.3"
 requires_python = ">=3.8"
 summary = "Signatures for entire Python programs. Extract the structure, the frame, the skeleton of your project, to generate API documentation or find breaking changes in your API."
 groups = ["docs"]
@@ -399,8 +399,8 @@ dependencies = [
     "colorama>=0.4",
 ]
 files = [
-    {file = "griffe-0.41.2-py3-none-any.whl", hash = "sha256:a3e1824bc8d5c3190b7e05fbfde36e1e794d9c409c646783a57366c947d7816b"},
-    {file = "griffe-0.41.2.tar.gz", hash = "sha256:662094e8066c1340d6993880ac46bdb3c42e639fe2b93995459503079332ec8f"},
+    {file = "griffe-0.41.3-py3-none-any.whl", hash = "sha256:27b4610f1ba6e5d039e9f0a2c97232e13463df75e53cb1833e0679f3377b9de2"},
+    {file = "griffe-0.41.3.tar.gz", hash = "sha256:9edcfa9f57f4d9c5fcc6d5ce067c67a685b7101a21a7d11848ce0437368e474c"},
 ]
 
 [[package]]
@@ -416,7 +416,7 @@ files = [
 
 [[package]]
 name = "importlib-metadata"
-version = "7.0.1"
+version = "7.0.2"
 requires_python = ">=3.8"
 summary = "Read metadata from Python packages"
 groups = ["default", "docs", "test"]
@@ -424,8 +424,8 @@ dependencies = [
     "zipp>=0.5",
 ]
 files = [
-    {file = "importlib_metadata-7.0.1-py3-none-any.whl", hash = "sha256:4805911c3a4ec7c3966410053e9ec6a1fecd629117df5adee56dfc9432a1081e"},
-    {file = "importlib_metadata-7.0.1.tar.gz", hash = "sha256:f238736bb06590ae52ac1fab06a3a9ef1d8dce2b7a35b5ab329371d6c8f5d2cc"},
+    {file = "importlib_metadata-7.0.2-py3-none-any.whl", hash = "sha256:f4bc4c0c070c490abf4ce96d715f68e95923320370efb66143df00199bb6c100"},
+    {file = "importlib_metadata-7.0.2.tar.gz", hash = "sha256:198f568f3230878cb1b44fbd7975f87906c22336dba2e4a7f05278c281fbd792"},
 ]
 
 [[package]]
@@ -730,6 +730,19 @@ files = [
 ]
 
 [[package]]
+name = "pexpect"
+version = "4.9.0"
+summary = "Pexpect allows easy control of interactive console applications."
+groups = ["test"]
+dependencies = [
+    "ptyprocess>=0.5",
+]
+files = [
+    {file = "pexpect-4.9.0-py2.py3-none-any.whl", hash = "sha256:7236d1e080e4936be2dc3e326cec0af72acf9212a7e1d060210e70a47e253523"},
+    {file = "pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f"},
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.2.0"
 requires_python = ">=3.8"
@@ -749,6 +762,16 @@ groups = ["test"]
 files = [
     {file = "pluggy-1.4.0-py3-none-any.whl", hash = "sha256:7db9f7b503d67d1c5b95f59773ebb58a8c1c288129a88665838012cfb07b8981"},
     {file = "pluggy-1.4.0.tar.gz", hash = "sha256:8c85c2876142a764e5b7548e7d9a0e0ddb46f5185161049a79b7e974454223be"},
+]
+
+[[package]]
+name = "ptyprocess"
+version = "0.7.0"
+summary = "Run a subprocess in a pseudo terminal"
+groups = ["test"]
+files = [
+    {file = "ptyprocess-0.7.0-py2.py3-none-any.whl", hash = "sha256:4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35"},
+    {file = "ptyprocess-0.7.0.tar.gz", hash = "sha256:5c5d0a3b48ceee0b48485e0c26037c0acd7d29765ca3fbb5cb3831d347423220"},
 ]
 
 [[package]]
@@ -839,7 +862,7 @@ files = [
 
 [[package]]
 name = "pymdown-extensions"
-version = "10.7"
+version = "10.7.1"
 requires_python = ">=3.8"
 summary = "Extension pack for Python Markdown."
 groups = ["docs"]
@@ -848,13 +871,13 @@ dependencies = [
     "pyyaml",
 ]
 files = [
-    {file = "pymdown_extensions-10.7-py3-none-any.whl", hash = "sha256:6ca215bc57bc12bf32b414887a68b810637d039124ed9b2e5bd3325cbb2c050c"},
-    {file = "pymdown_extensions-10.7.tar.gz", hash = "sha256:c0d64d5cf62566f59e6b2b690a4095c931107c250a8c8e1351c1de5f6b036deb"},
+    {file = "pymdown_extensions-10.7.1-py3-none-any.whl", hash = "sha256:f5cc7000d7ff0d1ce9395d216017fa4df3dde800afb1fb72d1c7d3fd35e710f4"},
+    {file = "pymdown_extensions-10.7.1.tar.gz", hash = "sha256:c70e146bdd83c744ffc766b4671999796aba18842b268510a329f7f64700d584"},
 ]
 
 [[package]]
 name = "pytest"
-version = "8.1.0"
+version = "8.0.2"
 requires_python = ">=3.8"
 summary = "pytest: simple powerful testing with Python"
 groups = ["test"]
@@ -863,12 +886,12 @@ dependencies = [
     "exceptiongroup>=1.0.0rc8; python_version < \"3.11\"",
     "iniconfig",
     "packaging",
-    "pluggy<2.0,>=1.4",
-    "tomli>=1; python_version < \"3.11\"",
+    "pluggy<2.0,>=1.3.0",
+    "tomli>=1.0.0; python_version < \"3.11\"",
 ]
 files = [
-    {file = "pytest-8.1.0-py3-none-any.whl", hash = "sha256:ee32db7af8de4629a455806befa90559f307424c07b8413ccfc30bf5b221dd7e"},
-    {file = "pytest-8.1.0.tar.gz", hash = "sha256:f8fa04ab8f98d185113ae60ea6d79c22f8143b14bc1caeced44a0ab844928323"},
+    {file = "pytest-8.0.2-py3-none-any.whl", hash = "sha256:edfaaef32ce5172d5466b5127b42e0d6d35ebbe4453f0e3505d96afd93f6b096"},
+    {file = "pytest-8.0.2.tar.gz", hash = "sha256:d4051d623a2e0b7e51960ba963193b09ce6daeb9759a451844a21e4ddedfc1bd"},
 ]
 
 [[package]]
