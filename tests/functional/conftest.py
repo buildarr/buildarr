@@ -86,7 +86,7 @@ def buildarr_interactive_command() -> Callable[..., pexpect.spawn]:
         _env = _get_env(env=env, testing=testing, log_level=log_level)
         return pexpect.spawn(
             BUILDARR_COMMAND,
-            args=list(opts),
+            args=[str(opt) for opt in opts],
             env=_env,
         )
 
@@ -99,6 +99,25 @@ def buildarr_compose(buildarr_command) -> Callable[..., subprocess.CompletedProc
         return buildarr_command("compose", *opts, **kwargs)
 
     return _buildarr_compose
+
+
+@pytest.fixture
+def buildarr_daemon(buildarr_command) -> Callable[..., subprocess.CompletedProcess[str]]:
+    def _buildarr_daemon(*opts: str, **kwargs) -> subprocess.CompletedProcess[str]:
+        return buildarr_command("daemon", *opts, **kwargs)
+
+    return _buildarr_daemon
+
+
+@pytest.fixture
+def buildarr_daemon_interactive(buildarr_interactive_command) -> Callable[..., pexpect.spawn]:
+    def _buildarr_daemon_interactive(
+        *opts: str,
+        **kwargs,
+    ) -> pexpect.spawn:
+        return buildarr_interactive_command("daemon", *opts, **kwargs)
+
+    return _buildarr_daemon_interactive
 
 
 @pytest.fixture

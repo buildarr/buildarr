@@ -502,7 +502,7 @@ def parse_time(
     "update_days",
     metavar="DAY",
     type=click.Choice([day.name for day in DayOfWeek], case_sensitive=False),
-    callback=lambda ctx, param, days: tuple(DayOfWeek(day) for day in days),
+    callback=lambda ctx, param, days: tuple(DayOfWeek.from_name_str(day) for day in days),
     multiple=True,
     help=(
         "Update defined instances on the specified day. "
