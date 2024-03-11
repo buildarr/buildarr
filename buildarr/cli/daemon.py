@@ -352,7 +352,7 @@ class Daemon:
         if hasattr(signal, "SIGHUP"):
             logger.debug("Setting up SIGHUP signal handler")
             signal.signal(signal.SIGHUP, self._sighup_handler)  # type: ignore[attr-defined]
-        else:
+        else:  # pragma: no cover
             logger.debug("SIGHUP is not available on this platform")
         logger.info("Finished setting up signal handlers")
 
@@ -461,7 +461,7 @@ def parse_time(
         try:
             times.append(datetime.strptime(time_str, "%H:%M").time())
         except ValueError:
-            raise click.BadParameter(f"Invalid 24 hour time '{time_str}'") from None
+            raise click.BadParameter(time_str) from None
     return tuple(times)
 
 
@@ -501,7 +501,7 @@ def parse_time(
     "--update-day",
     "update_days",
     metavar="DAY",
-    type=click.Choice([day.name for day in DayOfWeek], case_sensitive=False),
+    type=click.Choice([day.name.capitalize() for day in DayOfWeek], case_sensitive=False),
     callback=lambda ctx, param, days: tuple(DayOfWeek.from_name_str(day) for day in days),
     multiple=True,
     help=(

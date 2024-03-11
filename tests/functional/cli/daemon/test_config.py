@@ -24,8 +24,6 @@ import signal
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-import pytest
-
 if TYPE_CHECKING:
     from pathlib import Path
     from subprocess import CompletedProcess
@@ -34,9 +32,7 @@ if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
 
-@pytest.mark.parametrize("opt", ["-d", "--update-day"])
-def test_update_day(
-    opt,
+def test_update_days(
     httpserver: HTTPServer,
     buildarr_yml_factory,
     buildarr_daemon_interactive,
@@ -49,12 +45,10 @@ def test_update_day(
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Sunday"], "update_times": ["03:00"]},
+                "buildarr": {"update_days": ["Monday"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
-        opt,
-        "Monday",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
     child.kill(signal.SIGTERM)
@@ -65,12 +59,11 @@ def test_update_day(
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
     assert "[INFO]    - Monday 03:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    for day in ("Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
+        assert f"[INFO]    - {day} 03:00" not in output
 
 
-@pytest.mark.parametrize("opt", ["-d", "--update-day"])
-def test_update_day_multiple(
-    opt,
+def test_update_days_multiple(
     httpserver: HTTPServer,
     buildarr_yml_factory,
     buildarr_daemon_interactive,
@@ -83,14 +76,10 @@ def test_update_day_multiple(
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Sunday"], "update_times": ["03:00"]},
+                "buildarr": {"update_days": ["Monday", "Tuesday"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
-        opt,
-        "Monday",
-        opt,
-        "Tuesday",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
     child.kill(signal.SIGTERM)
@@ -100,34 +89,31 @@ def test_update_day_multiple(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Monday 03:00" in output
-    assert "[INFO]    - Tuesday 03:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    for day in ("Monday", "Tuesday"):
+        assert f"[INFO]    - {day} 03:00" in output
+    for day in ("Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
+        assert f"[INFO]    - {day} 03:00" not in output
 
 
-@pytest.mark.parametrize("opt", ["-d", "--update-day"])
-def test_update_day_invalid(opt, buildarr_yml_factory, buildarr_daemon) -> None:
+def test_update_days_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
     """
     Check that `buildarr test-config` passes on a configuration
     with a single instance value defined.
     """
 
     result: CompletedProcess = buildarr_daemon(
-        buildarr_yml_factory({"dummy": {}}),
-        opt,
-        "invalid",
+        buildarr_yml_factory({"buildarr": {"update_days": ["invalid"]}, "dummy": {}}),
     )
 
-    assert result.returncode == 2  # noqa: PLR2004
-    assert result.stderr.splitlines()[-1] == (
-        "Error: Invalid value for '-d' / '--update-day': 'invalid' is not one of "
-        "'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'."
-    )
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-3:] == [
+        "pydantic.error_wrappers.ValidationError: 1 validation error for Config",
+        "buildarr -> update_days -> 0",
+        "  Invalid DayOfWeek name or value: invalid (type=value_error)",
+    ]
 
 
-@pytest.mark.parametrize("opt", ["-t", "--update-time"])
-def test_update_time(
-    opt,
+def test_update_times(
     httpserver: HTTPServer,
     buildarr_yml_factory,
     buildarr_daemon_interactive,
@@ -140,12 +126,10 @@ def test_update_time(
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Sunday"], "update_times": ["03:00"]},
+                "buildarr": {"update_times": ["06:00"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
-        opt,
-        "09:00",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
     child.kill(signal.SIGTERM)
@@ -155,13 +139,12 @@ def test_update_time(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Sunday 09:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    for day in ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
+        assert f"[INFO]    - {day} 06:00" in output
+        assert f"[INFO]    - {day} 03:00" not in output
 
 
-@pytest.mark.parametrize("opt", ["-t", "--update-time"])
-def test_update_time_multiple(
-    opt,
+def test_update_times_multiple(
     httpserver: HTTPServer,
     buildarr_yml_factory,
     buildarr_daemon_interactive,
@@ -174,14 +157,10 @@ def test_update_time_multiple(
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Sunday"], "update_times": ["03:00"]},
+                "buildarr": {"update_times": ["06:00", "09:00"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
-        opt,
-        "09:00",
-        opt,
-        "12:00",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
     child.kill(signal.SIGTERM)
@@ -191,65 +170,31 @@ def test_update_time_multiple(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Sunday 09:00" in output
-    assert "[INFO]    - Sunday 12:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    for day in ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
+        assert f"[INFO]    - {day} 06:00" in output
+        assert f"[INFO]    - {day} 09:00" in output
+        assert f"[INFO]    - {day} 03:00" not in output
 
 
-@pytest.mark.parametrize("opt", ["-t", "--update-time"])
-def test_update_time_invalid(opt, buildarr_yml_factory, buildarr_daemon) -> None:
+def test_update_times_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
     """
     Check that `buildarr test-config` passes on a configuration
     with a single instance value defined.
     """
 
     result: CompletedProcess = buildarr_daemon(
-        buildarr_yml_factory({"dummy": {}}),
-        opt,
-        "invalid",
+        buildarr_yml_factory({"buildarr": {"update_times": ["invalid"]}, "dummy": {}}),
     )
 
-    assert result.returncode == 2  # noqa: PLR2004
-    assert result.stderr.splitlines()[-1] == (
-        "Error: Invalid value for '-t' / '--update-time': invalid"
-    )
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-3:] == [
+        "pydantic.error_wrappers.ValidationError: 1 validation error for Config",
+        "buildarr -> update_times -> 0",
+        "  invalid time format (type=value_error.time)",
+    ]
 
 
-@pytest.mark.parametrize("opt", ["-w", "--watch"])
-def test_watch(
-    opt,
-    httpserver: HTTPServer,
-    buildarr_yml_factory,
-    buildarr_daemon_interactive,
-) -> None:
-    """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
-    """
-
-    buildarr_yml: Path = buildarr_yml_factory(
-        {
-            "buildarr": {"watch_config": False},
-            "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
-        },
-    )
-
-    child: spawn = buildarr_daemon_interactive(buildarr_yml, opt)
-    child.expect(r"\[INFO\] Buildarr ready.")
-    buildarr_yml.touch()
-    child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
-    child.expect(r"\[INFO\] Reloading config")
-    child.expect(r"\[INFO\] Finished reloading config")
-    child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
-    child.wait()
-
-    assert child.exitstatus == 0
-
-
-@pytest.mark.parametrize("opt", ["-W", "--no-watch"])
-def test_no_watch(
-    opt,
+def test_watch_config_enabled(
     httpserver: HTTPServer,
     buildarr_yml_factory,
     buildarr_daemon_interactive,
@@ -266,7 +211,37 @@ def test_no_watch(
         },
     )
 
-    child: spawn = buildarr_daemon_interactive(buildarr_yml, opt)
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\] Buildarr ready.")
+    buildarr_yml.touch()
+    child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(r"\[INFO\] Finished reloading config")
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+    assert child.exitstatus == 0
+
+
+def test_watch_config_disabled(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml: Path = buildarr_yml_factory(
+        {
+            "buildarr": {"watch_config": False},
+            "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
+        },
+    )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\] Buildarr ready.")
     buildarr_yml.touch()
     child.kill(signal.SIGTERM)
@@ -278,3 +253,49 @@ def test_no_watch(
     assert f"[INFO] Config file '{buildarr_yml}' has been modified" not in output
     assert "[INFO] Reloading config" not in output
     assert "[INFO] Finished reloading config" not in output
+
+
+def test_watch_config_multiple_files(
+    tmp_path: Path,
+    httpserver: HTTPServer,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = tmp_path / "buildarr.yml"
+    dummy_yml = tmp_path / "dummy.yml"
+
+    with buildarr_yml.open("w") as f:
+        f.write("---\nincludes:\n  - dummy.yml\nbuildarr:\n  watch_config: true\n")
+
+    with dummy_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\] Buildarr ready.")
+    for config_file in (buildarr_yml, dummy_yml):
+        config_file.touch()
+        child.expect(f"\\[INFO\\] Config file '{re.escape(str(config_file))}' has been modified")
+        child.expect(r"\[INFO\] Reloading config")
+        child.expect(r"\[INFO\] Finished reloading config")
+        child.expect(r"\[INFO\] Buildarr ready.")
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+
+# TODO:
+#  - test_update_days_change_live (should work)
+#  - test_update_times_change_live (should work)
+#  - test_watch_config_enable_live (should work)
+#  - test_watch_config_disable_live (should work)
+#  - test_watch_config_parent_dir_update (should not cause an update run)
