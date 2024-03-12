@@ -19,7 +19,6 @@ Functional tests for the `buildarr daemon` CLI command.
 from __future__ import annotations
 
 import re
-import signal
 
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -57,7 +56,7 @@ def test_update_day(
         "Monday",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -93,7 +92,7 @@ def test_update_day_multiple(
         "Tuesday",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -148,7 +147,7 @@ def test_update_time(
         "09:00",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -184,7 +183,7 @@ def test_update_time_multiple(
         "12:00",
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -241,7 +240,7 @@ def test_watch(
     child.expect(r"\[INFO\] Reloading config")
     child.expect(r"\[INFO\] Finished reloading config")
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     assert child.exitstatus == 0
@@ -269,7 +268,7 @@ def test_no_watch(
     child: spawn = buildarr_daemon_interactive(buildarr_yml, opt)
     child.expect(r"\[INFO\] Buildarr ready.")
     buildarr_yml.touch()
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()

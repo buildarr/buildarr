@@ -349,9 +349,14 @@ class Daemon:
         signal.signal(signal.SIGINT, self._sigterm_handler)
         logger.debug("Setting up SIGTERM signal handler")
         signal.signal(signal.SIGTERM, self._sigterm_handler)
+        if hasattr(signal, "SIGBREAK"):  # pragma: no cover
+            logger.debug("Setting up SIGBREAK signal handler")
+            signal.signal(signal.SIGBREAK, self._sigterm_handler)
+        else:
+            logger.debug("SIGBREAK is not available on this platform")
         if hasattr(signal, "SIGHUP"):
             logger.debug("Setting up SIGHUP signal handler")
-            signal.signal(signal.SIGHUP, self._sighup_handler)  # type: ignore[attr-defined]
+            signal.signal(signal.SIGHUP, self._sighup_handler)
         else:  # pragma: no cover
             logger.debug("SIGHUP is not available on this platform")
         logger.info("Finished setting up signal handlers")

@@ -33,8 +33,11 @@ if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
 
-@pytest.mark.parametrize("sig", ["SIGTERM", "SIGINT"])
-def test_signal_shutdown(
+@pytest.mark.parametrize(
+    "sig",
+    ["SIGBREAK" if sys.platform == "win32" else "SIGTERM", "SIGINT"],
+)
+def test_signal_terminate(
     sig,
     httpserver: HTTPServer,
     buildarr_yml_factory,
@@ -86,7 +89,7 @@ def test_sighup(
     child.expect(r"\[INFO\] Reloading config")
     child.expect(r"\[INFO\] Finished reloading config")
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     assert child.exitstatus == 0

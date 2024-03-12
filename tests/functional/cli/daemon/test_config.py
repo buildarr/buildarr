@@ -54,7 +54,7 @@ def test_update_days(
         ),
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -85,7 +85,7 @@ def test_update_days_multiple(
         ),
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -148,7 +148,7 @@ def test_update_days_change_on_config_reload(
     child.expect(r"\[INFO\]  - Update at:")
     child.expect(r"\[INFO\]    - Tuesday 03:00")
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -195,7 +195,7 @@ def test_update_times(
         ),
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -226,7 +226,7 @@ def test_update_times_multiple(
         ),
     )
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -289,7 +289,7 @@ def test_update_times_change_on_config_reload(
     child.expect(r"\[INFO\]  - Update at:")
     child.expect(r"\[INFO\]    - Monday 09:00")
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -341,7 +341,7 @@ def test_watch_config_enabled(
     child.expect(r"\[INFO\] Reloading config")
     child.expect(r"\[INFO\] Finished reloading config")
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     assert child.exitstatus == 0
@@ -367,7 +367,7 @@ def test_watch_config_disabled(
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\] Buildarr ready.")
     buildarr_yml.touch()
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -412,7 +412,7 @@ def test_watch_config_multiple_files(
         child.expect(r"\[INFO\] Reloading config")
         child.expect(r"\[INFO\] Finished reloading config")
         child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     assert child.exitstatus == 0
@@ -438,7 +438,7 @@ def test_watch_config_parent_dir_modified(
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\] Buildarr ready.")
     buildarr_yml.parent.touch()
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()
@@ -501,7 +501,7 @@ def test_watch_config_disabled_to_enabled(
     child.expect(r"\[INFO\] Config file monitoring is already enabled")
     child.expect(r"\[INFO\] Finished reloading config")
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     assert child.exitstatus == 0
@@ -566,7 +566,7 @@ def test_watch_config_enabled_to_disabled(
         child.expect(r"\[INFO\] Finished reloading config")
         child.expect(r"\[INFO\] Buildarr ready.")
 
-    child.kill(signal.SIGTERM)
+    child.terminate()
     child.wait()
 
     output: str = child.logfile.getvalue().decode()

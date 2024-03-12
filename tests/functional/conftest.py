@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import random
 import shutil
+import signal
 import string
 import subprocess
 import sys
@@ -28,7 +29,7 @@ from typing import TYPE_CHECKING
 import pytest
 import yaml
 
-from pexpect.popen_spawn import PopenSpawn
+from pexpect.popen_spawn import PopenSpawn as PopenSpawnBase
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,6 +42,17 @@ BUILDARR_COMMAND = shutil.which("buildarr") or ""
 
 if not BUILDARR_COMMAND:
     raise RuntimeError("'buildarr' command not found on the command line")
+
+
+class PopenSpawn(PopenSpawnBase):
+    def terminate(self) -> None:
+        self.kill(
+            (
+                signal.SIGBREAK  # type: ignore[attr-defined]
+                if sys.platform == "win32"
+                else signal.SIGTERM
+            ),
+        )
 
 
 @pytest.fixture
