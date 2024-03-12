@@ -248,10 +248,10 @@ def compose(
                     new_volumes: List[Dict[str, Any]] = []
                     for volume in service_config["volumes"]:
                         if isinstance(volume, str):
+                            # TODO: Add Windows path handling here.
                             try:
                                 source, target, options_str = volume.split(":", maxsplit=3)
                             except ValueError:
-                                print(f"volume = {volume}")  # noqa: T201
                                 source, target = volume.split(":", maxsplit=2)
                                 options_str = None
                             options: Set[str] = (
@@ -272,6 +272,7 @@ def compose(
                             new_volumes.append(new_volume)
                         else:
                             new_volumes.append(volume)
+                    # TODO: Convert Windows path to similar Unix paths here.
                     service_config["volumes"] = new_volumes
             service: Dict[str, Any] = {
                 **service_config,

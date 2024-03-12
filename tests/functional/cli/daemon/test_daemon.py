@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(
     "sig",
-    ["SIGTERM", "SIGINT"] if sys.platform == "win32" else ["SIGBREAK", "CTRL_C_EVENT"],
+    ["SIGBREAK", "CTRL_C_EVENT"] if sys.platform == "win32" else ["SIGTERM", "SIGINT"],
 )
 def test_signal_terminate(
     sig,
