@@ -21,6 +21,7 @@ import string
 import subprocess
 import uuid
 
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 import pexpect
@@ -88,6 +89,7 @@ def buildarr_interactive_command() -> Callable[..., pexpect.spawn]:
             BUILDARR_COMMAND,
             args=[str(opt) for opt in opts],
             env=_env,
+            logfile=BytesIO(),
         )
 
     return _buildarr_interactive_command

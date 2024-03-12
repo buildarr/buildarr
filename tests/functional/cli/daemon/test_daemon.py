@@ -64,7 +64,7 @@ def test_signal_shutdown(
     assert child.exitstatus == 0
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="Windows does not support SIGHUP")
+@pytest.mark.skipif(sys.platform == "win32", reason="Not supported on Windows")
 def test_sighup(
     httpserver: HTTPServer,
     buildarr_yml_factory,

@@ -15,7 +15,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
@@ -25,13 +25,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+          operating_system:
+            - ubuntu-22.04
+            - windows-2022
           python_version:
             - "3.8"
             - "3.9"
             - "3.10"
             - "3.11"
             - "3.12"
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.operating_system }}
     steps:
       - name: Clone full tree, and checkout branch
         uses: actions/checkout@v4
@@ -57,7 +60,7 @@ jobs:
       - name: Setup Python and PDM
         uses: pdm-project/setup-pdm@v4
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Build source dist and wheels
         run: pdm build --verbose
       - name: Upload source dist and wheels to artifacts

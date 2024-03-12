@@ -60,7 +60,7 @@ def test_update_day(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -96,7 +96,7 @@ def test_update_day_multiple(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -151,7 +151,7 @@ def test_update_time(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -187,7 +187,7 @@ def test_update_time_multiple(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -272,7 +272,7 @@ def test_no_watch(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert f"[INFO] Config file '{buildarr_yml}' has been modified" not in output

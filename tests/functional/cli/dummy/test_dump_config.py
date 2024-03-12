@@ -78,6 +78,7 @@ def test_api_key_no_auth_required(
     child.expect(r"Dummy instance API key \(or leave blank to auto-fetch\): ")
     child.sendline("")
     child.wait()
+    child.read()
 
     expected_value = [
         "hostname: localhost",
@@ -94,7 +95,7 @@ def test_api_key_no_auth_required(
 
     httpserver.check_assertions()
     assert child.exitstatus == 0
-    assert child.read().decode().splitlines()[-len(expected_value) :] == expected_value
+    assert child.logfile.getvalue().decode().splitlines()[-len(expected_value) :] == expected_value
 
 
 def test_api_key_autofetch(
@@ -123,6 +124,7 @@ def test_api_key_autofetch(
     child.expect(r"Dummy instance API key \(or leave blank to auto-fetch\): ")
     child.sendline("")
     child.wait()
+    child.read()
 
     expected_value = [
         "hostname: localhost",
@@ -139,7 +141,7 @@ def test_api_key_autofetch(
 
     httpserver.check_assertions()
     assert child.exitstatus == 0
-    assert child.read().decode().splitlines()[-len(expected_value) :] == expected_value
+    assert child.logfile.getvalue().decode().splitlines()[-len(expected_value) :] == expected_value
 
 
 def test_api_key_interactive(
@@ -172,6 +174,7 @@ def test_api_key_interactive(
     child.expect(r"Dummy instance API key \(or leave blank to auto-fetch\): ")
     child.sendline(api_key)
     child.wait()
+    child.read()
 
     expected_value = [
         "hostname: localhost",
@@ -188,7 +191,7 @@ def test_api_key_interactive(
 
     httpserver.check_assertions()
     assert child.exitstatus == 0
-    assert child.read().decode().splitlines()[-len(expected_value) :] == expected_value
+    assert child.logfile.getvalue().decode().splitlines()[-len(expected_value) :] == expected_value
 
 
 @pytest.mark.parametrize("opt", ["-k", "--api-key"])

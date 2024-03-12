@@ -20,9 +20,12 @@ from __future__ import annotations
 
 import re
 import signal
+import sys
 
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
+
+import pytest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,7 +57,7 @@ def test_update_days(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -85,7 +88,7 @@ def test_update_days_multiple(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -93,6 +96,66 @@ def test_update_days_multiple(
         assert f"[INFO]    - {day} 03:00" in output
     for day in ("Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
         assert f"[INFO]    - {day} 03:00" not in output
+
+
+def test_update_days_change_on_config_reload(
+    tmp_path: Path,
+    httpserver: HTTPServer,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = tmp_path / "buildarr.yml"
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: true\n"
+                "  update_days:\n"
+                "    - Sunday\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\]  - Update at:")
+    child.expect(r"\[INFO\]    - Sunday 03:00")
+    child.expect(r"\[INFO\] Buildarr ready.")
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: true\n"
+                "  update_days:\n"
+                "    - Tuesday\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(r"\[INFO\]  - Update at:")
+    child.expect(r"\[INFO\]    - Tuesday 03:00")
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+    output: str = child.logfile.getvalue().decode()
+
+    assert child.exitstatus == 0
+    assert output.count("[INFO]    - Sunday 03:00") == 1
+    assert output.count("[INFO]    - Tuesday 03:00") == 1
 
 
 def test_update_days_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
@@ -135,7 +198,7 @@ def test_update_times(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -166,7 +229,7 @@ def test_update_times_multiple(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
@@ -174,6 +237,66 @@ def test_update_times_multiple(
         assert f"[INFO]    - {day} 06:00" in output
         assert f"[INFO]    - {day} 09:00" in output
         assert f"[INFO]    - {day} 03:00" not in output
+
+
+def test_update_times_change_on_config_reload(
+    tmp_path: Path,
+    httpserver: HTTPServer,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = tmp_path / "buildarr.yml"
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: true\n"
+                "  update_times:\n"
+                "    - '06:00'\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\]  - Update at:")
+    child.expect(r"\[INFO\]    - Monday 06:00")
+    child.expect(r"\[INFO\] Buildarr ready.")
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: true\n"
+                "  update_times:\n"
+                "    - '09:00'\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(r"\[INFO\]  - Update at:")
+    child.expect(r"\[INFO\]    - Monday 09:00")
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+    output: str = child.logfile.getvalue().decode()
+
+    assert child.exitstatus == 0
+    assert output.count("[INFO]    - Monday 06:00") == 1
+    assert output.count("[INFO]    - Monday 09:00") == 1
 
 
 def test_update_times_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
@@ -247,7 +370,7 @@ def test_watch_config_disabled(
     child.kill(signal.SIGTERM)
     child.wait()
 
-    output = child.before.decode() + child.read().decode()
+    output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
     assert f"[INFO] Config file '{buildarr_yml}' has been modified" not in output
@@ -292,10 +415,161 @@ def test_watch_config_multiple_files(
     child.kill(signal.SIGTERM)
     child.wait()
 
+    assert child.exitstatus == 0
 
-# TODO:
-#  - test_update_days_change_live (should work)
-#  - test_update_times_change_live (should work)
-#  - test_watch_config_enable_live (should work)
-#  - test_watch_config_disable_live (should work)
-#  - test_watch_config_parent_dir_update (should not cause an update run)
+
+def test_watch_config_parent_dir_modified(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml: Path = buildarr_yml_factory(
+        {
+            "buildarr": {"watch_config": True},
+            "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
+        },
+    )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\] Buildarr ready.")
+    buildarr_yml.parent.touch()
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+    output: str = child.logfile.getvalue().decode()
+
+    assert child.exitstatus == 0
+    assert f"[INFO] Config file '{buildarr_yml}' has been modified" not in output
+    assert f"[INFO] Config file '{buildarr_yml.parent}' has been modified" not in output
+    assert "[INFO] Reloading config" not in output
+    assert "[INFO] Finished reloading config" not in output
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="Not supported on Windows")
+def test_watch_config_disabled_to_enabled(
+    tmp_path: Path,
+    httpserver: HTTPServer,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = tmp_path / "buildarr.yml"
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: false\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\] Config file monitoring is already disabled")
+    child.expect(r"\[INFO\] Buildarr ready.")
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: true\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child.kill(signal.SIGHUP)  # type: ignore[attr-defined]
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(r"\[INFO\] Enabling config file monitoring")
+    child.expect(r"\[INFO\] Finished enabling config file monitoring")
+    child.expect(r"\[INFO\] Buildarr ready.")
+    buildarr_yml.touch()
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(r"\[INFO\] Config file monitoring is already enabled")
+    child.expect(r"\[INFO\] Finished reloading config")
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+    assert child.exitstatus == 0
+
+
+def test_watch_config_enabled_to_disabled(
+    tmp_path: Path,
+    httpserver: HTTPServer,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = tmp_path / "buildarr.yml"
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: true\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\] Enabling config file monitoring")
+    child.expect(r"\[INFO\] Finished enabling config file monitoring")
+    child.expect(r"\[INFO\] Buildarr ready.")
+
+    with buildarr_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "buildarr:\n"
+                "  watch_config: false\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(r"\[INFO\] Disabling config file monitoring")
+    child.expect(r"\[INFO\] Finished disabling config file monitoring")
+    child.expect(r"\[INFO\] Finished reloading config")
+    child.expect(r"\[INFO\] Buildarr ready.")
+
+    buildarr_yml.touch()
+
+    # Do extra testing on non-Windows platforms to make sure this is working as expected.
+    # Unfortunately we cannot do this on Windows because SIGHUP is not supported.
+    if sys.platform != "win32":
+        child.kill(signal.SIGHUP)
+        child.expect(r"\[INFO\] Reloading config")
+        child.expect(r"\[INFO\] Config file monitoring is already disabled")
+        child.expect(r"\[INFO\] Finished reloading config")
+        child.expect(r"\[INFO\] Buildarr ready.")
+
+    child.kill(signal.SIGTERM)
+    child.wait()
+
+    output: str = child.logfile.getvalue().decode()
+
+    assert child.exitstatus == 0
+    assert output.count(f"[INFO] Config file '{buildarr_yml}' has been modified") == 1
