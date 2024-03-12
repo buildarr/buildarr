@@ -25,11 +25,10 @@ from urllib.parse import urlparse
 
 import pytest
 
-from pexpect import spawn
-
 if TYPE_CHECKING:
     from typing import Callable
 
+    from pexpect import spawn
     from pytest_httpserver import HTTPServer
 
 
