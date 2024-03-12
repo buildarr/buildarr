@@ -251,6 +251,7 @@ def compose(
                             try:
                                 source, target, options_str = volume.split(":", maxsplit=3)
                             except ValueError:
+                                print(f"volume = {volume}")  # noqa: T201
                                 source, target = volume.split(":", maxsplit=2)
                                 options_str = None
                             options: Set[str] = (
