@@ -23,8 +23,9 @@ import subprocess
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-import pexpect
 import pytest
+
+from pexpect import spawn
 
 if TYPE_CHECKING:
     from typing import Callable
@@ -43,11 +44,11 @@ def buildarr_dummy_dump_config(buildarr_command) -> Callable[..., subprocess.Com
 @pytest.fixture
 def buildarr_dummy_dump_config_interactive(
     buildarr_interactive_command,
-) -> Callable[..., pexpect.spawn]:
+) -> Callable[..., spawn]:
     def _buildarr_dummy_dump_config_interactive(
         *opts: str,
         **kwargs,
-    ) -> pexpect.spawn:
+    ) -> spawn:
         return buildarr_interactive_command("dummy", "dump-config", *opts, **kwargs)
 
     return _buildarr_dummy_dump_config_interactive
@@ -74,7 +75,7 @@ def test_api_key_no_auth_required(
         {"isUpdated": False, "trashValue": None, "instanceValue": None},
     )
 
-    child: pexpect.spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""))
+    child: spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""), redirect_tty=True)
     child.expect(r"Dummy instance API key \(or leave blank to auto-fetch\): ")
     child.sendline("")
     child.wait()
@@ -120,7 +121,7 @@ def test_api_key_autofetch(
         {"isUpdated": False, "trashValue": None, "instanceValue": None},
     )
 
-    child: pexpect.spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""))
+    child: spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""), redirect_tty=True)
     child.expect(r"Dummy instance API key \(or leave blank to auto-fetch\): ")
     child.sendline("")
     child.wait()
@@ -170,7 +171,7 @@ def test_api_key_interactive(
         {"isUpdated": False, "trashValue": None, "instanceValue": None},
     )
 
-    child: pexpect.spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""))
+    child: spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""), redirect_tty=True)
     child.expect(r"Dummy instance API key \(or leave blank to auto-fetch\): ")
     child.sendline(api_key)
     child.wait()

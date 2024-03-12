@@ -19,18 +19,22 @@ import random
 import shutil
 import string
 import subprocess
+import sys
 import uuid
 
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-import pexpect
 import pytest
 import yaml
+
+from pexpect.popen_spawn import PopenSpawn
 
 if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, Callable, Dict, Mapping, Optional
+
+    from pexpect import spawn
 
 
 BUILDARR_COMMAND = shutil.which("buildarr") or ""
@@ -77,17 +81,35 @@ def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
 
 
 @pytest.fixture
-def buildarr_interactive_command() -> Callable[..., pexpect.spawn]:
+def buildarr_interactive_command() -> Callable[..., spawn]:
     def _buildarr_interactive_command(
         *opts: str,
         testing: Optional[bool] = True,
         log_level: Optional[str] = "DEBUG",
+        redirect_tty: bool = False,
         **env: str,
-    ) -> pexpect.spawn:
+    ) -> spawn:
         _env = _get_env(env=env, testing=testing, log_level=log_level)
-        return pexpect.spawn(
-            BUILDARR_COMMAND,
-            args=[str(opt) for opt in opts],
+
+        # Allows for /dev/tty redirection using a pseudo-terminal (PTY),
+        # but not supported on Windows.
+        if redirect_tty:
+            if sys.platform == "win32":
+                pytest.skip(reason="Not supported on Windows")
+
+            from pexpect import spawn as ptyspawn
+
+            return ptyspawn(
+                BUILDARR_COMMAND,
+                args=[str(opt) for opt in opts],
+                env=_env,
+                logfile=BytesIO(),
+            )
+
+        # Cross-platform, but does not support commands that directly
+        # interact with /dev/tty.
+        return PopenSpawn(
+            [BUILDARR_COMMAND, *opts],
             env=_env,
             logfile=BytesIO(),
         )
@@ -112,11 +134,11 @@ def buildarr_daemon(buildarr_command) -> Callable[..., subprocess.CompletedProce
 
 
 @pytest.fixture
-def buildarr_daemon_interactive(buildarr_interactive_command) -> Callable[..., pexpect.spawn]:
+def buildarr_daemon_interactive(buildarr_interactive_command) -> Callable[..., spawn]:
     def _buildarr_daemon_interactive(
         *opts: str,
         **kwargs,
-    ) -> pexpect.spawn:
+    ) -> spawn:
         return buildarr_interactive_command("daemon", *opts, **kwargs)
 
     return _buildarr_daemon_interactive
