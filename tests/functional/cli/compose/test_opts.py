@@ -24,6 +24,8 @@ import pytest
 
 from buildarr import __version__
 
+from .util import get_source
+
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
 def test_plugin(opt, buildarr_yml_factory, buildarr_compose) -> None:
@@ -37,6 +39,8 @@ def test_plugin(opt, buildarr_yml_factory, buildarr_compose) -> None:
     )
 
     result = buildarr_compose(buildarr_yml, opt, "dummy")
+
+    source = get_source(buildarr_yml)
 
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
@@ -61,7 +65,7 @@ def test_plugin(opt, buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",
@@ -80,6 +84,8 @@ def test_compose_version(opt, buildarr_yml_factory, buildarr_compose) -> None:
     buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "dummy"}})
 
     result = buildarr_compose(buildarr_yml, opt, "3.4")
+
+    source = get_source(buildarr_yml)
 
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
@@ -104,7 +110,7 @@ def test_compose_version(opt, buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",
@@ -130,6 +136,7 @@ def test_restart(opt, value, buildarr_yml_factory, buildarr_compose) -> None:
 
     result = buildarr_compose(buildarr_yml, opt, value)
 
+    source = get_source(buildarr_yml)
     expected_value = "'no'" if value == "no" else value
 
     assert result.returncode == 0
@@ -155,7 +162,7 @@ def test_restart(opt, value, buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         f"    restart: {expected_value}",
@@ -174,6 +181,8 @@ def test_ignore_hostnames(opt, buildarr_yml_factory, buildarr_compose) -> None:
     buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "192.0.2.1"}})
 
     result = buildarr_compose(buildarr_yml, opt)
+
+    source = get_source(buildarr_yml)
 
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
@@ -198,7 +207,7 @@ def test_ignore_hostnames(opt, buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",

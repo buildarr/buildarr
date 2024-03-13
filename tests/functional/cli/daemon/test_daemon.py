@@ -35,9 +35,9 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(
     "sig",
-    # SIGINT is not practical to test on Windows, because the only way
-    # to trigger it is to send the `CTRL_C_EVENT` signal, which interrupts
-    # every process in the running terminal (including the test suite).
+    # `SIGINT` is not practical to test on Windows right now, because
+    # the only way to trigger it is to send the `CTRL_C_EVENT` signal,
+    # which interrupts every process in the process tree (including the test suite).
     # It works when you run it manually, so it should be fine to not test here.
     ["SIGBREAK"] if sys.platform == "win32" else ["SIGTERM", "SIGINT"],
 )

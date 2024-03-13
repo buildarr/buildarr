@@ -18,11 +18,9 @@ Functional tests for the `buildarr run` CLI command.
 
 from __future__ import annotations
 
-import sys
-
-from pathlib import Path, PurePosixPath
-
 from buildarr import __version__
+
+from .util import get_source
 
 
 def test_hostname_is_ip_address(buildarr_yml_factory, buildarr_compose) -> None:
@@ -338,17 +336,3 @@ def test_volumes_list_tuple(buildarr_yml_factory, buildarr_compose) -> None:
         "volumes:",
         "- dummy_default",
     ]
-
-
-def get_source(path: Path) -> str:
-    source_dir = path.parent
-
-    return str(
-        (
-            PurePosixPath(
-                f"/{source_dir.drive.rstrip(':').lower()}",
-            ).joinpath(*source_dir.parts[1:])
-            if sys.platform == "win32"
-            else source_dir
-        ),
-    )

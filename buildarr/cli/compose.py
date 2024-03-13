@@ -281,7 +281,7 @@ def compose(
                     service_config["volumes"] = new_volumes
                 # If we are running on Windows, convert the source and target
                 # fields to POSIX paths, as required.
-                if sys.platform == "win32":  # pragma: no branch
+                if sys.platform == "win32":
                     for volume in service_config["volumes"]:
                         for key in ("source", "target"):
                             volume[key] = windows_to_posix(volume[key])
