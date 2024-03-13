@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    "sig",
+    "signal_name",
     # `SIGINT` is not practical to test on Windows right now, because
     # the only way to trigger it is to send the `CTRL_C_EVENT` signal,
     # which interrupts every process in the process tree (including the test suite).
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     ["SIGBREAK"] if sys.platform == "win32" else ["SIGTERM", "SIGINT"],
 )
 def test_signal_terminate(
-    sig,
+    signal_name,
     httpserver: HTTPServer,
     buildarr_yml_factory,
     buildarr_daemon_interactive,
@@ -58,8 +58,8 @@ def test_signal_terminate(
 
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\] Buildarr ready.")
-    child.kill(getattr(signal, sig))
-    child.expect(f"\\[INFO\\] {sig} received")
+    child.kill(getattr(signal, signal_name))
+    child.expect(f"\\[INFO\\] {signal_name} received")
     child.expect(r"\[INFO\] Stopping daemon")
     child.expect(r"\[INFO\] Stopping config file observer")
     child.expect(r"\[INFO\] Finished stopping config file observer")
@@ -99,8 +99,79 @@ def test_sighup(
     assert child.exitstatus == 0
 
 
+def test_initial_run_success(
+    httpserver: HTTPServer,
+    instance_value,
+    buildarr_yml_factory,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that a value that is not up to date on the remote instance is updated,
+    with Buildarr reporting that the instance was updated.
+    """
+
+    api_root = "/api/v1"
+    version = "1.0.0"
+
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
+    httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
+        {"version": version},
+    )
+    # Get instance configuration for updating.
+    httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+    )
+    # Update instance configuration.
+    httpserver.expect_ordered_request(
+        f"{api_root}/settings",
+        method="POST",
+        json={"trashValue": None, "instanceValue": instance_value},
+    ).respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        status=201,
+    )
+    # Get instance configuration for deleting resources.
+    httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+    )
+
+    child: spawn = buildarr_daemon_interactive(
+        buildarr_yml_factory(
+            {
+                "dummy": {
+                    "hostname": "localhost",
+                    "port": urlparse(httpserver.url_for("")).port,
+                    "settings": {"instance_value": instance_value},
+                },
+            },
+        ),
+    )
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.terminate()
+    child.wait()
+
+    output: str = child.logfile.getvalue().decode()
+
+    httpserver.check_assertions()
+    assert child.exitstatus == 0
+    assert "[INFO] Applying initial configuration" in output
+    assert (
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        in output
+    )
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in output
+    assert "[INFO] Finished applying initial configuration" in output
+
+
 # TODO:
-#  - test_initial_run_success
 #  - test_initial_run_fail
 #  - test_scheduled_run_success
 #  - test_scheduled_run_fail
