@@ -18,6 +18,10 @@ Functional tests for the `buildarr run` CLI command.
 
 from __future__ import annotations
 
+import sys
+
+from pathlib import Path, PurePosixPath
+
 from buildarr import __version__
 
 
@@ -99,6 +103,8 @@ def test_instance_dependencies(buildarr_yml_factory, buildarr_compose) -> None:
 
     result = buildarr_compose(buildarr_yml)
 
+    source = get_source(buildarr_yml)
+
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
         "---",
@@ -135,7 +141,7 @@ def test_instance_dependencies(buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",
@@ -163,6 +169,8 @@ def test_volumes_dict(buildarr_yml_factory, buildarr_compose) -> None:
 
     result = buildarr_compose(buildarr_yml)
 
+    source = get_source(buildarr_yml)
+
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
         "---",
@@ -179,7 +187,7 @@ def test_volumes_dict(buildarr_yml_factory, buildarr_compose) -> None:
         "    - --debug",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "    - type: volume",
         "      source: dummy_default",
@@ -193,7 +201,7 @@ def test_volumes_dict(buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",
@@ -222,6 +230,8 @@ def test_volumes_list_dict(buildarr_yml_factory, buildarr_compose) -> None:
 
     result = buildarr_compose(buildarr_yml)
 
+    source = get_source(buildarr_yml)
+
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
         "---",
@@ -238,7 +248,7 @@ def test_volumes_list_dict(buildarr_yml_factory, buildarr_compose) -> None:
         "    - --debug",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    - type: volume",
@@ -254,7 +264,7 @@ def test_volumes_list_dict(buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",
@@ -265,7 +275,7 @@ def test_volumes_list_dict(buildarr_yml_factory, buildarr_compose) -> None:
     ]
 
 
-def test_volumes_list_str(buildarr_yml_factory, buildarr_compose) -> None:
+def test_volumes_list_tuple(buildarr_yml_factory, buildarr_compose) -> None:
     """
     Check that `buildarr test-config` passes on a configuration
     with a single instance value defined.
@@ -276,12 +286,14 @@ def test_volumes_list_str(buildarr_yml_factory, buildarr_compose) -> None:
             "dummy": {
                 "hostname": "dummy",
                 "use_service_volumes": True,
-                "service_volumes_type": "list-str",
+                "service_volumes_type": "list-tuple",
             },
         },
     )
 
     result = buildarr_compose(buildarr_yml)
+
+    source = get_source(buildarr_yml)
 
     assert result.returncode == 0
     assert result.stdout.splitlines() == [
@@ -299,7 +311,7 @@ def test_volumes_list_str(buildarr_yml_factory, buildarr_compose) -> None:
         "    - --debug",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "      bind:",
@@ -317,7 +329,7 @@ def test_volumes_list_str(buildarr_yml_factory, buildarr_compose) -> None:
         "    - /config/buildarr.yml",
         "    volumes:",
         "    - type: bind",
-        f"      source: {buildarr_yml.parent}",
+        f"      source: {source}",
         "      target: /config",
         "      read_only: true",
         "    restart: always",
@@ -326,3 +338,17 @@ def test_volumes_list_str(buildarr_yml_factory, buildarr_compose) -> None:
         "volumes:",
         "- dummy_default",
     ]
+
+
+def get_source(path: Path) -> str:
+    source_dir = path.parent
+
+    return str(
+        (
+            PurePosixPath(
+                f"/{source_dir.drive.rstrip(':').lower()}",
+            ).joinpath(*source_dir.parts[1:])
+            if sys.platform == "win32"
+            else source_dir
+        ),
+    )

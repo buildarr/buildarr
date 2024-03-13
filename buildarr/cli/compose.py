@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import sys
+
 from ipaddress import ip_address
 from logging import getLogger
 from pathlib import Path
@@ -32,7 +34,7 @@ from ..config import load_config, load_instance_configs, resolve_instance_depend
 from ..logging import get_log_level
 from ..manager import load_managers
 from ..state import state
-from ..util import get_resolved_path
+from ..util import get_resolved_path, windows_to_posix
 from . import cli
 from .exceptions import (
     ComposeInvalidHostnameError,
@@ -247,32 +249,41 @@ def compose(
                 else:
                     new_volumes: List[Dict[str, Any]] = []
                     for volume in service_config["volumes"]:
-                        if isinstance(volume, str):
-                            # TODO: Add Windows path handling here.
+                        if isinstance(volume, tuple):
                             try:
-                                source, target, options_str = volume.split(":", maxsplit=3)
+                                source, target, options = volume
                             except ValueError:
-                                source, target = volume.split(":", maxsplit=2)
-                                options_str = None
-                            options: Set[str] = (
-                                set(o.strip().lower() for o in options_str.split(","))
-                                if options_str
-                                else set()
-                            )
+                                try:
+                                    source, target = volume
+                                    options = []
+                                except ValueError:
+                                    raise ValueError(
+                                        (
+                                            "Invalid tuple volume definition from plugin "
+                                            "(expecting a 2-tuple, or 3-tuple): "
+                                            f"{volume}"
+                                        ),
+                                    ) from None
+                            options_set = set(opt.strip().lower() for opt in options)
                             new_volume = {
                                 "type": (
                                     "volume" if "/" not in source and "\\" not in source else "bind"
                                 ),
                                 "source": source,
                                 "target": target,
-                                "read_only": "ro" in options and "rw" not in options,
+                                "read_only": "ro" in options_set and "rw" not in options_set,
                             }
                             if new_volume["type"] == "bind":
                                 new_volume["bind"] = {"create_host_path": True}
                             new_volumes.append(new_volume)
                         else:
                             new_volumes.append(volume)
-                    # TODO: Convert Windows path to similar Unix paths here.
+                    # If we are running on Windows, convert the source and target
+                    # fields to POSIX paths, as required.
+                    if sys.platform == "win32":  # pragma: no branch
+                        for volume in new_volumes:
+                            for key in ("source", "target"):
+                                volume[key] = windows_to_posix(volume[key])
                     service_config["volumes"] = new_volumes
             service: Dict[str, Any] = {
                 **service_config,
@@ -317,7 +328,11 @@ def compose(
         "volumes": [
             {
                 "type": "bind",
-                "source": str(state.config_files[0].parent),
+                "source": (
+                    windows_to_posix(state.config_files[0].parent)
+                    if sys.platform == "win32"
+                    else str(state.config_files[0].parent)
+                ),
                 "target": "/config",
                 "read_only": True,
             },

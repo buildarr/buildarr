@@ -21,7 +21,7 @@ from __future__ import annotations
 import os
 
 from contextlib import contextmanager
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from shutil import rmtree
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import TYPE_CHECKING, Mapping
@@ -186,3 +186,32 @@ def remove_dir(path: os.PathLike, nonexist_ok: bool = True) -> None:
     except FileNotFoundError:
         if not nonexist_ok:
             raise
+
+
+def windows_to_posix(path: os.PathLike) -> str:
+    """
+    Convert a given Windows path to the equivalent POSIX path, suitable for use in
+    e.g. Docker Desktop for Windows, or Windows Subsystem for Linux.
+
+    If the given path is already POSIX compliant, it will be unmodified.
+
+    Accepts both strings and path-like objects, but returns a string.
+
+    Args:
+        path (path-like object): Path to convert to POSIX.
+
+    Returns:
+        POSIX path string
+    """
+
+    windows_path = PureWindowsPath(path)
+
+    return (
+        str(
+            PurePosixPath(
+                f"/{windows_path.drive.rstrip(':').lower()}",
+            ).joinpath(*windows_path.parts[1:]),
+        )
+        if windows_path.drive
+        else windows_path.as_posix()
+    )

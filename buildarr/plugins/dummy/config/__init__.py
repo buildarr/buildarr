@@ -156,7 +156,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     Used in functional tests.
     """
 
-    service_volumes_type: Literal["dict", "list-str", "list-dict"] = "list-dict"
+    service_volumes_type: Literal["dict", "list-tuple", "list-dict"] = "list-dict"
     """
     The type to use for the service volumes when generating the Docker Compose service definition.
 
@@ -301,10 +301,10 @@ class DummyInstanceConfig(_DummyInstanceConfig):
                         "read_only": False,
                     },
                 ]
-            elif self.service_volumes_type == "list-str":
+            elif self.service_volumes_type == "list-tuple":
                 service["volumes"] = [
-                    f"{state.config_files[0].parent}:/config:ro",
-                    f"{service_name}:/data",
+                    (str(state.config_files[0].parent), "/config", ["ro"]),
+                    (service_name, "/data"),
                 ]
             else:
                 service["volumes"] = {
