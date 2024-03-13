@@ -35,7 +35,11 @@ if TYPE_CHECKING:
 
 @pytest.mark.parametrize(
     "sig",
-    ["SIGBREAK", "SIGINT"] if sys.platform == "win32" else ["SIGTERM", "SIGINT"],
+    # SIGINT is not practical to test on Windows, because the only way
+    # to trigger it is to send the `CTRL_C_EVENT` signal, which interrupts
+    # every process in the running terminal (including the test suite).
+    # It works when you run it manually, so it should be fine to not test here.
+    ["SIGBREAK"] if sys.platform == "win32" else ["SIGTERM", "SIGINT"],
 )
 def test_signal_terminate(
     sig,
@@ -48,8 +52,6 @@ def test_signal_terminate(
     with a single instance value defined.
     """
 
-    child_sig_name = "SIGINT" if sig == "CTRL_C_EVENT" else sig
-
     buildarr_yml: Path = buildarr_yml_factory(
         {"dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port}},
     )
@@ -57,7 +59,7 @@ def test_signal_terminate(
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\] Buildarr ready.")
     child.kill(getattr(signal, sig))
-    child.expect(f"\\[INFO\\] {child_sig_name} received")
+    child.expect(f"\\[INFO\\] {sig} received")
     child.expect(r"\[INFO\] Stopping daemon")
     child.expect(r"\[INFO\] Stopping config file observer")
     child.expect(r"\[INFO\] Finished stopping config file observer")

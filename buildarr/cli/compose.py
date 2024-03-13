@@ -245,7 +245,7 @@ def compose(
                         for source, target in service_config["volumes"].items()
                     ]
                 # Otherwise, assume the definition is a list structure.
-                # Convert old-style string volume definitions to long-form syntax.
+                # Convert tuples replicating short-form Docker volume syntax to long-form syntax.
                 else:
                     new_volumes: List[Dict[str, Any]] = []
                     for volume in service_config["volumes"]:
@@ -278,13 +278,13 @@ def compose(
                             new_volumes.append(new_volume)
                         else:
                             new_volumes.append(volume)
-                    # If we are running on Windows, convert the source and target
-                    # fields to POSIX paths, as required.
-                    if sys.platform == "win32":  # pragma: no branch
-                        for volume in new_volumes:
-                            for key in ("source", "target"):
-                                volume[key] = windows_to_posix(volume[key])
                     service_config["volumes"] = new_volumes
+                # If we are running on Windows, convert the source and target
+                # fields to POSIX paths, as required.
+                if sys.platform == "win32":  # pragma: no branch
+                    for volume in service_config["volumes"]:
+                        for key in ("source", "target"):
+                            volume[key] = windows_to_posix(volume[key])
             service: Dict[str, Any] = {
                 **service_config,
                 "hostname": hostname,
