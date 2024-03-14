@@ -276,7 +276,7 @@ def api_error(
     """
 
     error_message = (
-        f"Unexpected response with status code {response.status_code} from from '{method} {url}'"
+        f"Unexpected response with status code {response.status_code} from '{method} {url}'"
     )
 
     if parse_response:

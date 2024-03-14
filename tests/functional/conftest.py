@@ -33,7 +33,7 @@ from pexpect.popen_spawn import PopenSpawn as PopenSpawnBase
 
 if TYPE_CHECKING:
     from pathlib import Path
-    from typing import Any, Callable, Dict, Mapping, Optional
+    from typing import Any, Callable, Dict, Generator, List, Mapping, Optional
 
     from pexpect import spawn
 
@@ -93,7 +93,9 @@ def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
 
 
 @pytest.fixture
-def buildarr_interactive_command() -> Callable[..., spawn]:
+def buildarr_interactive_command() -> Generator[Callable[..., spawn], None, None]:
+    children: List[spawn] = []
+
     def _buildarr_interactive_command(
         *opts: str,
         testing: Optional[bool] = True,
@@ -102,7 +104,6 @@ def buildarr_interactive_command() -> Callable[..., spawn]:
         **env: str,
     ) -> spawn:
         _env = _get_env(env=env, testing=testing, log_level=log_level)
-
         # Allows for /dev/tty redirection using a pseudo-terminal (PTY),
         # but not supported on Windows.
         if redirect_tty:
@@ -111,22 +112,30 @@ def buildarr_interactive_command() -> Callable[..., spawn]:
 
             from pexpect import spawn as ptyspawn
 
-            return ptyspawn(
+            child = ptyspawn(
                 BUILDARR_COMMAND,
                 args=[str(opt) for opt in opts],
                 env=_env,
                 logfile=BytesIO(),
             )
-
         # Cross-platform, but does not support commands that directly
         # interact with /dev/tty.
-        return PopenSpawn(
-            [BUILDARR_COMMAND, *opts],
-            env=_env,
-            logfile=BytesIO(),
-        )
+        else:
+            child = PopenSpawn(
+                [BUILDARR_COMMAND, *opts],
+                env=_env,
+                logfile=BytesIO(),
+            )
+        children.append(child)
+        return child
 
-    return _buildarr_interactive_command
+    try:
+        yield _buildarr_interactive_command
+    finally:
+        for child in children:
+            if not getattr(child, "terminated", False):
+                child.kill(signal.SIGKILL)
+                child.wait()
 
 
 @pytest.fixture
