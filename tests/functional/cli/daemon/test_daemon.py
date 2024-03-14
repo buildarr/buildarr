@@ -229,7 +229,7 @@ def test_initial_run_fail(
     child.terminate()
     child.wait()
 
-    output: str = child.logfile.getvalue().decode()
+    output: str = child.logfile.getvalue().decode().replace("\r\n", "\n")
 
     httpserver.check_assertions()
     assert child.exitstatus == 0
@@ -452,7 +452,7 @@ def test_scheduled_run_fail(
     child.terminate()
     child.wait()
 
-    output: str = child.logfile.getvalue().decode()
+    output: str = child.logfile.getvalue().decode().replace("\r\n", "\n")
 
     httpserver.check_assertions()
     assert child.exitstatus == 0
