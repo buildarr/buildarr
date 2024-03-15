@@ -360,5 +360,5 @@ def test_volumes_list_tuple_invalid(buildarr_yml_factory, buildarr_compose) -> N
     assert result.stderr.splitlines()[-1] == (
         "buildarr.cli.exceptions.ComposeInvalidVolumeDefinitionError: "
         "Invalid tuple volume definition for dummy instance 'default' "
-        f"(expecting a 2-tuple, or 3-tuple): ({buildarr_yml!r}, '/config', ['ro'], 'invalid')"
+        f"(expecting a 2-tuple, or 3-tuple): ({str(buildarr_yml)!r}, '/config', ['ro'], 'invalid')"
     )
