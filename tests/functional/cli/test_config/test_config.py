@@ -224,3 +224,9 @@ def test_trash_id_invalid(buildarr_yml_factory, buildarr_test_config) -> None:
         "buildarr.config.exceptions.ConfigTrashIDNotFoundError: "
         f"Unable to find Sonarr quality definition file with trash ID {trash_id!r}"
     )
+
+
+# TODO: Implement:
+#  - test_trash_metadata_download_url
+#  - test_trash_metadata_dir_prefix
+#  - test_trash_metadata_download_fail

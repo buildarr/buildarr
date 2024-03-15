@@ -25,6 +25,22 @@ if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
 
+def test_no_plugins_found(buildarr_yml_factory, buildarr_run) -> None:
+    """
+    Check that if there are no non-testing Buildarr plugins installed,
+    it is reflected in the logs.
+    """
+
+    result = buildarr_run(buildarr_yml_factory({}), testing=False)
+
+    assert result.returncode == 1
+    assert "[INFO] Loaded plugins: (no plugins found)" in result.stdout
+    assert result.stderr.splitlines()[-1] == (
+        "buildarr.cli.exceptions.RunNoPluginsDefinedError: "
+        "No loaded plugins configured in Buildarr"
+    )
+
+
 def test_no_plugins_configured(buildarr_yml_factory, buildarr_run) -> None:
     """
     Check that if `buildarr.yml` does not have any plugins configured,

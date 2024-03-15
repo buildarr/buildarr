@@ -26,6 +26,9 @@ import pytest
 if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
+# TODO: Implement:
+#   - test_config_path_undefined
+
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
 def test_plugin(

@@ -20,6 +20,9 @@ from __future__ import annotations
 
 import pytest
 
+# TODO: Implement:
+#   - test_config_path_undefined
+
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
 def test_plugin(opt, instance_value, buildarr_yml_factory, buildarr_test_config) -> None:

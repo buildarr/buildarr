@@ -26,6 +26,9 @@ from buildarr import __version__
 
 from .util import get_source
 
+# TODO: Implement:
+#   - test_config_path_undefined
+
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
 def test_plugin(opt, buildarr_yml_factory, buildarr_compose) -> None:

@@ -73,6 +73,7 @@ def buildarr_yml_factory(tmp_path) -> Callable[..., Path]:
 def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
     def _buildarr_command(
         *opts: str,
+        cwd: Optional[str] = None,
         stdin: Optional[str] = None,
         check: bool = False,
         testing: Optional[bool] = True,
@@ -82,6 +83,7 @@ def buildarr_command() -> Callable[..., subprocess.CompletedProcess[str]]:
         _env = _get_env(env=env, testing=testing, log_level=log_level)
         return subprocess.run(
             args=[BUILDARR_COMMAND, *opts],
+            cwd=cwd,
             input=stdin,
             env=_env,
             check=check,
@@ -98,6 +100,7 @@ def buildarr_interactive_command() -> Generator[Callable[..., spawn], None, None
 
     def _buildarr_interactive_command(
         *opts: str,
+        cwd: Optional[str] = None,
         testing: Optional[bool] = True,
         log_level: Optional[str] = "DEBUG",
         redirect_tty: bool = False,
@@ -115,6 +118,7 @@ def buildarr_interactive_command() -> Generator[Callable[..., spawn], None, None
             child = ptyspawn(
                 BUILDARR_COMMAND,
                 args=[str(opt) for opt in opts],
+                cwd=cwd,
                 env=_env,
                 logfile=BytesIO(),
             )
@@ -123,6 +127,7 @@ def buildarr_interactive_command() -> Generator[Callable[..., spawn], None, None
         else:
             child = PopenSpawn(
                 [BUILDARR_COMMAND, *opts],
+                cwd=cwd,
                 env=_env,
                 logfile=BytesIO(),
             )

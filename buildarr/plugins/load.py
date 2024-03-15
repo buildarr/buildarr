@@ -55,21 +55,20 @@ def load(namespace: str = "buildarr.plugins") -> None:
         # if Buildarr was not started in testing mode.
         if not state.testing and plugin.name in ("dummy", "dummy2"):
             continue
-        if plugin.name not in plugins:
+        if plugin.name not in plugins:  # pragma: no branch
             plugins[plugin.name] = plugin.entry_point.load()
 
     state.plugins = plugins
 
 
-def _on_plugin_failure(manager: ExtensionManager, entrypoint: EntryPoint, err: Exception) -> None:
+def _on_plugin_failure(manager: ExtensionManager, entry_point: EntryPoint, err: Exception) -> None:
     """
     Plugin load error handler.
 
     Args:
         manager (ExtensionManager): Extension manager used to load the plugin
-        entrypoint (EntryPoint): Entry point metadata of the plugin
+        entry_point (EntryPoint): Entry point metadata of the plugin
         err (Exception): Exception raised during loading
     """
 
-    logger.error("An error occured while loading plugin '%s':", entrypoint.name)
-    logger.exception(err)
+    logger.exception("An error occurred while loading plugin '%s': %s", entry_point.name, err)

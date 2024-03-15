@@ -392,7 +392,7 @@ def test_watch_config_multiple_files(
     dummy_yml = tmp_path / "dummy.yml"
 
     with buildarr_yml.open("w") as f:
-        f.write("---\nincludes:\n  - dummy.yml\nbuildarr:\n  watch_config: true\n")
+        f.write(f"---\nincludes:\n  - {dummy_yml}\nbuildarr:\n  watch_config: true\n")
 
     with dummy_yml.open("w") as f:
         f.write(

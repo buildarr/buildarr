@@ -22,7 +22,96 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from pytest_httpserver import HTTPServer
+
+
+def test_invalid_type(buildarr_yml_factory, buildarr_run) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    buildarr_yml = buildarr_yml_factory([])
+
+    result = buildarr_run(buildarr_yml)
+
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-1] == (
+        f"ValueError: Error while loading configuration file '{buildarr_yml}': "
+        "Invalid configuration object type (got 'list', expected 'dict'): []"
+    )
+
+
+def test_null(buildarr_yml_factory, buildarr_run) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    result = buildarr_run(buildarr_yml_factory(None))
+
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-1] == (
+        "buildarr.cli.exceptions.RunNoPluginsDefinedError: "
+        "No loaded plugins configured in Buildarr"
+    )
+
+
+def test_includes_relative_path(tmp_path: Path, httpserver: HTTPServer, buildarr_run) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    buildarr_yml = tmp_path / "buildarr.yml"
+    dummy_yml = tmp_path / "dummy.yml"
+
+    with buildarr_yml.open("w") as f:
+        f.write("---\nincludes:\n  - dummy.yml\nbuildarr:\n  watch_config: true\n")
+
+    with dummy_yml.open("w") as f:
+        f.write(
+            (
+                "---\n"
+                "dummy:\n"
+                "  hostname: localhost\n"
+                f"  port: {urlparse(httpserver.url_for('')).port}\n"
+            ),
+        )
+
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"message": "Test Error"},
+        status=500,
+    )
+
+    result = buildarr_run(buildarr_yml)
+
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-1] == (
+        "buildarr.plugins.dummy.exceptions.DummyAPIError: Unexpected response "
+        f"with status code 500 from 'GET {httpserver.url_for('/initialize.json')}': "
+        "Test Error"
+    )
+
+
+def test_includes_invalid_type(buildarr_yml_factory, buildarr_run) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    buildarr_yml = buildarr_yml_factory({"includes": {}})
+
+    result = buildarr_run(buildarr_yml)
+
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-1] == (
+        f"ValueError: Error while loading configuration file '{buildarr_yml}': "
+        "Invalid value type for 'includes' (got 'dict', expected 'list'): {}"
+    )
 
 
 def test_instance_value_changed(

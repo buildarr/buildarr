@@ -22,6 +22,10 @@ from buildarr import __version__
 
 from .util import get_source
 
+# TODO: Implement:
+#   - test_buildarr_docker_image_uri_config
+#   - test_buildarr_docker_image_uri_envvar
+
 
 def test_hostname_is_ip_address(buildarr_yml_factory, buildarr_compose) -> None:
     """

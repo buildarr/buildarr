@@ -19,6 +19,29 @@ Functional tests for the `buildarr run` CLI command.
 from __future__ import annotations
 
 
+def test_no_plugins_found(buildarr_yml_factory, buildarr_test_config) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    buildarr_yml = buildarr_yml_factory({})
+
+    result = buildarr_test_config(buildarr_yml, testing=False)
+
+    assert result.returncode == 1
+    assert "[INFO] Loaded plugins: (no plugins found)" in result.stdout
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "[ERROR] Checking configured plugins: FAILED" in result.stderr
+    assert result.stderr.splitlines()[-1] == (
+        "buildarr.cli.exceptions.TestConfigNoPluginsDefinedError: "
+        "No configuration defined for any selected plugins"
+    )
+
+
 def test_no_plugins_configured(buildarr_yml_factory, buildarr_test_config) -> None:
     """
     Check that if `buildarr.yml` does not have any plugins configured,

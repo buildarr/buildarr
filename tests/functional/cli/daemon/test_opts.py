@@ -32,6 +32,9 @@ if TYPE_CHECKING:
     from pexpect import spawn
     from pytest_httpserver import HTTPServer
 
+# TODO: Implement:
+#   - test_config_path_undefined
+
 
 @pytest.mark.parametrize("opt", ["-d", "--update-day"])
 def test_update_day(
