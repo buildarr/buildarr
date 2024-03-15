@@ -31,7 +31,6 @@ class Dummy2Plugin(Plugin):
     Dummy2 plugin class that Buildarr reads to process Dummy2 instances.
     """
 
-    cli = None
     config = Dummy2Config
     manager = Dummy2Manager
     secrets = Dummy2Secrets
