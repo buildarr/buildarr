@@ -336,3 +336,31 @@ def test_volumes_list_tuple(buildarr_yml_factory, buildarr_compose) -> None:
         "volumes:",
         "- dummy_default",
     ]
+
+
+def test_volumes_list_tuple_invalid(buildarr_yml_factory, buildarr_compose) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "dummy": {
+                "hostname": "dummy",
+                "use_service_volumes": True,
+                "service_volumes_type": "list-tuple-invalid",
+            },
+        },
+    )
+
+    result = buildarr_compose(buildarr_yml)
+
+    source = get_source(buildarr_yml)
+
+    assert result.returncode == 1
+    assert result.stderr.splitlines()[-1] == (
+        "buildarr.cli.exceptions.ComposeInvalidVolumeDefinitionError: "
+        "Invalid tuple volume definition for dummy instance 'default' "
+        f"(expecting a 2-tuple, or 3-tuple): ({source!r}, '/config', ['ro'], 'invalid')"
+    )

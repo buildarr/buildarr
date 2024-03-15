@@ -38,6 +38,7 @@ from ..util import get_resolved_path, windows_to_posix
 from . import cli
 from .exceptions import (
     ComposeInvalidHostnameError,
+    ComposeInvalidVolumeDefinitionError,
     ComposeNoPluginsDefinedError,
     ComposeNotSupportedError,
 )
@@ -257,9 +258,10 @@ def compose(
                                     source, target = volume
                                     options = []
                                 except ValueError:
-                                    raise ValueError(
+                                    raise ComposeInvalidVolumeDefinitionError(
                                         (
-                                            "Invalid tuple volume definition from plugin "
+                                            "Invalid tuple volume definition for "
+                                            f"{plugin_name} instance '{instance_name}' "
                                             "(expecting a 2-tuple, or 3-tuple): "
                                             f"{volume}"
                                         ),

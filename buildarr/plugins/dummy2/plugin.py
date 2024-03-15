@@ -21,7 +21,6 @@ from __future__ import annotations
 from buildarr import __version__
 from buildarr.plugins import Plugin
 
-from .cli import dummy2
 from .config import Dummy2Config
 from .manager import Dummy2Manager
 from .secrets import Dummy2Secrets
@@ -32,7 +31,7 @@ class Dummy2Plugin(Plugin):
     Dummy2 plugin class that Buildarr reads to process Dummy2 instances.
     """
 
-    cli = dummy2
+    cli = None
     config = Dummy2Config
     manager = Dummy2Manager
     secrets = Dummy2Secrets

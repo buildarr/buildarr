@@ -116,6 +116,7 @@ omit = [
 [tool.coverage.report]
 exclude_also = [
     "if TYPE_CHECKING:",
+    'if __name__ == "__main__":',
     "raise NotImplementedError",
 ]
 
