@@ -89,6 +89,7 @@ def test_includes_relative_path(tmp_path: Path, httpserver: HTTPServer, buildarr
 
     result = buildarr_run(buildarr_yml)
 
+    httpserver.check_assertions()
     assert result.returncode == 1
     assert result.stderr.splitlines()[-1] == (
         "buildarr.plugins.dummy.exceptions.DummyAPIError: Unexpected response "

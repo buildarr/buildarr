@@ -22,9 +22,102 @@ from buildarr import __version__
 
 from .util import get_source
 
-# TODO: Implement:
-#   - test_buildarr_docker_image_uri_config
-#   - test_buildarr_docker_image_uri_envvar
+
+def test_buildarr_docker_image_uri_config(buildarr_yml_factory, buildarr_compose) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    docker_image_uri = "testing/buildarr"
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "buildarr": {"docker_image_uri": docker_image_uri},
+            "dummy": {"hostname": "dummy"},
+        },
+    )
+
+    result = buildarr_compose(buildarr_yml)
+
+    source = get_source(buildarr_yml)
+
+    assert result.returncode == 0
+    assert result.stdout.splitlines() == [
+        "---",
+        "version: '3.7'",
+        "services:",
+        "  dummy_default:",
+        f"    image: {docker_image_uri}:{__version__}",
+        "    entrypoint:",
+        "    - flask",
+        "    command:",
+        "    - --app",
+        "    - buildarr.plugins.dummy.server:app",
+        "    - run",
+        "    - --debug",
+        "    hostname: dummy",
+        "    restart: always",
+        "  buildarr:",
+        f"    image: {docker_image_uri}:{__version__}",
+        "    command:",
+        "    - daemon",
+        "    - /config/buildarr.yml",
+        "    volumes:",
+        "    - type: bind",
+        f"      source: {source}",
+        "      target: /config",
+        "      read_only: true",
+        "    restart: always",
+        "    depends_on:",
+        "    - dummy_default",
+    ]
+
+
+def test_buildarr_docker_image_uri_envvar(buildarr_yml_factory, buildarr_compose) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    docker_image_uri = "testing/buildarr"
+
+    buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "dummy"}})
+
+    result = buildarr_compose(buildarr_yml, BUILDARR_DOCKER_IMAGE_URI=docker_image_uri)
+
+    source = get_source(buildarr_yml)
+
+    assert result.returncode == 0
+    assert result.stdout.splitlines() == [
+        "---",
+        "version: '3.7'",
+        "services:",
+        "  dummy_default:",
+        f"    image: {docker_image_uri}:{__version__}",
+        "    entrypoint:",
+        "    - flask",
+        "    command:",
+        "    - --app",
+        "    - buildarr.plugins.dummy.server:app",
+        "    - run",
+        "    - --debug",
+        "    hostname: dummy",
+        "    restart: always",
+        "  buildarr:",
+        f"    image: {docker_image_uri}:{__version__}",
+        "    command:",
+        "    - daemon",
+        "    - /config/buildarr.yml",
+        "    volumes:",
+        "    - type: bind",
+        f"      source: {source}",
+        "      target: /config",
+        "      read_only: true",
+        "    restart: always",
+        "    depends_on:",
+        "    - dummy_default",
+    ]
 
 
 def test_hostname_is_ip_address(buildarr_yml_factory, buildarr_compose) -> None:

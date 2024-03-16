@@ -26,8 +26,50 @@ from buildarr import __version__
 
 from .util import get_source
 
-# TODO: Implement:
-#   - test_config_path_undefined
+
+def test_config_path_undefined(buildarr_yml_factory, buildarr_compose) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "dummy"}})
+
+    result = buildarr_compose(cwd=buildarr_yml.parent)
+
+    source = get_source(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[DEBUG] Loading configuration file '{buildarr_yml}'" in result.stderr
+    assert result.stdout.splitlines() == [
+        "---",
+        "version: '3.7'",
+        "services:",
+        "  dummy_default:",
+        f"    image: callum027/buildarr:{__version__}",
+        "    entrypoint:",
+        "    - flask",
+        "    command:",
+        "    - --app",
+        "    - buildarr.plugins.dummy.server:app",
+        "    - run",
+        "    - --debug",
+        "    hostname: dummy",
+        "    restart: always",
+        "  buildarr:",
+        f"    image: callum027/buildarr:{__version__}",
+        "    command:",
+        "    - daemon",
+        "    - /config/buildarr.yml",
+        "    volumes:",
+        "    - type: bind",
+        f"      source: {source}",
+        "      target: /config",
+        "      read_only: true",
+        "    restart: always",
+        "    depends_on:",
+        "    - dummy_default",
+    ]
 
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])

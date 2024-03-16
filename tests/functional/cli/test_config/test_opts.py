@@ -20,8 +20,28 @@ from __future__ import annotations
 
 import pytest
 
-# TODO: Implement:
-#   - test_config_path_undefined
+
+def test_config_path_undefined(instance_value, buildarr_yml_factory, buildarr_test_config) -> None:
+    """
+    Check that if `buildarr.yml` does not have any plugins configured,
+    the appropriate error message is raised.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {"dummy": {"hostname": "dummy", "settings": {"instance_value": instance_value}}},
+    )
+
+    result = buildarr_test_config(cwd=buildarr_yml.parent)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])

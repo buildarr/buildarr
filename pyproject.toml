@@ -101,7 +101,7 @@ dummy-server = {cmd = "flask --app buildarr.plugins.dummy.server:app run --debug
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-r A --showlocals --verbosity=3 --color=yes --junit-xml=rspec.xml --cov=buildarr --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:cover"
+addopts = "--color=yes --cov=buildarr --cov-config=pyproject.toml --cov-report=html:cover --cov-report=term --cov-report=xml:coverage.xml --junit-xml=rspec.xml -r A --showlocals --verbosity=3"
 testpaths = [
     "tests",
 ]

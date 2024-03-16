@@ -32,8 +32,42 @@ if TYPE_CHECKING:
     from pexpect import spawn
     from pytest_httpserver import HTTPServer
 
-# TODO: Implement:
-#   - test_config_path_undefined
+
+def test_config_path_undefined(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {"dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port}},
+    )
+
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"message": "Test Error"},
+        status=500,
+    )
+
+    child: spawn = buildarr_daemon_interactive(cwd=buildarr_yml.parent)
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.terminate()
+    child.wait()
+
+    output: str = child.logfile.getvalue().decode()
+
+    httpserver.check_assertions()
+    assert child.exitstatus == 0
+    assert f"[INFO] Loading configuration file '{buildarr_yml}'" in output
+    assert (
+        "buildarr.plugins.dummy.exceptions.DummyAPIError: Unexpected response "
+        f"with status code 500 from 'GET {httpserver.url_for('/initialize.json')}': "
+        "Test Error"
+    ) in output
 
 
 @pytest.mark.parametrize("opt", ["-d", "--update-day"])

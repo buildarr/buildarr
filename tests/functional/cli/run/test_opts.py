@@ -26,8 +26,69 @@ import pytest
 if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
-# TODO: Implement:
-#   - test_config_path_undefined
+
+def test_config_path_undefined(
+    httpserver: HTTPServer,
+    instance_value,
+    buildarr_yml_factory,
+    buildarr_run,
+) -> None:
+    """
+    Check that if `--plugin` is used to define which plugin to use during the update run,
+    only that plugin is actually used.
+    """
+
+    api_root = "/api/v1"
+    version = "1.0.0"
+
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
+    httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
+        {"version": version},
+    )
+    httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+    )
+    httpserver.expect_ordered_request(
+        f"{api_root}/settings",
+        method="POST",
+        json={"trashValue": None, "instanceValue": instance_value},
+    ).respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        status=201,
+    )
+    httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+    )
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "dummy": {
+                "hostname": "localhost",
+                "port": urlparse(httpserver.url_for("")).port,
+                "settings": {"instance_value": instance_value},
+            },
+        },
+    )
+
+    result = buildarr_run(cwd=buildarr_yml.parent)
+
+    httpserver.check_assertions()
+    assert result.returncode == 0
+    assert f"[INFO] Loading configuration file '{buildarr_yml}'" in result.stdout
+    assert "[INFO] Running with plugins: dummy" in result.stdout
+    assert (
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        in result.stdout
+    )
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
 
 
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
