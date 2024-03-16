@@ -151,46 +151,6 @@ def test_trash_id(buildarr_yml_factory, buildarr_test_config) -> None:
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
-def test_trash_metadata_download_fail(
-    httpserver: HTTPServer,
-    buildarr_yml_factory,
-    buildarr_test_config,
-) -> None:
-    """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
-    """
-
-    trash_metadata_download_url = httpserver.url_for("/master.zip")
-
-    buildarr_yml = buildarr_yml_factory(
-        {
-            "buildarr": {
-                "trash_metadata_download_url": trash_metadata_download_url,
-            },
-            "dummy": {
-                "hostname": "localhost",
-                "port": 9999,
-                "settings": {"trash_id": "387e6278d8e06083d813358762e00000"},
-            },
-        },
-    )
-
-    result = buildarr_test_config(buildarr_yml)
-
-    assert result.returncode == 1
-    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
-    assert "[INFO] Loading configuration: PASSED" in result.stdout
-    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
-    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
-    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
-    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
-    assert "[ERROR] Fetching TRaSH-Guides metadata: FAILED" in result.stderr
-    assert result.stderr.splitlines()[-1] == (
-        "urllib.error.HTTPError: HTTP Error 500: INTERNAL SERVER ERROR"
-    )
-
-
 def test_trash_id_invalid(buildarr_yml_factory, buildarr_test_config) -> None:
     """
     Check that `buildarr test-config` passes on a configuration
@@ -229,4 +189,39 @@ def test_trash_id_invalid(buildarr_yml_factory, buildarr_test_config) -> None:
 # TODO: Implement:
 #  - test_trash_metadata_download_url
 #  - test_trash_metadata_dir_prefix
-#  - test_trash_metadata_download_fail
+
+
+def test_trash_metadata_download_fail(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_test_config,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    trash_metadata_download_url = httpserver.url_for("/master.zip")
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "buildarr": {
+                "trash_metadata_download_url": trash_metadata_download_url,
+            },
+            "dummy": {"settings": {"trash_id": "387e6278d8e06083d813358762e00000"}},
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 1
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[ERROR] Fetching TRaSH-Guides metadata: FAILED" in result.stderr
+    assert result.stderr.splitlines()[-1] == (
+        "urllib.error.HTTPError: HTTP Error 500: INTERNAL SERVER ERROR"
+    )
