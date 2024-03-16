@@ -110,7 +110,7 @@ testpaths = [
 branch = true
 disable_warnings = ["no-data-collected"]
 omit = [
-    "buildarr/plugins/dummy/server.py",
+    "*/buildarr/plugins/dummy/server.py",
 ]
 
 [tool.coverage.report]

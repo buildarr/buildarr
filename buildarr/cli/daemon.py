@@ -266,7 +266,7 @@ class Daemon:
         Print a log alerting the user to the next scheduled run time.
         """
         now = datetime.now()
-        for job in sorted(self._scheduler.jobs):
+        for job in sorted(self._scheduler.jobs):  # pragma: no branch
             if not job.next_run or (job.next_run - now).total_seconds() < 0:
                 continue
             logger.info(
