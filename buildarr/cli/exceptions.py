@@ -72,6 +72,14 @@ class ComposeInvalidHostnameError(ComposeError):
     pass
 
 
+class ComposeInvalidVolumeDefinitionError(ComposeError):
+    """
+    Exception raised when an invalid volume definition is returned by a plugin.
+    """
+
+    pass
+
+
 class ComposeNoPluginsDefinedError(ComposeError):
     """
     Exception raised when no plugin is configured or loaded when

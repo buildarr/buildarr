@@ -13,7 +13,7 @@
 
 
 """
-Dummy plugin API functions.
+Dummy2 plugin API functions.
 """
 
 from __future__ import annotations
@@ -28,19 +28,19 @@ import requests
 
 from buildarr.state import state
 
-from .exceptions import DummyAPIError
+from .exceptions import Dummy2APIError
 
 if TYPE_CHECKING:
     from typing import Any, Optional, Union
 
-    from .secrets import DummySecrets
+    from .secrets import Dummy2Secrets
 
 
 logger = getLogger(__name__)
 
 
 def api_get(
-    secrets: Union[DummySecrets, str],
+    secrets: Union[Dummy2Secrets, str],
     api_url: str,
     *,
     api_key: Optional[str] = None,
@@ -52,7 +52,7 @@ def api_get(
     Send an API `GET` request.
 
     Args:
-        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        secrets (Union[Dummy2Secrets, str]): Secrets metadata, or host URL.
         api_url (str): API command.
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
 
@@ -95,7 +95,7 @@ def api_get(
 
 
 def api_post(
-    secrets: Union[DummySecrets, str],
+    secrets: Union[Dummy2Secrets, str],
     api_url: str,
     req: Any,
     *,
@@ -108,7 +108,7 @@ def api_post(
     Send a `POST` request to a Sonarr instance.
 
     Args:
-        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        secrets (Union[Dummy2Secrets, str]): Secrets metadata, or host URL.
         api_url (str): API command.
         req (Any): Request (JSON-serialisable).
         expected_status_code (HTTPStatus): Expected response status. Defaults to `201 Created`.
@@ -153,7 +153,7 @@ def api_post(
 
 
 def api_put(
-    secrets: Union[DummySecrets, str],
+    secrets: Union[Dummy2Secrets, str],
     api_url: str,
     req: Any,
     *,
@@ -166,7 +166,7 @@ def api_put(
     Send a `PUT` request to a Sonarr instance.
 
     Args:
-        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        secrets (Union[Dummy2Secrets, str]): Secrets metadata, or host URL.
         api_url (str): API command.
         req (Any): Request (JSON-serialisable).
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
@@ -211,7 +211,7 @@ def api_put(
 
 
 def api_delete(
-    secrets: Union[DummySecrets, str],
+    secrets: Union[Dummy2Secrets, str],
     api_url: str,
     *,
     api_key: Optional[str] = None,
@@ -223,7 +223,7 @@ def api_delete(
     Send a `DELETE` request to a Sonarr instance.
 
     Args:
-        secrets (Union[DummySecrets, str]): Secrets metadata, or host URL.
+        secrets (Union[Dummy2Secrets, str]): Secrets metadata, or host URL.
         api_url (str): API command.
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
     """
@@ -263,7 +263,7 @@ def api_error(
     parse_response: bool = True,
 ) -> None:
     """
-    Process an error response from the Dummy API.
+    Process an error response from the Dummy2 API.
 
     Args:
         method (str): HTTP method.
@@ -272,11 +272,11 @@ def api_error(
         parse_response (bool, optional): Parse response error JSON. Defaults to True.
 
     Raises:
-        Dummy API exception
+        Dummy2 API exception
     """
 
     error_message = (
-        f"Unexpected response with status code {response.status_code} from '{method} {url}'"
+        f"Unexpected response with status code {response.status_code} from from '{method} {url}'"
     )
 
     if parse_response:
@@ -296,4 +296,4 @@ def api_error(
         except (json.JSONDecodeError, requests.exceptions.JSONDecodeError):
             f"(Non-JSON error response)\n{response.text}"
 
-    raise DummyAPIError(error_message, status_code=response.status_code)
+    raise Dummy2APIError(error_message, status_code=response.status_code)

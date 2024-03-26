@@ -13,7 +13,7 @@
 
 
 """
-Dummy plugin settings configuration.
+Dummy2 plugin settings configuration.
 """
 
 from __future__ import annotations
@@ -31,19 +31,19 @@ from buildarr.state import state
 from buildarr.types import InstanceName, TrashID
 
 from ..api import api_get, api_post
-from ..secrets import DummySecrets
-from .types import DummyConfigBase
+from ..secrets import Dummy2Secrets
+from .types import Dummy2ConfigBase
 
 
-class DummySettingsConfig(DummyConfigBase):
+class Dummy2SettingsConfig(Dummy2ConfigBase):
     """
-    Dummy settings configuration.
+    Dummy2 settings configuration.
 
     Specify any of the following attributes to ensure the attribute
-    on the remote Dummy instance is set accordingly.
+    on the remote Dummy2 instance is set accordingly.
 
     ```yaml
-    dummy:
+    dummy2:
       settings:
         trash_value: 5
     ```
@@ -51,7 +51,7 @@ class DummySettingsConfig(DummyConfigBase):
     Specify `trash_id` to get a value from TRaSH-Guides metadata and set it to `trash_value`.
 
     ```yaml
-    dummy:
+    dummy2:
       settings:
         trash_id: "387e6278d8e06083d813358762e0ac63" # anime
     ```
@@ -59,8 +59,8 @@ class DummySettingsConfig(DummyConfigBase):
 
     instance_name: Optional[InstanceName] = Field(None, plugin="dummy")
     """
-    The name of the Dummy instance within Buildarr, if linking this Dummy instance
-    with another Buildarr-defined Dummy instance.
+    The name of the Dummy instance within Buildarr, if linking this Dummy2 instance
+    with a Buildarr-defined Dummy instance.
     """
 
     trash_id: Optional[TrashID] = None  # type: ignore[assignment]
@@ -86,18 +86,18 @@ class DummySettingsConfig(DummyConfigBase):
     _remote_map: List[RemoteMapEntry] = [
         (
             "trash_value",  # Buildarr config attribute name.
-            "trashValue",  # Dummy instance API attribute name.
+            "trashValue",  # Dummy2 instance API attribute name.
             {},  # Local/remote map conversion function parameters.
         ),
         (
             "instance_value",  # Buildarr config attribute name.
-            "instanceValue",  # Dummy instance API attribute name.
+            "instanceValue",  # Dummy2 instance API attribute name.
             {"check_unmanaged": True},  # Local/remote map conversion function parameters.
         ),
     ]
     """
     A list of remote map entries containing metadata for how to convert
-    between local and remote Dummy instance configuration values.
+    between local and remote Dummy2 instance configuration values.
 
     For more information on how to create this structure,
     see the documentation for the following methods in `buildarr/config/__init__.py`:
@@ -156,11 +156,11 @@ class DummySettingsConfig(DummyConfigBase):
         return an object with fully qualified attribute values.
 
         Returns:
-            Fully qualified Dummy configuration object
+            Fully qualified Dummy2 configuration object
         """
         if not self.instance_name:
             return self
-        secrets = cast(DummySecrets, state.instance_secrets["dummy"][self.instance_name])
+        secrets = cast(Dummy2Secrets, state.instance_secrets["dummy2"][self.instance_name])
         return self.copy(
             update={
                 "instance_name": self.instance_name,
@@ -169,12 +169,12 @@ class DummySettingsConfig(DummyConfigBase):
         )
 
     @classmethod
-    def from_remote(cls, secrets: DummySecrets) -> Self:
+    def from_remote(cls, secrets: Dummy2Secrets) -> Self:
         """
         Read configuration from a remote instance and return it as a configuration object.
 
         Args:
-            secrets (DummySecrets): Instance host and secrets information
+            secrets (Dummy2Secrets): Instance host and secrets information
 
         Returns:
             Configuration object for remote instance
@@ -190,7 +190,7 @@ class DummySettingsConfig(DummyConfigBase):
     def update_remote(
         self,
         tree: str,
-        secrets: DummySecrets,
+        secrets: Dummy2Secrets,
         remote: Self,
         check_unmanaged: bool = False,
     ) -> bool:
@@ -199,7 +199,7 @@ class DummySettingsConfig(DummyConfigBase):
 
         Args:
             tree (str): Configuration tree represented as a string. Mainly used in logging.
-            secrets (DummySecrets): Remote instance host and secrets information.
+            secrets (Dummy2Secrets): Remote instance host and secrets information.
             remote (Self): Remote instance configuration for the current section.
             check_unmanaged (bool, optional): Set unmanaged fields to defaults (default `False`).
 

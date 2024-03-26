@@ -22,7 +22,7 @@ import os
 
 from datetime import time
 from pathlib import Path
-from typing import Set
+from typing import Optional, Set
 
 from pydantic import AnyHttpUrl, PositiveFloat
 
@@ -99,9 +99,6 @@ class BuildarrConfig(ConfigBase):
     Times are specified in the `HH:MM` format, in 24-hour time.
     The times do not need to be in order.
 
-    Days are specified as a list of case-insensitive strings, in English.
-    The days do not need to be in order.
-
     ```yaml
     buildarr:
       update_times:
@@ -130,9 +127,12 @@ class BuildarrConfig(ConfigBase):
     URL to download the latest TRaSH-Guides metadata from.
     """
 
-    trash_metadata_dir_prefix: Path = "Guides-master"  # type: ignore[assignment]
+    trash_metadata_dir_prefix: Optional[Path] = "Guides-master"  # type: ignore[assignment]
     """
     Metadata directory name within the downloaded ZIP file.
+
+    *Changed in version 0.8.0*: Now can be set to `null` if the metadata directories
+    are located in the root of the ZIP file.
     """
 
     docker_image_uri: NonEmptyStr = os.environ.get(  # type: ignore[assignment]

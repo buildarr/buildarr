@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -13,16 +13,29 @@
 
 
 """
-Buildarr root module.
+Utility functions for the `buildarr compose` CLI command functional tests.
 """
 
 from __future__ import annotations
 
-from importlib_metadata import PackageNotFoundError, version as package_version
+import sys
 
-__all__ = ["__version__"]
+from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
-try:
-    __version__: str = package_version("buildarr")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.1.0"
+if TYPE_CHECKING:
+    from pathlib import Path
+
+
+def get_source(path: Path) -> str:
+    source_dir = path.parent
+
+    return str(
+        (
+            PurePosixPath(
+                f"/{source_dir.drive.rstrip(':').lower()}",
+            ).joinpath(*source_dir.parts[1:])
+            if sys.platform == "win32"
+            else source_dir
+        ),
+    )

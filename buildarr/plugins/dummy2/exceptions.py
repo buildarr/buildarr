@@ -13,16 +13,43 @@
 
 
 """
-Buildarr root module.
+Dummy2 plugin exception classes.
 """
 
 from __future__ import annotations
 
-from importlib_metadata import PackageNotFoundError, version as package_version
+from buildarr.exceptions import BuildarrError
 
-__all__ = ["__version__"]
 
-try:
-    __version__: str = package_version("buildarr")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.1.0"
+class Dummy2Error(BuildarrError):
+    """
+    Dummy2 plugin exception base class.
+    """
+
+    pass
+
+
+class Dummy2APIError(Dummy2Error):
+    """
+    Dummy2 API exception class.
+    """
+
+    def __init__(self, msg: str, status_code: int) -> None:
+        self.status_code = status_code
+        super().__init__(msg)
+
+
+class Dummy2SecretsError(Dummy2Error):
+    """
+    Dummy2 plugin secrets exception base class.
+    """
+
+    pass
+
+
+class Dummy2SecretsUnauthorizedError(Dummy2SecretsError):
+    """
+    Error raised when the Dummy2 API key wasn't able to be retrieved.
+    """
+
+    pass

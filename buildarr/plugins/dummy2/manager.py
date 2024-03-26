@@ -13,16 +13,16 @@
 
 
 """
-Buildarr root module.
+Dummy2 plugin manager class.
 """
 
 from __future__ import annotations
 
-from importlib_metadata import PackageNotFoundError, version as package_version
+from buildarr.manager import ManagerPlugin
 
-__all__ = ["__version__"]
+from .config import Dummy2InstanceConfig
+from .secrets import Dummy2Secrets
 
-try:
-    __version__: str = package_version("buildarr")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.1.0"
+
+class Dummy2Manager(ManagerPlugin[Dummy2InstanceConfig, Dummy2Secrets]):
+    pass

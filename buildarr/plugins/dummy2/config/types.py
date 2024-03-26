@@ -13,16 +13,25 @@
 
 
 """
-Buildarr root module.
+Dummy2 plugin configuration utility classes and functions.
 """
 
 from __future__ import annotations
 
-from importlib_metadata import PackageNotFoundError, version as package_version
+from typing import TYPE_CHECKING
 
-__all__ = ["__version__"]
+from buildarr.config import ConfigBase
 
-try:
-    __version__: str = package_version("buildarr")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.1.0"
+# Define the base class for Dummy2 configuration classes.
+# Subclassing this conditionally-created class allows Mypy to
+# properly resolve secrets type declarations.
+if TYPE_CHECKING:
+    from ..secrets import Dummy2Secrets
+
+    class Dummy2ConfigBase(ConfigBase[Dummy2Secrets]):
+        pass
+
+else:
+
+    class Dummy2ConfigBase(ConfigBase):
+        pass

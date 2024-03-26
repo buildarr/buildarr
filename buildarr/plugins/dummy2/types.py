@@ -13,16 +13,33 @@
 
 
 """
-Buildarr root module.
+Dummy2 plugin type hints.
 """
 
 from __future__ import annotations
 
-from importlib_metadata import PackageNotFoundError, version as package_version
+from typing import Literal
 
-__all__ = ["__version__"]
+from buildarr.types import Password
 
-try:
-    __version__: str = package_version("buildarr")
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "0.1.0"
+Dummy2ApiKey = Password
+"""
+Constrained string type for a Dummy2 instance API key.
+
+The type `Password` allows anything as long as it is not an empty string, but is a subclass
+of type `pydantic.SecretStr`, allowing Buildarr to hide the value in any logging.
+
+A more complex type for API key might look something like this:
+
+```python
+from pydantic import Field, SecretStr
+from typing_extensions import Annotated
+
+Dummy2ApiKey = Annotated[SecretStr, Field(min_length=32, max_length=32)]
+```
+"""
+
+Dummy2Protocol = Literal["http"]
+"""
+Allowed protocols for communicating with a Dummy2 instance.
+"""
