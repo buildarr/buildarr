@@ -329,13 +329,14 @@ class Daemon:
                 logger.info("Reloading config")
                 self._initial_run()
                 logger.info("Finished reloading config")
-                self._log_next_run()
             except Exception as err:
                 logger.exception(
                     "Unexpected exception occurred while handling config file event: %s",
                     err,
                 )
+                logger.warning("Aborted reloading config")
             finally:
+                self._log_next_run()
                 logger.info("Buildarr ready.")
 
     def _setup_signal_handlers(self) -> None:

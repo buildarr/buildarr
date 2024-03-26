@@ -573,3 +573,41 @@ def test_watch_config_enabled_to_disabled(
 
     assert child.exitstatus == 0
     assert output.count(f"[INFO] Config file '{buildarr_yml}' has been modified") == 1
+
+
+def test_watch_config_error_handler(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_daemon_interactive,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml: Path = buildarr_yml_factory(
+        {
+            "buildarr": {"watch_config": True},
+            "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
+        },
+    )
+
+    child: spawn = buildarr_daemon_interactive(buildarr_yml)
+    child.expect(r"\[INFO\] Buildarr ready.")
+    with buildarr_yml.open("w") as f:
+        f.write("%")
+    child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
+    child.expect(r"\[INFO\] Reloading config")
+    child.expect(
+        (
+            r"\[ERROR\] Unexpected exception occurred while handling config file event: "
+            "while scanning a directive"
+        ),
+    )
+    child.expect(r"yaml\.scanner\.ScannerError: while scanning a directive")
+    child.expect(r"\[WARNING\] Aborted reloading config")
+    child.expect(r"\[INFO\] Buildarr ready.")
+    child.terminate()
+    child.wait()
+
+    assert child.exitstatus == 0

@@ -18,7 +18,11 @@ Functional tests for the `buildarr run` CLI command.
 
 from __future__ import annotations
 
+import json
+
+from io import BytesIO
 from typing import TYPE_CHECKING
+from zipfile import ZipFile
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,7 +30,7 @@ if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
 
-def test_invalid_config_file(tmp_path, buildarr_yml_factory, buildarr_test_config) -> None:
+def test_invalid_config_file(tmp_path, buildarr_test_config) -> None:
     """
     Check that `buildarr test-config` passes on a configuration
     with a single instance value defined.
@@ -186,9 +190,172 @@ def test_trash_id_invalid(buildarr_yml_factory, buildarr_test_config) -> None:
     )
 
 
-# TODO: Implement:
-#  - test_trash_metadata_download_url
-#  - test_trash_metadata_dir_prefix
+def test_trash_metadata_download_url(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_test_config,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    trash_id = "387e6278d8e06083d813358762e00000"
+    trash_metadata_download_url = httpserver.url_for("/master.zip")
+    trash_metadata_dir_prefix = "Guides-master"
+
+    with BytesIO() as f:
+        with ZipFile(f, mode="w") as g:
+            g.writestr(
+                f"{trash_metadata_dir_prefix}/docs/json/sonarr/quality-size/anime.json",
+                json.dumps(
+                    {
+                        "trash_id": trash_id,
+                        "qualities": [{"quality": "Bluray-1080p", "min": 50.0}],
+                    },
+                ),
+            )
+        httpserver.expect_ordered_request("/master.zip", method="GET").respond_with_data(
+            f.getvalue(),
+            content_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="master.zip"'},
+        )
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "buildarr": {
+                "trash_metadata_download_url": trash_metadata_download_url,
+                # Do not specify trash_metadata_dir_prefix here,
+                # to make sure the default value is correct.
+            },
+            "dummy": {"settings": {"trash_id": trash_id}},
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "trash_value: 50.0" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
+def test_trash_metadata_dir_prefix_null(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_test_config,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    trash_id = "387e6278d8e06083d813358762e00000"
+    trash_metadata_download_url = httpserver.url_for("/master.zip")
+
+    with BytesIO() as f:
+        with ZipFile(f, mode="w") as g:
+            g.writestr(
+                "docs/json/sonarr/quality-size/anime.json",
+                json.dumps(
+                    {
+                        "trash_id": trash_id,
+                        "qualities": [{"quality": "Bluray-1080p", "min": 50.0}],
+                    },
+                ),
+            )
+        httpserver.expect_ordered_request("/master.zip", method="GET").respond_with_data(
+            f.getvalue(),
+            content_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="master.zip"'},
+        )
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "buildarr": {
+                "trash_metadata_download_url": trash_metadata_download_url,
+                "trash_metadata_dir_prefix": None,
+            },
+            "dummy": {"settings": {"trash_id": trash_id}},
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "trash_value: 50.0" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
+def test_trash_metadata_dir_prefix_custom(
+    httpserver: HTTPServer,
+    buildarr_yml_factory,
+    buildarr_test_config,
+) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    trash_id = "387e6278d8e06083d813358762e00000"
+    trash_metadata_download_url = httpserver.url_for("/master.zip")
+    trash_metadata_dir_prefix = "custom-prefix"
+
+    with BytesIO() as f:
+        with ZipFile(f, mode="w") as g:
+            g.writestr(
+                f"{trash_metadata_dir_prefix}/docs/json/sonarr/quality-size/anime.json",
+                json.dumps(
+                    {
+                        "trash_id": trash_id,
+                        "qualities": [{"quality": "Bluray-1080p", "min": 50.0}],
+                    },
+                ),
+            )
+        httpserver.expect_ordered_request("/master.zip", method="GET").respond_with_data(
+            f.getvalue(),
+            content_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="master.zip"'},
+        )
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "buildarr": {
+                "trash_metadata_download_url": trash_metadata_download_url,
+                "trash_metadata_dir_prefix": trash_metadata_dir_prefix,
+            },
+            "dummy": {"settings": {"trash_id": trash_id}},
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "trash_value: 50.0" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
 def test_trash_metadata_download_fail(
