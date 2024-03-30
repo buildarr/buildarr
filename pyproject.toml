@@ -96,12 +96,14 @@ test = [
 lint = {cmd = "ruff check"}
 format = {cmd = "ruff format"}
 test = {cmd = "pytest"}
-coverage = {cmd = "coverage report"}
 dummy-server = {cmd = "flask --app buildarr.plugins.dummy.server:app run --debug"}
 
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--color=yes --cov=buildarr --cov-config=pyproject.toml --cov-report=html:cover --cov-report=term --cov-report=xml:coverage.xml --junit-xml=rspec.xml -r A --showlocals --verbosity=3"
+filterwarnings = [
+    "error",
+]
 testpaths = [
     "tests",
 ]

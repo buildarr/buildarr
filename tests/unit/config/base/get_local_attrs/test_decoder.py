@@ -13,33 +13,21 @@
 
 
 """
-Test the `ConfigBase.from_remote` class method's handling of nested configuration attributes.
+Test the `decoder` remote map entry optional parameter functionality
+on the `ConfigBase.get_local_attrs` class method.
 """
 
 from __future__ import annotations
 
-from typing import Optional
-
 from buildarr.config.base import ConfigBase
+from buildarr.util import str_to_bool
 
 
-class Settings(ConfigBase):
-    test_value: bool = False
-    secret_value: Optional[str] = None
-
-    @classmethod
-    def from_remote(cls, secrets):
-        return Settings(test_value=True, secret_value=secrets)
-
-
-class GeneralSettings(ConfigBase):
-    test: Settings = Settings()
-    general_value: bool = False
-
-
-def test_nested_config() -> None:
-    secrets = "Hello, world!"
-    general_settings = GeneralSettings.from_remote(secrets=secrets)
-    assert general_settings.test.test_value is True
-    assert general_settings.test.secret_value == secrets
-    assert general_settings.general_value is False
+def test_decoder() -> None:
+    assert (
+        ConfigBase.get_local_attrs(
+            remote_map=[("test_attr", "testAttr", {"decoder": str_to_bool})],
+            remote_attrs={"testAttr": "true"},
+        )["test_attr"]
+        is True
+    )
