@@ -20,6 +20,28 @@ jobs:
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
 
+  build:
+    needs: pre-commit
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone full tree, and checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: "3.12"
+      - name: Build source dist and wheels
+        run: pdm build --verbose
+      - name: Upload source dist and wheels to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 5
+          if-no-files-found: error
+
   test:
     needs: pre-commit
     strategy:
@@ -48,25 +70,31 @@ jobs:
         run: pdm install
       - name: Run tests
         run: pdm run test
-
-  build:
-    needs: pre-commit
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Clone full tree, and checkout branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup Python and PDM
-        uses: pdm-project/setup-pdm@v4
-        with:
-          python-version: "3.12"
-      - name: Build source dist and wheels
-        run: pdm build --verbose
-      - name: Upload source dist and wheels to artifacts
+      - name: Upload coverage report to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: dist/
+          name: coverage-${{ matrix.operating_system}}-${{ matrix.python_version }}
+          path: coverage.xml
           retention-days: 5
-          if-no-files-found: error
+          if-no-files-found: warn
+
+  coverage:
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download coverage reports from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+      - name: Generate code coverage summary report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage-*/coverage.xml
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: false
+          indicators: false
+          output: both
+      - name: Write to job summary
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
