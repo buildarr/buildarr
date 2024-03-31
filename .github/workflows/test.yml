@@ -44,6 +44,8 @@ jobs:
 
   test:
     needs: pre-commit
+    permissions:
+      checks: write
     strategy:
       fail-fast: false
       matrix:
@@ -70,8 +72,16 @@ jobs:
         run: pdm install
       - name: Run tests
         run: pdm run test
+      - name: Publish test results
+        uses: mikepenz/action-junit-report@v4
+        # Always run, even if the tests fail.
+        if: success() || failure()
+        with:
+          report_paths: rspec.xml
       - name: Upload coverage report to artifacts
         uses: actions/upload-artifact@v4
+        # Always run, even if the tests fail.
+        if: success() || failure()
         with:
           name: coverage-${{ matrix.operating_system}}-${{ matrix.python_version }}
           path: coverage.xml
@@ -80,6 +90,8 @@ jobs:
 
   coverage:
     needs: test
+    # Always run, even if the test job failed.
+    if: success() || failure()
     runs-on: ubuntu-22.04
     steps:
       - name: Download coverage reports from artifacts
@@ -92,7 +104,7 @@ jobs:
         with:
           path: coverage-*/coverage.xml
           skip_covered: false
-          minimum_covered: 0
+          minimum_coverage: 0
           show_line: true
           show_branch: true
           show_missing: true
