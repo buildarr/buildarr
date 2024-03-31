@@ -96,5 +96,3 @@ jobs:
           show_branch: true
           show_missing: true
           link_missing_lines: true
-      - name: Write to job summary
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
