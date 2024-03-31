@@ -92,6 +92,7 @@ jobs:
         with:
           path: coverage-*/coverage.xml
           skip_covered: false
+          minimum_covered: 0
           show_line: true
           show_branch: true
           show_missing: true
