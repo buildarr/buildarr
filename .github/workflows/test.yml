@@ -88,13 +88,13 @@ jobs:
           pattern: coverage-*
           merge-multiple: false
       - name: Generate code coverage summary report
-        uses: irongut/CodeCoverageSummary@v1.3.0
+        uses: 5monkeys/cobertura-action@v14
         with:
-          filename: coverage-*/coverage.xml
-          format: markdown
-          hide_branch_rate: false
-          hide_complexity: false
-          indicators: false
-          output: both
+          path: coverage-*/coverage.xml
+          skip_covered: false
+          show_line: true
+          show_branch: true
+          show_missing: true
+          link_missing_lines: true
       - name: Write to job summary
         run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
