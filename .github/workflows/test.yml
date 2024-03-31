@@ -111,5 +111,3 @@ jobs:
           minimum_coverage: 0
           show_line: true
           show_branch: true
-          show_missing: true
-          link_missing_lines: true
