@@ -71,7 +71,7 @@ def test_api_key_no_auth_required(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
 
     child: spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""), redirect_tty=True)
@@ -90,6 +90,7 @@ def test_api_key_no_auth_required(
         "settings:",
         "  trash_id: null",
         "  trash_value: null",
+        "  trash_value_2: null",
         "  instance_value: null",
     ]
 
@@ -117,7 +118,7 @@ def test_api_key_autofetch(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
 
     child: spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""), redirect_tty=True)
@@ -136,6 +137,7 @@ def test_api_key_autofetch(
         "settings:",
         "  trash_id: null",
         "  trash_value: null",
+        "  trash_value_2: null",
         "  instance_value: null",
     ]
 
@@ -167,7 +169,7 @@ def test_api_key_interactive(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
 
     child: spawn = buildarr_dummy_dump_config_interactive(httpserver.url_for(""), redirect_tty=True)
@@ -186,6 +188,7 @@ def test_api_key_interactive(
         "settings:",
         "  trash_id: null",
         "  trash_value: null",
+        "  trash_value_2: null",
         "  instance_value: null",
     ]
 
@@ -214,7 +217,7 @@ def test_api_key_opt(opt, httpserver: HTTPServer, api_key, buildarr_dummy_dump_c
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
 
     result = buildarr_dummy_dump_config(httpserver.url_for(""), opt, api_key)
@@ -231,6 +234,7 @@ def test_api_key_opt(opt, httpserver: HTTPServer, api_key, buildarr_dummy_dump_c
         "settings:",
         "  trash_id: null",
         "  trash_value: null",
+        "  trash_value_2: null",
         "  instance_value: null",
     ]
 
@@ -259,7 +263,7 @@ def test_url_base(suffix, httpserver: HTTPServer, api_key, buildarr_dummy_dump_c
         f"{url_base}{api_root}/settings",
         method="GET",
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
 
     result = buildarr_dummy_dump_config(
@@ -280,5 +284,6 @@ def test_url_base(suffix, httpserver: HTTPServer, api_key, buildarr_dummy_dump_c
         "settings:",
         "  trash_id: null",
         "  trash_value: null",
+        "  trash_value_2: null",
         "  instance_value: null",
     ]

@@ -32,6 +32,7 @@ jobs:
         uses: pdm-project/setup-pdm@v4
         with:
           python-version: "3.12"
+          version: "2.13.2"
       - name: Build source dist and wheels
         run: pdm build --verbose
       - name: Upload source dist and wheels to artifacts
@@ -68,6 +69,7 @@ jobs:
         uses: pdm-project/setup-pdm@v4
         with:
           python-version: ${{ matrix.python_version }}
+          version: "2.13.2"
       - name: Create virtual environment
         run: pdm install
       - name: Run tests
@@ -90,6 +92,8 @@ jobs:
 
   coverage:
     needs: test
+    permissions:
+      issues: write
     # Always run, even if the test job failed.
     if: success() || failure()
     runs-on: ubuntu-22.04

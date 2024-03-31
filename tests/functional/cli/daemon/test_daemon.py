@@ -136,20 +136,25 @@ def test_initial_run_success(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     child: spawn = buildarr_daemon_interactive(
@@ -211,13 +216,13 @@ def test_initial_run_fail(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
         {"message": "Internal Server Error", "description": "Test Error"},
         status=500,
@@ -288,20 +293,25 @@ def test_scheduled_run_success(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     # Scheduled run.
@@ -319,11 +329,21 @@ def test_scheduled_run_success(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
     # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     child: spawn = buildarr_daemon_interactive(
@@ -406,20 +426,25 @@ def test_scheduled_run_fail(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     # Scheduled run.

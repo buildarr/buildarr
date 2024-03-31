@@ -39,7 +39,6 @@ requires-python = ">=3.8"
 dependencies = [
     "aenum",
     "click>=8.0.4",
-    "click-params>=0.4.1",
     "importlib-metadata>=4.6.0",
     "pyyaml>=6.0",
     "pydantic[email]>=1.10.0,<2.0.0",

@@ -87,20 +87,25 @@ def test_initialize(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     result = buildarr_run(
@@ -155,20 +160,25 @@ def test_already_initialized(
     )
     # Get instance configuration for updating.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update instance configuration.
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     # Get instance configuration for deleting resources.
     httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     result = buildarr_run(
@@ -237,15 +247,15 @@ def test_multiple_plugins(
 
     # Get dummy instance configuration for updating.
     httpserver.expect_ordered_request(f"/dummy{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     # Update dummy instance configuration.
     httpserver.expect_ordered_request(
         f"/dummy{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
 
@@ -276,7 +286,12 @@ def test_multiple_plugins(
 
     # Get instance configuration for deleting dummy2 instance resources.
     httpserver.expect_ordered_request(f"/dummy{api_root}/settings", method="GET").respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     result = buildarr_run(

@@ -61,6 +61,7 @@ _is_initialized: bool = not app.config["API_REQUIRES_INIT"]
 _settings: Dict[str, Any] = {
     "isUpdated": False,  # bool
     "trashValue": None,  # Optional[float]
+    "trashValue2": None,  # Optional[float]
     "instanceValue": None,  # Optional[str] (UUID)
 }
 

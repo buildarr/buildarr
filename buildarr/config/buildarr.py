@@ -47,13 +47,13 @@ class BuildarrConfig(ConfigBase):
     buildarr:
       watch_config: true
       update_days:
-        - "monday"
-        - "tuesday"
-        - "wednesday"
-        - "thursday"
-        - "friday"
-        - "saturday"
-        - "sunday"
+        - "Monday"
+        - "Tuesday"
+        - "Wednesday"
+        - "Thursday"
+        - "Friday"
+        - "Saturday"
+        - "Sunday"
       update_times:
         - "03:00"
     ```

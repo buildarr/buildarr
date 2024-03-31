@@ -60,15 +60,15 @@ def test_api_key_fetch(
         method="GET",
         headers={"X-Api-Key": api_key},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
         headers={"X-Api-Key": api_key},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     httpserver.expect_ordered_request(
@@ -76,7 +76,12 @@ def test_api_key_fetch(
         method="GET",
         headers={"X-Api-Key": api_key},
     ).respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     result = buildarr_run(
@@ -140,15 +145,15 @@ def test_api_key_in_config(
         method="GET",
         headers={"X-Api-Key": api_key},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
     )
     httpserver.expect_ordered_request(
         f"{api_root}/settings",
         method="POST",
-        json={"trashValue": None, "instanceValue": instance_value},
+        json={"trashValue": None, "trashValue2": None, "instanceValue": instance_value},
         headers={"X-Api-Key": api_key},
     ).respond_with_json(
-        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        {"isUpdated": False, "trashValue": None, "trashValue2": None, "instanceValue": None},
         status=201,
     )
     httpserver.expect_ordered_request(
@@ -156,7 +161,12 @@ def test_api_key_in_config(
         method="GET",
         headers={"X-Api-Key": api_key},
     ).respond_with_json(
-        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+        {
+            "isUpdated": True,
+            "trashValue": None,
+            "trashValue2": None,
+            "instanceValue": instance_value,
+        },
     )
 
     result = buildarr_run(

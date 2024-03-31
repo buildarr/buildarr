@@ -245,6 +245,41 @@ class DummyInstanceConfig(_DummyInstanceConfig):
             else:
                 raise
 
+    def post_init_render(self, secrets: DummySecrets) -> Self:
+        """
+        Render dynamically populated configuration attributes that require the instance
+        to be initialised.
+
+        Typically used for fetching configuration attribute schemas from the remote instance
+        for validation during rendering.
+
+        If the instance configuration returned `True` for `uses_trash_metadata`,
+        the filepath to the downloaded metadata directory will be available as
+        `state.trash_metadata_dir` in the global state.
+
+        Configuration plugins should implement this function if there are any attributes
+        that get dynamically populated, but require some kind of request to be made to the
+        remote instance during the rendering process.
+
+        Args:
+            secrets (Secrets): Remote instance host and secrets information.
+
+        Returns:
+            Rendered configuration object
+
+        Raises:
+            NotImplementedError: When post-initialisation rendering is not supported.
+        """
+        copy = self.copy(deep=True)
+        copy._post_init_render()
+        return copy
+
+    def _post_init_render(self) -> None:
+        """
+        Post-init render dynamic configuration attributes in place.
+        """
+        self.settings._post_init_render()
+
     @classmethod
     def from_remote(cls, secrets: DummySecrets) -> Self:
         """
