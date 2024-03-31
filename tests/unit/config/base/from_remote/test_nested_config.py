@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from buildarr.config.base import ConfigBase
+from buildarr.config import ConfigBase
 
 
 class Settings(ConfigBase):

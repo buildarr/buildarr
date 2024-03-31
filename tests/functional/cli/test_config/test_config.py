@@ -83,6 +83,42 @@ def test_instance_value(instance_value, buildarr_yml_factory, buildarr_test_conf
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
+def test_instance_dependency_multiple(buildarr_yml_factory, buildarr_test_config) -> None:
+    """
+    Check that `buildarr test-config` passes on a configuration
+    with a single instance value defined.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "dummy": {
+                "hostname": "localhost",
+                "instances": {
+                    "dummy1": {"port": 9997},
+                    "dummy2": {"port": 9998, "settings": {"instance_name": "dummy1"}},
+                    "dummy3": {"port": 9999, "settings": {"instance_name": "dummy1"}},
+                },
+            },
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[DEBUG] Execution order:" in result.stderr
+    assert "[DEBUG]   1. dummy.instances['dummy1']" in result.stderr
+    assert "[DEBUG]   2. dummy.instances['dummy2']" in result.stderr
+    assert "[DEBUG]   3. dummy.instances['dummy3']" in result.stderr
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
 def test_instance_dependency_cycle(buildarr_yml_factory, buildarr_test_config) -> None:
     """
     Check that `buildarr test-config` passes on a configuration
@@ -94,14 +130,8 @@ def test_instance_dependency_cycle(buildarr_yml_factory, buildarr_test_config) -
             "dummy": {
                 "hostname": "localhost",
                 "instances": {
-                    "dummy1": {
-                        "port": 9998,
-                        "settings": {"instance_name": "dummy2"},
-                    },
-                    "dummy2": {
-                        "port": 9999,
-                        "settings": {"instance_name": "dummy1"},
-                    },
+                    "dummy1": {"port": 9998, "settings": {"instance_name": "dummy2"}},
+                    "dummy2": {"port": 9999, "settings": {"instance_name": "dummy1"}},
                 },
             },
         },
@@ -134,12 +164,7 @@ def test_instance_dependency_plugin_not_configured(
     """
 
     buildarr_yml = buildarr_yml_factory(
-        {
-            "dummy2": {
-                "hostname": "localhost",
-                "settings": {"instance_name": "dummy"},
-            },
-        },
+        {"dummy2": {"hostname": "localhost", "settings": {"instance_name": "dummy"}}},
     )
 
     result = buildarr_test_config(buildarr_yml)

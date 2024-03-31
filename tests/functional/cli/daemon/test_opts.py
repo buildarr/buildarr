@@ -25,6 +25,8 @@ from urllib.parse import urlparse
 
 import pytest
 
+from .util import next_hour
+
 if TYPE_CHECKING:
     from pathlib import Path
     from subprocess import CompletedProcess
@@ -82,10 +84,12 @@ def test_update_day(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Sunday"], "update_times": ["03:00"]},
+                "buildarr": {"update_times": [update_time], "update_days": ["Sunday"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
@@ -100,8 +104,8 @@ def test_update_day(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Monday 03:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    assert f"[INFO]    - Monday {update_time}" in output
+    assert f"[INFO]    - Sunday {update_time}" not in output
 
 
 @pytest.mark.parametrize("opt", ["-d", "--update-day"])
@@ -116,10 +120,12 @@ def test_update_day_multiple(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Sunday"], "update_times": ["03:00"]},
+                "buildarr": {"update_times": [update_time], "update_days": ["Sunday"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
@@ -136,9 +142,9 @@ def test_update_day_multiple(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Monday 03:00" in output
-    assert "[INFO]    - Tuesday 03:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    assert f"[INFO]    - Monday {update_time}" in output
+    assert f"[INFO]    - Tuesday {update_time}" in output
+    assert f"[INFO]    - Sunday {update_time}" not in output
 
 
 @pytest.mark.parametrize("opt", ["-d", "--update-day"])
@@ -173,6 +179,8 @@ def test_update_time(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
@@ -181,7 +189,7 @@ def test_update_time(
             },
         ),
         opt,
-        "09:00",
+        update_time,
     )
     child.expect(r"\[INFO\] Buildarr ready.")
     child.terminate()
@@ -191,8 +199,7 @@ def test_update_time(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Sunday 09:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    assert f"[INFO]    - Sunday {update_time}" in output
 
 
 @pytest.mark.parametrize("opt", ["-t", "--update-time"])
@@ -207,6 +214,9 @@ def test_update_time_multiple(
     with a single instance value defined.
     """
 
+    update_time_1 = next_hour()
+    update_time_2 = next_hour(2)
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
@@ -215,9 +225,9 @@ def test_update_time_multiple(
             },
         ),
         opt,
-        "09:00",
+        update_time_1,
         opt,
-        "12:00",
+        update_time_2,
     )
     child.expect(r"\[INFO\] Buildarr ready.")
     child.terminate()
@@ -227,9 +237,8 @@ def test_update_time_multiple(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Sunday 09:00" in output
-    assert "[INFO]    - Sunday 12:00" in output
-    assert "[INFO]    - Sunday 03:00" not in output
+    assert f"[INFO]    - Sunday {update_time_1}" in output
+    assert f"[INFO]    - Sunday {update_time_2}" in output
 
 
 @pytest.mark.parametrize("opt", ["-t", "--update-time"])
@@ -265,7 +274,7 @@ def test_watch(
 
     buildarr_yml: Path = buildarr_yml_factory(
         {
-            "buildarr": {"watch_config": False},
+            "buildarr": {"update_times": [next_hour()], "watch_config": False},
             "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
         },
     )
@@ -297,7 +306,7 @@ def test_no_watch(
 
     buildarr_yml: Path = buildarr_yml_factory(
         {
-            "buildarr": {"watch_config": True},
+            "buildarr": {"update_times": [next_hour()], "watch_config": True},
             "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
         },
     )

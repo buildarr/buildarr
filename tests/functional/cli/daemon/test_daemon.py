@@ -27,6 +27,8 @@ from urllib.parse import urlparse
 
 import pytest
 
+from .util import next_hour
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -54,7 +56,10 @@ def test_signal_terminate(
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
-        {"dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port}},
+        {
+            "buildarr": {"update_times": [next_hour()]},
+            "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
+        },
     )
 
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
@@ -84,7 +89,10 @@ def test_sighup(
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
-        {"dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port}},
+        {
+            "buildarr": {"update_times": [next_hour()]},
+            "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
+        },
     )
 
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
@@ -147,6 +155,7 @@ def test_initial_run_success(
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
+                "buildarr": {"update_times": [next_hour()]},
                 "dummy": {
                     "hostname": "localhost",
                     "port": urlparse(httpserver.url_for("")).port,
@@ -217,6 +226,7 @@ def test_initial_run_fail(
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
+                "buildarr": {"update_times": [next_hour()]},
                 "dummy": {
                     "hostname": "localhost",
                     "port": port,

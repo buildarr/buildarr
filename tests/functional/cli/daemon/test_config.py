@@ -27,6 +27,8 @@ from urllib.parse import urlparse
 
 import pytest
 
+from .util import next_hour
+
 if TYPE_CHECKING:
     from pathlib import Path
     from subprocess import CompletedProcess
@@ -45,10 +47,12 @@ def test_update_days(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Monday"]},
+                "buildarr": {"update_times": [update_time], "update_days": ["Monday"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
@@ -61,9 +65,9 @@ def test_update_days(
 
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
-    assert "[INFO]    - Monday 03:00" in output
+    assert f"[INFO]    - Monday {update_time}" in output
     for day in ("Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
-        assert f"[INFO]    - {day} 03:00" not in output
+        assert f"[INFO]    - {day} {update_time}" not in output
 
 
 def test_update_days_multiple(
@@ -76,10 +80,12 @@ def test_update_days_multiple(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_days": ["Monday", "Tuesday"]},
+                "buildarr": {"update_times": [update_time], "update_days": ["Monday", "Tuesday"]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
@@ -93,9 +99,9 @@ def test_update_days_multiple(
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
     for day in ("Monday", "Tuesday"):
-        assert f"[INFO]    - {day} 03:00" in output
+        assert f"[INFO]    - {day} {update_time}" in output
     for day in ("Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
-        assert f"[INFO]    - {day} 03:00" not in output
+        assert f"[INFO]    - {day} {update_time}" not in output
 
 
 def test_update_days_change_on_config_reload(
@@ -108,6 +114,8 @@ def test_update_days_change_on_config_reload(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     buildarr_yml = tmp_path / "buildarr.yml"
 
     with buildarr_yml.open("w") as f:
@@ -116,6 +124,8 @@ def test_update_days_change_on_config_reload(
                 "---\n"
                 "buildarr:\n"
                 "  watch_config: true\n"
+                "  update_times:\n"
+                f"    - '{update_time}'\n"
                 "  update_days:\n"
                 "    - Sunday\n"
                 "dummy:\n"
@@ -126,7 +136,7 @@ def test_update_days_change_on_config_reload(
 
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\]  - Update at:")
-    child.expect(r"\[INFO\]    - Sunday 03:00")
+    child.expect(f"\\[INFO\\]    - Sunday {update_time}")
     child.expect(r"\[INFO\] Buildarr ready.")
 
     with buildarr_yml.open("w") as f:
@@ -135,6 +145,8 @@ def test_update_days_change_on_config_reload(
                 "---\n"
                 "buildarr:\n"
                 "  watch_config: true\n"
+                "  update_times:\n"
+                f"    - '{update_time}'\n"
                 "  update_days:\n"
                 "    - Tuesday\n"
                 "dummy:\n"
@@ -146,7 +158,7 @@ def test_update_days_change_on_config_reload(
     child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
     child.expect(r"\[INFO\] Reloading config")
     child.expect(r"\[INFO\]  - Update at:")
-    child.expect(r"\[INFO\]    - Tuesday 03:00")
+    child.expect(f"\\[INFO\\]    - Tuesday {update_time}")
     child.expect(r"\[INFO\] Buildarr ready.")
     child.terminate()
     child.wait()
@@ -154,8 +166,8 @@ def test_update_days_change_on_config_reload(
     output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
-    assert output.count("[INFO]    - Sunday 03:00") == 1
-    assert output.count("[INFO]    - Tuesday 03:00") == 1
+    assert output.count(f"[INFO]    - Sunday {update_time}") == 1
+    assert output.count(f"[INFO]    - Tuesday {update_time}") == 1
 
 
 def test_update_days_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
@@ -186,10 +198,12 @@ def test_update_times(
     with a single instance value defined.
     """
 
+    update_time = next_hour()
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_times": ["06:00"]},
+                "buildarr": {"update_times": [update_time]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
@@ -203,8 +217,7 @@ def test_update_times(
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
     for day in ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
-        assert f"[INFO]    - {day} 06:00" in output
-        assert f"[INFO]    - {day} 03:00" not in output
+        assert f"[INFO]    - {day} {update_time}" in output
 
 
 def test_update_times_multiple(
@@ -217,10 +230,13 @@ def test_update_times_multiple(
     with a single instance value defined.
     """
 
+    next_hour_1 = next_hour()
+    next_hour_2 = next_hour(2)
+
     child: spawn = buildarr_daemon_interactive(
         buildarr_yml_factory(
             {
-                "buildarr": {"update_times": ["06:00", "09:00"]},
+                "buildarr": {"update_times": [next_hour_1, next_hour_2]},
                 "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
             },
         ),
@@ -234,9 +250,8 @@ def test_update_times_multiple(
     assert child.exitstatus == 0
     assert "[INFO]  - Update at:" in output
     for day in ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"):
-        assert f"[INFO]    - {day} 06:00" in output
-        assert f"[INFO]    - {day} 09:00" in output
-        assert f"[INFO]    - {day} 03:00" not in output
+        assert f"[INFO]    - {day} {next_hour_1}" in output
+        assert f"[INFO]    - {day} {next_hour_2}" in output
 
 
 def test_update_times_change_on_config_reload(
@@ -249,6 +264,9 @@ def test_update_times_change_on_config_reload(
     with a single instance value defined.
     """
 
+    update_time_1 = next_hour()
+    update_time_2 = next_hour(2)
+
     buildarr_yml = tmp_path / "buildarr.yml"
 
     with buildarr_yml.open("w") as f:
@@ -258,7 +276,7 @@ def test_update_times_change_on_config_reload(
                 "buildarr:\n"
                 "  watch_config: true\n"
                 "  update_times:\n"
-                "    - '06:00'\n"
+                f"    - '{update_time_1}'\n"
                 "dummy:\n"
                 "  hostname: localhost\n"
                 f"  port: {urlparse(httpserver.url_for('')).port}\n"
@@ -267,7 +285,7 @@ def test_update_times_change_on_config_reload(
 
     child: spawn = buildarr_daemon_interactive(buildarr_yml)
     child.expect(r"\[INFO\]  - Update at:")
-    child.expect(r"\[INFO\]    - Monday 06:00")
+    child.expect(f"\\[INFO\\]    - Monday {update_time_1}")
     child.expect(r"\[INFO\] Buildarr ready.")
 
     with buildarr_yml.open("w") as f:
@@ -277,7 +295,7 @@ def test_update_times_change_on_config_reload(
                 "buildarr:\n"
                 "  watch_config: true\n"
                 "  update_times:\n"
-                "    - '09:00'\n"
+                f"    - '{update_time_2}'\n"
                 "dummy:\n"
                 "  hostname: localhost\n"
                 f"  port: {urlparse(httpserver.url_for('')).port}\n"
@@ -287,7 +305,7 @@ def test_update_times_change_on_config_reload(
     child.expect(f"\\[INFO\\] Config file '{re.escape(str(buildarr_yml))}' has been modified")
     child.expect(r"\[INFO\] Reloading config")
     child.expect(r"\[INFO\]  - Update at:")
-    child.expect(r"\[INFO\]    - Monday 09:00")
+    child.expect(f"\\[INFO\\]    - Monday {update_time_2}")
     child.expect(r"\[INFO\] Buildarr ready.")
     child.terminate()
     child.wait()
@@ -295,8 +313,8 @@ def test_update_times_change_on_config_reload(
     output: str = child.logfile.getvalue().decode()
 
     assert child.exitstatus == 0
-    assert output.count("[INFO]    - Monday 06:00") == 1
-    assert output.count("[INFO]    - Monday 09:00") == 1
+    assert output.count(f"[INFO]    - Monday {update_time_1}") == 1
+    assert output.count(f"[INFO]    - Monday {update_time_2}") == 1
 
 
 def test_update_times_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
@@ -329,7 +347,7 @@ def test_watch_config_enabled(
 
     buildarr_yml: Path = buildarr_yml_factory(
         {
-            "buildarr": {"watch_config": True},
+            "buildarr": {"update_times": [next_hour()], "watch_config": True},
             "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
         },
     )
@@ -359,7 +377,7 @@ def test_watch_config_disabled(
 
     buildarr_yml: Path = buildarr_yml_factory(
         {
-            "buildarr": {"watch_config": False},
+            "buildarr": {"update_times": [next_hour()], "watch_config": False},
             "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
         },
     )
@@ -392,7 +410,17 @@ def test_watch_config_multiple_files(
     dummy_yml = tmp_path / "dummy.yml"
 
     with buildarr_yml.open("w") as f:
-        f.write(f"---\nincludes:\n  - {dummy_yml}\nbuildarr:\n  watch_config: true\n")
+        f.write(
+            (
+                f"---\n"
+                "includes:\n"
+                f"  - {dummy_yml}\n"
+                "buildarr:\n"
+                "  update_times:\n"
+                f"    - '{next_hour()}'\n"
+                "  watch_config: true\n"
+            ),
+        )
 
     with dummy_yml.open("w") as f:
         f.write(
@@ -430,7 +458,7 @@ def test_watch_config_parent_dir_modified(
 
     buildarr_yml: Path = buildarr_yml_factory(
         {
-            "buildarr": {"watch_config": True},
+            "buildarr": {"update_times": [next_hour()], "watch_config": True},
             "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
         },
     )
@@ -468,6 +496,8 @@ def test_watch_config_disabled_to_enabled(
             (
                 "---\n"
                 "buildarr:\n"
+                "  update_times:\n"
+                f"    - '{next_hour()}'\n"
                 "  watch_config: false\n"
                 "dummy:\n"
                 "  hostname: localhost\n"
@@ -524,6 +554,8 @@ def test_watch_config_enabled_to_disabled(
             (
                 "---\n"
                 "buildarr:\n"
+                "  update_times:\n"
+                f"    - '{next_hour()}'\n"
                 "  watch_config: true\n"
                 "dummy:\n"
                 "  hostname: localhost\n"
@@ -541,6 +573,8 @@ def test_watch_config_enabled_to_disabled(
             (
                 "---\n"
                 "buildarr:\n"
+                "  update_times:\n"
+                f"    - '{next_hour()}'\n"
                 "  watch_config: false\n"
                 "dummy:\n"
                 "  hostname: localhost\n"
@@ -587,7 +621,7 @@ def test_watch_config_error_handler(
 
     buildarr_yml: Path = buildarr_yml_factory(
         {
-            "buildarr": {"watch_config": True},
+            "buildarr": {"update_times": [next_hour()], "watch_config": True},
             "dummy": {"hostname": "localhost", "port": urlparse(httpserver.url_for("")).port},
         },
     )

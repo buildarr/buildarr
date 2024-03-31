@@ -46,9 +46,6 @@ def resolve_instance_dependencies() -> None:
 
     for plugin_name in state.active_plugins:
         for instance_name in sorted(state.instance_configs[plugin_name].keys()):
-            instance = (plugin_name, instance_name)
-            if instance in added_plugin_instances:
-                continue
             _resolve_instance_dependencies(
                 added_plugin_instances=added_plugin_instances,
                 execution_order=execution_order,
@@ -90,7 +87,7 @@ def _resolve_instance_dependencies(
     # NOTE: Due to similar checks being run in the instance configuration loading
     # stage in the `InstanceName` validator, in practice the checks within this block
     # will never actually be used. They are still defined here as well, just in case.
-    if plugin_name not in state.instance_configs:
+    if plugin_name not in state.instance_configs:  # pragma: no cover
         error_message = 'Unable to resolve instance dependency "'
         try:
             previous_pi = dependency_tree[-1]

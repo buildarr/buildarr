@@ -11,23 +11,10 @@
 # You should have received a copy of the GNU General Public License along with Buildarr.
 # If not, see <https://www.gnu.org/licenses/>.
 
-
-"""
-Test the `decoder` remote map entry optional parameter functionality
-on the `ConfigBase.get_local_attrs` class method.
-"""
-
 from __future__ import annotations
 
-from buildarr.config import ConfigBase
-from buildarr.util import str_to_bool
+from datetime import datetime, timedelta
 
 
-def test_decoder() -> None:
-    assert (
-        ConfigBase.get_local_attrs(
-            remote_map=[("test_attr", "testAttr", {"decoder": str_to_bool})],
-            remote_attrs={"testAttr": "true"},
-        )["test_attr"]
-        is True
-    )
+def next_hour(hours: int = 1) -> str:
+    return (datetime.now() + timedelta(hours=hours)).strftime("%H:%M")

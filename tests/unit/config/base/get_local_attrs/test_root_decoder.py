@@ -19,7 +19,7 @@ on the `ConfigBase.get_local_attrs` class method.
 
 from __future__ import annotations
 
-from buildarr.config.base import ConfigBase
+from buildarr.config import ConfigBase
 from buildarr.util import str_to_bool
 
 
