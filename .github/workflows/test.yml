@@ -92,8 +92,6 @@ jobs:
 
   coverage:
     needs: test
-    permissions:
-      pull-requests: write
     # Always run, even if the test job failed.
     if: success() || failure()
     runs-on: ubuntu-22.04
@@ -104,10 +102,13 @@ jobs:
           pattern: coverage-*
           merge-multiple: false
       - name: Generate code coverage summary report
-        uses: 5monkeys/cobertura-action@v14
+        uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          path: coverage-*/coverage.xml
-          skip_covered: false
-          minimum_coverage: 0
-          show_line: true
-          show_branch: true
+          filename: coverage-*/coverage.xml
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: false
+          indicators: false
+          output: both
+      - name: Write to job summary
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
