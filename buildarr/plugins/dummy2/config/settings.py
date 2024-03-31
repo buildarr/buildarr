@@ -69,6 +69,13 @@ class Dummy2SettingsConfig(Dummy2ConfigBase):
     If `instance_name` is defined, this value will instead be read from the target instance.
     """
 
+    nonexistent_plugin_instance: Optional[InstanceName] = Field(None, plugin="dummy3")
+    """
+    The name of an instance that belongs to a non-existent plugin.
+
+    Used for validating instance dependency error checking within the functional tests.
+    """
+
     _remote_map: List[RemoteMapEntry] = [
         (
             "instance_value",  # Buildarr config attribute name.

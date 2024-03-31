@@ -529,7 +529,7 @@ class InstanceName(str):
             plugin_name: str = field.field_info.extra["plugin"]
             instance_name = value
             if plugin_name not in state.plugins:
-                raise ValueError(f"Target plugin '{plugin_name}' not installed")
+                raise ValueError(f"target plugin '{plugin_name}' not installed")
             if state.config:
                 instances: Mapping[str, ConfigPlugin] = getattr(
                     state.config,
@@ -558,7 +558,7 @@ class InstanceName(str):
         except KeyError as err:
             if err.args[0] == "plugin":
                 raise ValueError(
-                    "Target plugin not defined in instance name metadata, "
+                    "target plugin not defined in instance name metadata, "
                     "make sure the default value is set to `Field(None, plugin='<plugin-name>')`",
                 ) from None
             else:

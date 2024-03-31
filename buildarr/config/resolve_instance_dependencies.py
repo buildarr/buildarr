@@ -87,6 +87,9 @@ def _resolve_instance_dependencies(
 
     plugin_instance: PluginInstanceRef = (plugin_name, instance_name)
 
+    # NOTE: Due to similar checks being run in the instance configuration loading
+    # stage in the `InstanceName` validator, in practice the checks within this block
+    # will never actually be used. They are still defined here as well, just in case.
     if plugin_name not in state.instance_configs:
         error_message = 'Unable to resolve instance dependency "'
         try:
