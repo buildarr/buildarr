@@ -93,7 +93,7 @@ jobs:
   coverage:
     needs: test
     permissions:
-      issues: write
+      pull-requests: write
     # Always run, even if the test job failed.
     if: success() || failure()
     runs-on: ubuntu-22.04

@@ -61,7 +61,8 @@ Changelog = "https://buildarr.github.io/release-notes"
 buildarr = "buildarr.cli.main:main"
 
 [project.entry-points."buildarr.plugins"]
-# Used during unit testing.
+# Used by functional tests. Otherwise, disabled and cannot be used.
+# Also serves as an example of how to register Buildarr plugins in packages.
 dummy = "buildarr.plugins.dummy.plugin:DummyPlugin"
 dummy2 = "buildarr.plugins.dummy2.plugin:Dummy2Plugin"
 
