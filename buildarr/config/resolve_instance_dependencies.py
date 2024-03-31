@@ -44,8 +44,8 @@ def resolve_instance_dependencies() -> None:
     added_plugin_instances: Set[PluginInstanceRef] = set()
     execution_order: List[PluginInstanceRef] = []
 
-    for plugin_name, instance_configs in state.instance_configs.items():
-        for instance_name in instance_configs.keys():
+    for plugin_name in state.active_plugins:
+        for instance_name in sorted(state.instance_configs[plugin_name].keys()):
             instance = (plugin_name, instance_name)
             if instance in added_plugin_instances:
                 continue
@@ -115,7 +115,7 @@ def _resolve_instance_dependencies(
         )
 
     if plugin_instance in state._instance_dependencies:
-        for target_plugin_instance in state._instance_dependencies[plugin_instance]:
+        for target_plugin_instance in sorted(state._instance_dependencies[plugin_instance]):
             if target_plugin_instance not in added_plugin_instances:
                 target_plugin, target_instance = target_plugin_instance
                 _resolve_instance_dependencies(

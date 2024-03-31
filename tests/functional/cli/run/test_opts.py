@@ -161,3 +161,10 @@ def test_plugin(
         in result.stdout
     )
     assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
+    assert (
+        f"[INFO] <dummy2> (default) dummy2.settings.instance_value: None -> {instance_value!r}"
+        not in result.stdout
+    )
+    assert (
+        "[INFO] <dummy2> (default) Remote configuration successfully updated" not in result.stdout
+    )

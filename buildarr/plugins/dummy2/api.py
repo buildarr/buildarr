@@ -43,8 +43,6 @@ def api_get(
     secrets: Union[Dummy2Secrets, str],
     api_url: str,
     *,
-    api_key: Optional[str] = None,
-    use_api_key: bool = True,
     expected_status_code: HTTPStatus = HTTPStatus.OK,
     session: Optional[requests.Session] = None,
 ) -> Any:
@@ -60,15 +58,7 @@ def api_get(
         Response object
     """
 
-    if isinstance(secrets, str):
-        host_url = secrets
-        host_api_key = api_key
-    else:
-        host_url = secrets.host_url
-        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
-
-    if not use_api_key:
-        host_api_key = None
+    host_url = secrets if isinstance(secrets, str) else secrets.host_url
 
     url = f"{host_url}/{api_url.lstrip('/')}"
 
@@ -76,11 +66,7 @@ def api_get(
 
     if not session:
         session = requests.Session()
-    res = session.get(
-        url,
-        headers={"X-Api-Key": host_api_key} if host_api_key else None,
-        timeout=state.request_timeout,
-    )
+    res = session.get(url, timeout=state.request_timeout)
     try:
         res_json = res.json()
     except requests.JSONDecodeError:
@@ -99,8 +85,6 @@ def api_post(
     api_url: str,
     req: Any,
     *,
-    api_key: Optional[str] = None,
-    use_api_key: bool = True,
     session: Optional[requests.Session] = None,
     expected_status_code: HTTPStatus = HTTPStatus.CREATED,
 ) -> Any:
@@ -117,15 +101,7 @@ def api_post(
         Response object
     """
 
-    if isinstance(secrets, str):
-        host_url = secrets
-        host_api_key = api_key
-    else:
-        host_url = secrets.host_url
-        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
-
-    if not use_api_key:
-        host_api_key = None
+    host_url = secrets if isinstance(secrets, str) else secrets.host_url
 
     url = f"{host_url}/{api_url.lstrip('/')}"
 
@@ -135,7 +111,6 @@ def api_post(
         session = requests.Session()
     res = session.post(
         url,
-        headers={"X-Api-Key": host_api_key} if host_api_key else None,
         timeout=state.request_timeout,
         **({"json": req} if req is not None else {}),
     )
@@ -157,8 +132,6 @@ def api_put(
     api_url: str,
     req: Any,
     *,
-    api_key: Optional[str] = None,
-    use_api_key: bool = True,
     session: Optional[requests.Session] = None,
     expected_status_code: HTTPStatus = HTTPStatus.ACCEPTED,
 ) -> Any:
@@ -175,15 +148,7 @@ def api_put(
         Response object
     """
 
-    if isinstance(secrets, str):
-        host_url = secrets
-        host_api_key = api_key
-    else:
-        host_url = secrets.host_url
-        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
-
-    if not use_api_key:
-        host_api_key = None
+    host_url = secrets if isinstance(secrets, str) else secrets.host_url
 
     url = f"{host_url}/{api_url.lstrip('/')}"
 
@@ -193,7 +158,6 @@ def api_put(
         session = requests.Session()
     res = session.put(
         url,
-        headers={"X-Api-Key": host_api_key} if host_api_key else None,
         json=req,
         timeout=state.request_timeout,
     )
@@ -214,8 +178,6 @@ def api_delete(
     secrets: Union[Dummy2Secrets, str],
     api_url: str,
     *,
-    api_key: Optional[str] = None,
-    use_api_key: bool = True,
     session: Optional[requests.Session] = None,
     expected_status_code: HTTPStatus = HTTPStatus.OK,
 ) -> None:
@@ -228,15 +190,7 @@ def api_delete(
         expected_status_code (HTTPStatus): Expected response status. Defaults to `200 OK`.
     """
 
-    if isinstance(secrets, str):
-        host_url = secrets
-        host_api_key = api_key
-    else:
-        host_url = secrets.host_url
-        host_api_key = secrets.api_key.get_secret_value() if secrets.api_key else None
-
-    if not use_api_key:
-        host_api_key = None
+    host_url = secrets if isinstance(secrets, str) else secrets.host_url
 
     url = f"{host_url}/{api_url.lstrip('/')}"
 
@@ -244,11 +198,7 @@ def api_delete(
 
     if not session:
         session = requests.Session()
-    res = session.delete(
-        url,
-        headers={"X-Api-Key": host_api_key} if host_api_key else None,
-        timeout=state.request_timeout,
-    )
+    res = session.delete(url, timeout=state.request_timeout)
 
     logger.debug("DELETE %s -> status_code=%i", url, res.status_code)
 

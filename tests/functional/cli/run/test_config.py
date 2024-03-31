@@ -21,6 +21,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+import pytest
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -356,3 +358,93 @@ def test_trash_value_unchanged(
         in result.stderr
     )
     assert "[INFO] <dummy> (default) Remote configuration is up to date" in result.stdout
+
+
+@pytest.mark.parametrize("suffix", ["", "/"])
+def test_url_base(
+    suffix,
+    httpserver: HTTPServer,
+    instance_value,
+    buildarr_yml_factory,
+    buildarr_run,
+) -> None:
+    """
+    Test that the instance initialisation process works for standard plugins.
+    """
+
+    url_base = "/dummy"
+    api_root = "/api/v1"
+    version = "1.0.0"
+
+    # Check if the server is initialised.
+    httpserver.expect_ordered_request(
+        f"{url_base}/initialize.json",
+        method="GET",
+    ).respond_with_json(
+        {"apiRoot": f"{url_base}{api_root}", "initialized": False},
+    )
+    # Initialise the server (if supported).
+    httpserver.expect_ordered_request(
+        f"{url_base}{api_root}/init",
+        method="POST",
+    ).respond_with_json(
+        {"initialized": True},
+    )
+    # Fetch API key (if available).
+    httpserver.expect_ordered_request(
+        f"{url_base}/initialize.json",
+        method="GET",
+    ).respond_with_json(
+        {"apiRoot": f"{url_base}{api_root}", "version": version, "initialized": True},
+    )
+    # Get status in the connection test.
+    httpserver.expect_ordered_request(
+        f"{url_base}{api_root}/status",
+        method="GET",
+    ).respond_with_json(
+        {"version": version},
+    )
+    # Get instance configuration for updating.
+    httpserver.expect_ordered_request(
+        f"{url_base}{api_root}/settings",
+        method="GET",
+    ).respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+    )
+    # Update instance configuration.
+    httpserver.expect_ordered_request(
+        f"{url_base}{api_root}/settings",
+        method="POST",
+        json={"trashValue": None, "instanceValue": instance_value},
+    ).respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        status=201,
+    )
+    # Get instance configuration for deleting resources.
+    httpserver.expect_ordered_request(
+        f"{url_base}{api_root}/settings",
+        method="GET",
+    ).respond_with_json(
+        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+    )
+
+    result = buildarr_run(
+        buildarr_yml_factory(
+            {
+                "dummy": {
+                    "hostname": "localhost",
+                    "port": urlparse(httpserver.url_for("")).port,
+                    "url_base": f"{url_base}{suffix}",
+                    "settings": {"instance_value": instance_value},
+                },
+            },
+        ),
+    )
+
+    httpserver.check_assertions()
+    assert result.returncode == 0
+    assert (
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        in result.stdout
+    )
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout

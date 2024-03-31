@@ -20,25 +20,6 @@ from __future__ import annotations
 
 from typing import Literal
 
-from buildarr.types import Password
-
-Dummy2ApiKey = Password
-"""
-Constrained string type for a Dummy2 instance API key.
-
-The type `Password` allows anything as long as it is not an empty string, but is a subclass
-of type `pydantic.SecretStr`, allowing Buildarr to hide the value in any logging.
-
-A more complex type for API key might look something like this:
-
-```python
-from pydantic import Field, SecretStr
-from typing_extensions import Annotated
-
-Dummy2ApiKey = Annotated[SecretStr, Field(min_length=32, max_length=32)]
-```
-"""
-
 Dummy2Protocol = Literal["http"]
 """
 Allowed protocols for communicating with a Dummy2 instance.

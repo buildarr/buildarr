@@ -111,15 +111,8 @@ def test_initialize(
                     "port": urlparse(httpserver.url_for("")).port,
                     "settings": {"instance_value": instance_value},
                 },
-                "dummy2": {
-                    "hostname": "localhost",
-                    "port": urlparse(httpserver.url_for("")).port,
-                    "settings": {"instance_value": instance_value},
-                },
             },
         ),
-        "--plugin",
-        "dummy",
     )
 
     httpserver.check_assertions()
@@ -186,15 +179,8 @@ def test_already_initialized(
                     "port": urlparse(httpserver.url_for("")).port,
                     "settings": {"instance_value": instance_value},
                 },
-                "dummy2": {
-                    "hostname": "localhost",
-                    "port": urlparse(httpserver.url_for("")).port,
-                    "settings": {"instance_value": instance_value},
-                },
             },
         ),
-        "--plugin",
-        "dummy",
     )
 
     httpserver.check_assertions()
@@ -208,3 +194,183 @@ def test_already_initialized(
         in result.stdout
     )
     assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
+
+
+def test_multiple_plugins(
+    httpserver: HTTPServer,
+    instance_value,
+    buildarr_yml_factory,
+    buildarr_run,
+) -> None:
+    """
+    Test that the instance initialisation process works for standard plugins.
+    """
+
+    api_root = "/api/v1"
+    version = "1.0.0"
+
+    # Check (and initialise) the dummy instance.
+    httpserver.expect_ordered_request("/dummy/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": f"/dummy{api_root}", "initialized": False},
+    )
+    httpserver.expect_ordered_request(f"/dummy{api_root}/init", method="POST").respond_with_json(
+        {"initialized": True},
+    )
+
+    # Fetch API key (if available) from the dummy instance.
+    httpserver.expect_ordered_request("/dummy/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version, "initialized": True},
+    )
+    # Get dummy instance status in the connection test.
+    httpserver.expect_ordered_request(f"/dummy{api_root}/status", method="GET").respond_with_json(
+        {"version": version},
+    )
+
+    # Fetch dummy2 instance metadata in the connection test.
+    httpserver.expect_ordered_request("/dummy2/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": f"/dummy2{api_root}", "version": version},
+    )
+    # Get dummy2 instance status in the connection test.
+    httpserver.expect_ordered_request(f"/dummy2{api_root}/status", method="GET").respond_with_json(
+        {"version": version},
+    )
+
+    # Get dummy instance configuration for updating.
+    httpserver.expect_ordered_request(f"/dummy{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+    )
+    # Update dummy instance configuration.
+    httpserver.expect_ordered_request(
+        f"/dummy{api_root}/settings",
+        method="POST",
+        json={"trashValue": None, "instanceValue": instance_value},
+    ).respond_with_json(
+        {"isUpdated": False, "trashValue": None, "instanceValue": None},
+        status=201,
+    )
+
+    # Get dummy2 instance configuration for updating.
+    httpserver.expect_ordered_request(
+        f"/dummy2{api_root}/settings",
+        method="GET",
+    ).respond_with_json(
+        {"isUpdated": False, "instanceValue": None},
+    )
+    # Update dummy2 instance configuration.
+    httpserver.expect_ordered_request(
+        f"/dummy2{api_root}/settings",
+        method="POST",
+        json={"instanceValue": instance_value},
+    ).respond_with_json(
+        {"isUpdated": False, "instanceValue": None},
+        status=201,
+    )
+
+    # Get instance configuration for deleting dummy2 instance resources.
+    httpserver.expect_ordered_request(
+        f"/dummy2{api_root}/settings",
+        method="GET",
+    ).respond_with_json(
+        {"isUpdated": True, "instanceValue": instance_value},
+    )
+
+    # Get instance configuration for deleting dummy2 instance resources.
+    httpserver.expect_ordered_request(f"/dummy{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": True, "trashValue": None, "instanceValue": instance_value},
+    )
+
+    result = buildarr_run(
+        buildarr_yml_factory(
+            {
+                "dummy": {
+                    "hostname": "localhost",
+                    "port": urlparse(httpserver.url_for("")).port,
+                    "url_base": "/dummy",
+                    "settings": {"instance_value": instance_value},
+                },
+                "dummy2": {
+                    "hostname": "localhost",
+                    "port": urlparse(httpserver.url_for("")).port,
+                    "url_base": "/dummy2",
+                    "settings": {"instance_value": instance_value},
+                },
+            },
+        ),
+    )
+
+    httpserver.check_assertions()
+    assert result.returncode == 0
+    assert (
+        f"[INFO] <dummy> (default) dummy.settings.instance_value: None -> {instance_value!r}"
+        in result.stdout
+    )
+    assert "[INFO] <dummy> (default) Remote configuration successfully updated" in result.stdout
+    assert (
+        f"[INFO] <dummy2> (default) dummy2.settings.instance_value: None -> {instance_value!r}"
+        in result.stdout
+    )
+    assert "[INFO] <dummy2> (default) Remote configuration successfully updated" in result.stdout
+
+
+def test_render_unsupported(
+    httpserver: HTTPServer,
+    instance_value,
+    buildarr_yml_factory,
+    buildarr_run,
+) -> None:
+    """
+    Test that the instance initialisation process works for standard plugins.
+    """
+
+    api_root = "/api/v1"
+    version = "1.0.0"
+
+    # Fetch server metadata.
+    httpserver.expect_ordered_request("/initialize.json", method="GET").respond_with_json(
+        {"apiRoot": api_root, "version": version},
+    )
+    # Get status in the connection test.
+    httpserver.expect_ordered_request(f"{api_root}/status", method="GET").respond_with_json(
+        {"version": version},
+    )
+    # Get instance configuration for updating.
+    httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": False, "instanceValue": None},
+    )
+    # Update instance configuration.
+    httpserver.expect_ordered_request(
+        f"{api_root}/settings",
+        method="POST",
+        json={"instanceValue": instance_value},
+    ).respond_with_json(
+        {"isUpdated": False, "instanceValue": None},
+        status=201,
+    )
+    # Get instance configuration for deleting resources.
+    httpserver.expect_ordered_request(f"{api_root}/settings", method="GET").respond_with_json(
+        {"isUpdated": True, "instanceValue": instance_value},
+    )
+
+    result = buildarr_run(
+        buildarr_yml_factory(
+            {
+                "dummy2": {
+                    "hostname": "localhost",
+                    "port": urlparse(httpserver.url_for("")).port,
+                    "settings": {"instance_value": instance_value},
+                },
+            },
+        ),
+    )
+
+    httpserver.check_assertions()
+    assert result.returncode == 0
+    assert (
+        "[DEBUG] <dummy2> (default) Skipped performing pre-initialisation configuration rendering "
+        "(not supported by plugin)"
+    ) in result.stderr
+    assert (
+        f"[INFO] <dummy2> (default) dummy2.settings.instance_value: None -> {instance_value!r}"
+        in result.stdout
+    )
+    assert "[INFO] <dummy2> (default) Remote configuration successfully updated" in result.stdout

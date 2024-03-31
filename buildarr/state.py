@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Tuple
 from buildarr.util import str_to_bool
 
 if TYPE_CHECKING:
-    from typing import DefaultDict, FrozenSet, Generator, Mapping, Optional, Sequence, Set
+    from typing import DefaultDict, Generator, Mapping, Optional, Sequence, Set
 
     from .config import ConfigPlugin, ConfigType
     from .manager import ManagerPlugin
@@ -108,9 +108,10 @@ class State:
     Fully qualified configuration objects for each instance, under each plugin.
     """
 
-    active_plugins: FrozenSet[str]
+    active_plugins: Sequence[str]
     """
-    A data structure containing the names of all the currently active plugins.
+    A data structure containing the names of all the currently active plugins,
+    in alphabetical order.
     """
 
     trash_metadata_dir: Path

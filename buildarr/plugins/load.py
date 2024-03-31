@@ -21,7 +21,7 @@ from __future__ import annotations
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from stevedore.extension import ExtensionManager  # type: ignore[import]
+from stevedore.extension import ExtensionManager
 
 from ..state import state
 

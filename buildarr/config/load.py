@@ -306,4 +306,4 @@ def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
 
     # Update global application state with the fully qualified instance configurations.
     state.instance_configs = configs
-    state.active_plugins = frozenset(active_plugins)
+    state.active_plugins = tuple(sorted(active_plugins))
