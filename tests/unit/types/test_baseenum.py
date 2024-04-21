@@ -57,6 +57,13 @@ def test_single_value_decode() -> None:
     )
 
 
+def test_single_value_create_encode() -> None:
+    assert Settings(test_single_value=SingleValueEnum.one).get_create_remote_attrs(
+        tree="test.settings",
+        remote_map=[("test_single_value", "testAttr", {})],
+    ) == {"testAttr": 1}
+
+
 def test_single_value_create_format(caplog) -> None:
     caplog.set_level(logging.DEBUG)
 
@@ -68,13 +75,6 @@ def test_single_value_create_format(caplog) -> None:
     record = caplog.records[0]
     assert record.levelname == "INFO"
     assert record.message == "test.settings.test_single_value: 'one' -> (created)"
-
-
-def test_single_value_create_encode() -> None:
-    assert Settings(test_single_value=SingleValueEnum.one).get_create_remote_attrs(
-        tree="test.settings",
-        remote_map=[("test_single_value", "testAttr", {})],
-    ) == {"testAttr": 1}
 
 
 def test_single_value_update_encode() -> None:

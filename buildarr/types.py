@@ -234,7 +234,7 @@ class TrashID(ConstrainedStr):
     ```
     """
 
-    regex = re.compile("[A-Fa-f0-9]+")
+    regex = re.compile("^[A-Fa-f0-9]+$")
     min_length = 32
     max_length = 32
     to_lower = True
