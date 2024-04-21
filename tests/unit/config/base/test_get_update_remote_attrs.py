@@ -296,7 +296,7 @@ def test_formatter(caplog) -> None:
     ) == (True, {"testAttr": True})
     record = caplog.records[0]
     assert record.levelname == "INFO"
-    assert caplog.text.strip().endswith("test.settings.test_bool: 'No' -> 'Yes'")
+    assert record.message == "test.settings.test_bool: 'No' -> 'Yes'"
 
 
 @pytest.mark.parametrize("test_value", [False, True])
