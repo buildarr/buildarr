@@ -19,6 +19,8 @@ on the `ConfigBase.get_update_remote_attrs` method.
 
 from __future__ import annotations
 
+import logging
+
 from typing import Dict, List, Optional, Set, Union
 
 import pytest
@@ -70,7 +72,7 @@ def test_unmanaged() -> None:
     ) == (False, {})
 
 
-def test_set_unchanged() -> None:
+def test_unchanged() -> None:
     assert Settings(
         test_bool=False,
         test_int=0,
@@ -229,12 +231,12 @@ def test_check_unmanaged_false() -> None:
 
 
 def test_set_unchanged_true() -> None:
-    assert Settings(test_bool=False).get_update_remote_attrs(
+    assert Settings(test_bool=True).get_update_remote_attrs(
         tree="test.settings",
-        remote=Settings(),
+        remote=Settings(test_bool=True),
         remote_map=[("test_bool", "testAttr", {})],
         set_unchanged=True,
-    ) == (False, {"testAttr": False})
+    ) == (False, {"testAttr": True})
 
 
 def test_set_unchanged_true_unmanaged() -> None:
@@ -255,6 +257,59 @@ def test_set_unchanged_false() -> None:
     ) == (False, {})
 
 
+def test_encoder() -> None:
+    assert Settings(test_bool=True).get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(),
+        remote_map=[
+            ("test_bool", "testAttr", {"encoder": lambda v: "Hello, world!" if v else None}),
+        ],
+    ) == (True, {"testAttr": "Hello, world!"})
+
+
+def test_root_encoder() -> None:
+    assert Settings(test_bool=True, test_int=123).get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(),
+        remote_map=[
+            (
+                "test_bool",
+                "testAttr",
+                {
+                    "root_encoder": lambda vs: (
+                        f"test_bool={vs.test_bool}, test_int={vs.test_int}"
+                    ),
+                },
+            ),
+        ],
+    ) == (True, {"testAttr": "test_bool=True, test_int=123"})
+
+
+def test_formatter(caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    assert Settings(test_bool=True).get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(),
+        remote_map=[
+            ("test_bool", "testAttr", {"formatter": lambda v: "Yes" if v else "No"}),
+        ],
+    ) == (True, {"testAttr": True})
+    record = caplog.records[0]
+    assert record.levelname == "INFO"
+    assert caplog.text.strip().endswith("test.settings.test_bool: 'No' -> 'Yes'")
+
+
+@pytest.mark.parametrize("test_value", [False, True])
+def test_set_if(test_value) -> None:
+    assert Settings(test_bool=test_value).get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(test_bool=not test_value),
+        remote_map=[
+            ("test_bool", "testAttr", {"set_if": lambda v: not v}),
+        ],
+    ) == (True, ({"testAttr": False} if not test_value else {}))
+
+
 def test_is_field() -> None:
     assert Settings(test_bool=True, test_int=123).get_update_remote_attrs(
         tree="test.settings",
@@ -267,3 +322,48 @@ def test_is_field() -> None:
         True,
         {"fields": [{"name": "testBool", "value": True}, {"name": "testInt", "value": 123}]},
     )
+
+
+def test_remote_map_entry_check_unmanaged_true() -> None:
+    assert Settings().get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(test_bool=True),
+        remote_map=[("test_bool", "testAttr", {"check_unmanaged": True})],
+        check_unmanaged=False,
+    ) == (True, {"testAttr": False})
+
+
+def test_remote_map_entry_check_unmanaged_false() -> None:
+    assert Settings().get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(test_bool=True),
+        remote_map=[("test_bool", "testAttr", {"check_unmanaged": False})],
+        check_unmanaged=True,
+    ) == (False, {})
+
+
+def test_remote_map_entry_set_unchanged_true() -> None:
+    assert Settings(test_bool=True).get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(test_bool=True),
+        remote_map=[("test_bool", "testAttr", {"set_unchanged": True})],
+        set_unchanged=False,
+    ) == (False, {"testAttr": True})
+
+
+def test_remote_map_entry_set_unchanged_true_unmanaged() -> None:
+    assert Settings().get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(test_bool=False),
+        remote_map=[("test_bool", "testAttr", {"set_unchanged": True})],
+        set_unchanged=False,
+    ) == (False, {"testAttr": False})
+
+
+def test_remote_map_entry_set_unchanged_false() -> None:
+    assert Settings(test_bool=False).get_update_remote_attrs(
+        tree="test.settings",
+        remote=Settings(),
+        remote_map=[("test_bool", "testAttr", {"set_unchanged": False})],
+        set_unchanged=True,
+    ) == (False, {})
