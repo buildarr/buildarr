@@ -38,8 +38,14 @@ class GeneralSettings(ConfigBase):
 
 
 def test_nested_config() -> None:
+    """
+    Check that running `from_remote` on a nested configuration object works.
+    """
+
     secrets = "Hello, world!"
+
     general_settings = GeneralSettings.from_remote(secrets=secrets)
+
     assert general_settings.test.test_value is True
     assert general_settings.test.secret_value == secrets
     assert general_settings.general_value is False

@@ -36,6 +36,12 @@ class GeneralSettings(ConfigBase):
 
 
 def test_nested_config_unchanged() -> None:
+    """
+    Check that running `delete_remote` on a nested configuration object
+    works, and that if `delete_remote` returns `False`, it is propagated
+    back up to the caller.
+    """
+
     assert not GeneralSettings().delete_remote(
         tree="general",
         secrets=False,
@@ -44,6 +50,12 @@ def test_nested_config_unchanged() -> None:
 
 
 def test_nested_config_changed() -> None:
+    """
+    Check that running `delete_remote` on a nested configuration object
+    works, and that if `delete_remote` returns `True`, it is propagated
+    back up to the caller.
+    """
+
     assert GeneralSettings().delete_remote(
         tree="general",
         secrets=True,

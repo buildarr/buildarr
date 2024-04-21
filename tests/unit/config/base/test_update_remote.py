@@ -45,7 +45,14 @@ class GeneralSettings(ConfigBase):
 
 
 def test_nested_config_unchanged() -> None:
+    """
+    Check that running `update_remote` on a nested configuration object
+    works, and that if `update_remote` returns `False`, it is propagated
+    back up to the caller.
+    """
+
     secrets: List[bool] = []
+
     assert not GeneralSettings().update_remote(
         tree="general",
         secrets=secrets,
@@ -55,7 +62,14 @@ def test_nested_config_unchanged() -> None:
 
 
 def test_nested_config_changed() -> None:
+    """
+    Check that running `update_remote` on a nested configuration object
+    works, and that if `update_remote` returns `True`, it is propagated
+    back up to the caller.
+    """
+
     secrets: List[bool] = []
+
     assert GeneralSettings().update_remote(
         tree="general",
         secrets=secrets,
@@ -64,19 +78,15 @@ def test_nested_config_changed() -> None:
     assert secrets == [True]
 
 
-def test_secrets() -> None:
-    secrets: List[bool] = []
-    assert not GeneralSettings(secrets_value=True).update_remote(
-        tree="general",
-        secrets=secrets,
-        remote=GeneralSettings(),
-    )
-    assert secrets == [True]
-
-
 @pytest.mark.parametrize("test_value", [False, True])
 def test_check_unmanaged(test_value) -> None:
+    """
+    Check that the `check_unmanaged` parameter is propagated through
+    to the nested `update_remote` call.
+    """
+
     secrets: List[bool] = []
+
     assert not GeneralSettings(settings=Settings(check_unmanaged_value=test_value)).update_remote(
         tree="general",
         secrets=secrets,

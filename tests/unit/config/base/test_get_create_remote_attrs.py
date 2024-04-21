@@ -43,6 +43,11 @@ class Settings(ConfigBase):
 
 
 def test_encode_bool() -> None:
+    """
+    Check that encoding a `bool` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_bool=True).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_bool", "testAttr", {})],
@@ -50,6 +55,11 @@ def test_encode_bool() -> None:
 
 
 def test_encode_int() -> None:
+    """
+    Check that encoding an `int` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_int=123).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_int", "testAttr", {})],
@@ -57,6 +67,11 @@ def test_encode_int() -> None:
 
 
 def test_encode_float() -> None:
+    """
+    Check that encoding a `float` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_float=123.456).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_float", "testAttr", {})],
@@ -64,6 +79,11 @@ def test_encode_float() -> None:
 
 
 def test_encode_str() -> None:
+    """
+    Check that encoding a `str` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_str="Hello, world!").get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_str", "testAttr", {})],
@@ -71,6 +91,11 @@ def test_encode_str() -> None:
 
 
 def test_encode_list_int() -> None:
+    """
+    Check that encoding a `list[int]` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_list_int=[1, 2, 3]).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_list_int", "testAttr", {})],
@@ -78,6 +103,11 @@ def test_encode_list_int() -> None:
 
 
 def test_encode_list_str() -> None:
+    """
+    Check that encoding a `list[str]` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_list_str=["Hello", "World", "Buildarr"]).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_list_str", "testAttr", {})],
@@ -85,26 +115,43 @@ def test_encode_list_str() -> None:
 
 
 def test_encode_set_int() -> None:
+    """
+    Check that encoding a `set[int]` attribute works properly
+    using the default encoder.
+    """
+
     remote_attrs = Settings(test_set_int=[1, 2, 3]).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_set_int", "testAttr", {})],
     )
+
     assert "testAttr" in remote_attrs
     assert isinstance(remote_attrs["testAttr"], list)
     assert sorted(remote_attrs["testAttr"]) == [1, 2, 3]
 
 
 def test_encode_set_str() -> None:
+    """
+    Check that encoding a `set[str]` attribute works properly
+    using the default encoder.
+    """
+
     remote_attrs = Settings(test_set_str=["Str1", "Str2", "Str3"]).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_set_str", "testAttr", {})],
     )
+
     assert "testAttr" in remote_attrs
     assert isinstance(remote_attrs["testAttr"], list)
     assert sorted(remote_attrs["testAttr"]) == ["Str1", "Str2", "Str3"]
 
 
 def test_encode_dict_int_str() -> None:
+    """
+    Check that encoding a `dict[int, str]` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_dict_int_str={1: "Hello, world!"}).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_dict_int_str", "testAttr", {})],
@@ -113,6 +160,11 @@ def test_encode_dict_int_str() -> None:
 
 @pytest.mark.parametrize("test_value", [1, "Hello, world!", ["Hello", "world!"]])
 def test_encode_union_int_str_liststr(test_value) -> None:
+    """
+    Check that encoding a `int | str | list[str]` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_union_int_str_liststr=test_value).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_union_int_str_liststr", "testAttr", {})],
@@ -121,6 +173,11 @@ def test_encode_union_int_str_liststr(test_value) -> None:
 
 @pytest.mark.parametrize("test_value", [None, "Hello, world!"])
 def test_encode_optional_str(test_value) -> None:
+    """
+    Check that encoding a `str | None` attribute works properly
+    using the default encoder.
+    """
+
     assert Settings(test_optional_str=test_value).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_optional_str", "testAttr", {})],
@@ -128,6 +185,11 @@ def test_encode_optional_str(test_value) -> None:
 
 
 def test_set_unmanaged_true() -> None:
+    """
+    Check that the `set_unmanaged` method argument works properly
+    when set to `True`.
+    """
+
     assert Settings().get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_bool", "testAttr", {})],
@@ -136,6 +198,11 @@ def test_set_unmanaged_true() -> None:
 
 
 def test_set_unmanaged_false() -> None:
+    """
+    Check that the `set_unmanaged` method argument works properly
+    when set to `False`.
+    """
+
     assert (
         Settings().get_create_remote_attrs(
             tree="test.settings",
@@ -147,6 +214,11 @@ def test_set_unmanaged_false() -> None:
 
 
 def test_encoder() -> None:
+    """
+    Check that configuring a custom encoder using the `encoder`
+    remote map entry parameter works properly.
+    """
+
     assert Settings(test_bool=True).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[
@@ -156,6 +228,11 @@ def test_encoder() -> None:
 
 
 def test_root_encoder() -> None:
+    """
+    Check that configuring a root encoder using the `root_encoder`
+    remote map entry parameter works properly.
+    """
+
     assert Settings(test_bool=True, test_int=123).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[
@@ -173,6 +250,11 @@ def test_root_encoder() -> None:
 
 
 def test_formatter(caplog) -> None:
+    """
+    Check that configuring a custom logging formatter using the `formatter`
+    remote map entry parameter works properly.
+    """
+
     caplog.set_level(logging.DEBUG)
     assert Settings(test_bool=True).get_create_remote_attrs(
         tree="test.settings",
@@ -187,6 +269,10 @@ def test_formatter(caplog) -> None:
 
 @pytest.mark.parametrize("test_value", [False, True])
 def test_set_if(test_value) -> None:
+    """
+    Check that the `set_if` remote map entry parameter works properly.
+    """
+
     assert Settings(test_bool=test_value).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[
@@ -196,6 +282,10 @@ def test_set_if(test_value) -> None:
 
 
 def test_is_field() -> None:
+    """
+    Check that the `is_field` remote map entry parameter works properly.
+    """
+
     assert Settings(test_bool=True, test_int=123).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[
@@ -206,6 +296,11 @@ def test_is_field() -> None:
 
 
 def test_remote_map_entry_set_unmanaged_true() -> None:
+    """
+    Check that the `set_unmanaged` remote map entry parameter works properly
+    when set to `True`, and that it overrides the method argument of the same name.
+    """
+
     assert Settings().get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_bool", "testAttr", {"set_unmanaged": True})],
@@ -214,6 +309,11 @@ def test_remote_map_entry_set_unmanaged_true() -> None:
 
 
 def test_remote_map_entry_set_unmanaged_false() -> None:
+    """
+    Check that the `set_unmanaged` remote map entry parameter works properly
+    when set to `False`, and that it overrides the method argument of the same name.
+    """
+
     assert (
         Settings().get_create_remote_attrs(
             tree="test.settings",
