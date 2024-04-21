@@ -13,7 +13,7 @@
 
 
 """
-Utility functions for the `buildarr compose` CLI command functional tests.
+Helper functions for the `buildarr compose` CLI command functional tests.
 """
 
 from __future__ import annotations

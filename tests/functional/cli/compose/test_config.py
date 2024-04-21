@@ -13,7 +13,7 @@
 
 
 """
-Functional tests for the `buildarr run` CLI command.
+Configuration attribute functional tests for the `buildarr compose` CLI command.
 """
 
 from __future__ import annotations
@@ -25,8 +25,7 @@ from .util import get_source
 
 def test_buildarr_docker_image_uri_config(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `buildarr.docker_image_uri` configuration attribute works properly.
     """
 
     docker_image_uri = "testing/buildarr"
@@ -76,8 +75,7 @@ def test_buildarr_docker_image_uri_config(buildarr_yml_factory, buildarr_compose
 
 def test_buildarr_docker_image_uri_envvar(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `BUILDARR_DOCKER_IMAGE_URI` environment variable works properly.
     """
 
     docker_image_uri = "testing/buildarr"
@@ -122,8 +120,8 @@ def test_buildarr_docker_image_uri_envvar(buildarr_yml_factory, buildarr_compose
 
 def test_hostname_is_ip_address(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that IP addresses are rejected as hostname definitions
+    when generating a Docker Compose file.
     """
 
     result = buildarr_compose(buildarr_yml_factory({"dummy": {"hostname": "192.0.2.1"}}))
@@ -138,8 +136,8 @@ def test_hostname_is_ip_address(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_hostname_is_localhost(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that `localhost` is rejected as a hostname definition
+    when generating a Docker Compose file.
     """
 
     result = buildarr_compose(buildarr_yml_factory({"dummy": {"hostname": "localhost"}}))
@@ -154,8 +152,8 @@ def test_hostname_is_localhost(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_hostname_overlap(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned if instance hostnames overlap
+    when generating a Docker Compose file.
     """
 
     result = buildarr_compose(
@@ -181,8 +179,8 @@ def test_hostname_overlap(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_instance_dependencies(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that instance dependencies are rendered correctly
+    in the Docker Compose file using `depends_on` structures.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -248,8 +246,8 @@ def test_instance_dependencies(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_volumes_dict(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that plugin-supplied volume definitions using the `dict`-type
+    syntax are rendered correctly.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -309,8 +307,8 @@ def test_volumes_dict(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_volumes_list_dict(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that plugin-supplied volume definitions using the `list`-of-`dict`-type
+    syntax are rendered correctly.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -372,8 +370,8 @@ def test_volumes_list_dict(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_volumes_list_tuple(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that plugin-supplied volume definitions using the `list`-of-`tuple`-type
+    syntax are rendered correctly.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -437,8 +435,8 @@ def test_volumes_list_tuple(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_volumes_list_tuple_invalid(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an invalid tuple-type volume definition
+    is returned by a plugin when generating a Docker Compose file.
     """
 
     buildarr_yml = buildarr_yml_factory(

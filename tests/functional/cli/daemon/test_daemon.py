@@ -13,7 +13,7 @@
 
 
 """
-Functional tests for the `buildarr daemon` CLI command.
+Daemon functional tests for the `buildarr daemon` CLI command.
 """
 
 from __future__ import annotations

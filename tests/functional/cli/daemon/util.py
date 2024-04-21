@@ -11,6 +11,11 @@
 # You should have received a copy of the GNU General Public License along with Buildarr.
 # If not, see <https://www.gnu.org/licenses/>.
 
+
+"""
+Helper functions for the `buildarr daemon` CLI command functional tests.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta

@@ -13,7 +13,7 @@
 
 
 """
-Functional tests for the `buildarr run` CLI command.
+Configuration attribute functional tests for the `buildarr run` CLI command.
 """
 
 from __future__ import annotations
