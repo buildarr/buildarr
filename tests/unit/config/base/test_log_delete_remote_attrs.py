@@ -29,6 +29,11 @@ class Settings(ConfigBase):
 
 
 def test_delete_false(caplog) -> None:
+    """
+    Check that when `delete` is set to `False`, the correct `DEBUG` logging messages
+    for an unmanaged resource are output.
+    """
+
     caplog.set_level(logging.DEBUG)
     Settings().log_delete_remote_attrs(
         tree="test.settings",
@@ -44,6 +49,11 @@ def test_delete_false(caplog) -> None:
 
 
 def test_delete_true(caplog) -> None:
+    """
+    Check that when `delete` is set to `False`, the correct `INFO` logging messages
+    for a deleted resource are output.
+    """
+
     caplog.set_level(logging.DEBUG)
     Settings().log_delete_remote_attrs(
         tree="test.settings",
@@ -59,6 +69,11 @@ def test_delete_true(caplog) -> None:
 
 
 def test_delete_false_formatter(caplog) -> None:
+    """
+    Check that the `formatter` remote map entry parameter works properly
+    when a resource is unmanaged.
+    """
+
     caplog.set_level(logging.DEBUG)
     Settings().log_delete_remote_attrs(
         tree="test.settings",
@@ -73,6 +88,11 @@ def test_delete_false_formatter(caplog) -> None:
 
 
 def test_delete_true_formatter(caplog) -> None:
+    """
+    Check that the `formatter` remote map entry parameter works properly
+    when a resource is deleted.
+    """
+
     caplog.set_level(logging.DEBUG)
     Settings().log_delete_remote_attrs(
         tree="test.settings",
