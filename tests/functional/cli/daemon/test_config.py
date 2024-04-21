@@ -546,7 +546,7 @@ def test_watch_config_enabled_to_disabled(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Test disabling configuration file watching in a running daemon,
+    Check disabling configuration file watching in a running daemon,
     by disabling `buildarr.watch_config` in the configuration file.
 
     On Windows, some additional testing that makes sure this is working correctly

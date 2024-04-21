@@ -63,7 +63,7 @@ def test_initialize(
     buildarr_run,
 ) -> None:
     """
-    Test that the instance initialisation process works for standard plugins.
+    Check that the instance initialisation process works for standard plugins.
     """
 
     api_root = "/api/v1"
@@ -139,7 +139,7 @@ def test_already_initialized(
     buildarr_run,
 ) -> None:
     """
-    Test that if an instance is already initialised, Buildarr does not
+    Check that if an instance is already initialised, Buildarr does not
     try to re-run the initialisation function.
     """
 
@@ -213,7 +213,7 @@ def test_multiple_plugins(
     buildarr_run,
 ) -> None:
     """
-    Test performing a single update run with multiple plugins configured.
+    Check performing a single update run with multiple plugins configured.
     """
 
     api_root = "/api/v1"
@@ -334,7 +334,7 @@ def test_render_unsupported(
     buildarr_run,
 ) -> None:
     """
-    Test that pre-initialisation configuring rendering is not performed for plugins
+    Check that pre-initialisation configuring rendering is not performed for plugins
     that do not support it, or do not use it.
     """
 
