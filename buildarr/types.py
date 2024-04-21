@@ -338,7 +338,7 @@ class BaseEnum(MultiValueEnum):
 
     def to_name_str(self) -> str:
         """
-        Return the name for this enumaration object.
+        Return the name for this enumeration object.
 
         Returns:
             First `str`-type value in list of values (if available),

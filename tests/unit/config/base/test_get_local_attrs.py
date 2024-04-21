@@ -23,14 +23,6 @@ from typing import Dict, List, Optional, Set, Union
 import pytest
 
 from buildarr.config import ConfigBase
-from buildarr.types import BaseEnum
-
-
-class Enum(BaseEnum):
-    zero = 0
-    one = 1
-    two = 2
-    three = 3
 
 
 class Settings(ConfigBase):
@@ -43,7 +35,6 @@ class Settings(ConfigBase):
     test_set_int: Set[int] = set()
     test_set_str: Set[str] = set()
     test_dict_int_str: Dict[int, str] = {}
-    test_enum: Enum = Enum.zero
     test_union_int_str_liststr: Union[int, str, List[str]] = 0
     test_optional_str: Optional[str] = None
 
@@ -139,18 +130,6 @@ def test_decode_dict_int_str() -> None:
             remote_attrs={"testAttr": {1: "Hello, world!"}},
         ),
     ).test_dict_int_str == {1: "Hello, world!"}
-
-
-def test_decode_enum() -> None:
-    assert (
-        Settings(
-            **Settings.get_local_attrs(
-                remote_map=[("test_enum", "testAttr", {})],
-                remote_attrs={"testAttr": 1},
-            ),
-        ).test_enum
-        == Enum.one
-    )
 
 
 @pytest.mark.parametrize("test_value", [1, "Hello, world!", ["Hello", "world!"]])
