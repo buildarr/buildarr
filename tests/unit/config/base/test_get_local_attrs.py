@@ -40,6 +40,11 @@ class Settings(ConfigBase):
 
 
 def test_decode_bool() -> None:
+    """
+    Check that decoding a `bool` attribute works properly
+    using the default decoder.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -52,6 +57,11 @@ def test_decode_bool() -> None:
 
 
 def test_decode_int() -> None:
+    """
+    Check that decoding an `int` attribute works properly
+    using the default decoder.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -64,6 +74,11 @@ def test_decode_int() -> None:
 
 
 def test_decode_float() -> None:
+    """
+    Check that decoding a `float` attribute works properly
+    using the default decoder.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -76,6 +91,11 @@ def test_decode_float() -> None:
 
 
 def test_decode_str() -> None:
+    """
+    Check that decoding an `str` attribute works properly
+    using the default decoder.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -88,6 +108,11 @@ def test_decode_str() -> None:
 
 
 def test_decode_list_int() -> None:
+    """
+    Check that decoding a `list[int]` attribute works properly
+    using the default decoder.
+    """
+
     assert Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_list_int", "testAttr", {})],
@@ -97,6 +122,11 @@ def test_decode_list_int() -> None:
 
 
 def test_decode_list_str() -> None:
+    """
+    Check that decoding a `list[str]` attribute works properly
+    using the default decoder.
+    """
+
     assert Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_list_str", "testAttr", {})],
@@ -106,6 +136,11 @@ def test_decode_list_str() -> None:
 
 
 def test_decode_set_int() -> None:
+    """
+    Check that decoding a `set[int]` attribute works properly
+    using the default decoder.
+    """
+
     assert Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_set_int", "testAttr", {})],
@@ -115,6 +150,11 @@ def test_decode_set_int() -> None:
 
 
 def test_decode_set_str() -> None:
+    """
+    Check that decoding a `set[str]` attribute works properly
+    using the default decoder.
+    """
+
     assert Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_set_str", "testAttr", {})],
@@ -124,6 +164,11 @@ def test_decode_set_str() -> None:
 
 
 def test_decode_dict_int_str() -> None:
+    """
+    Check that decoding a `dict[int, str]` attribute works properly
+    using the default decoder.
+    """
+
     assert Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_dict_int_str", "testAttr", {})],
@@ -134,6 +179,11 @@ def test_decode_dict_int_str() -> None:
 
 @pytest.mark.parametrize("test_value", [1, "Hello, world!", ["Hello", "world!"]])
 def test_decode_union_int_str_liststr(test_value) -> None:
+    """
+    Check that decoding a `int | str | list[str]` attribute works properly
+    using the default decoder.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -147,6 +197,11 @@ def test_decode_union_int_str_liststr(test_value) -> None:
 
 @pytest.mark.parametrize("test_value", [None, "Hello, world!"])
 def test_decode_optional_str(test_value) -> None:
+    """
+    Check that decoding an `str | None` attribute works properly
+    using the default decoder.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -159,6 +214,11 @@ def test_decode_optional_str(test_value) -> None:
 
 
 def test_decoder() -> None:
+    """
+    Check that configuring a custom decoder using the `decoder`
+    remote map entry parameter works properly.
+    """
+
     assert (
         ConfigBase.get_local_attrs(
             remote_map=[("test_attr", "testAttr", {"decoder": lambda v: v == "hello"})],
@@ -169,6 +229,11 @@ def test_decoder() -> None:
 
 
 def test_root_decoder() -> None:
+    """
+    Check that configuring a root decoder using the `root_decoder`
+    remote map entry parameter works properly.
+    """
+
     assert (
         ConfigBase.get_local_attrs(
             remote_map=[
@@ -185,6 +250,11 @@ def test_root_decoder() -> None:
 
 
 def test_optional_true() -> None:
+    """
+    Check that the `optional` remote map entry parameter
+    works properly when set to `True` for standard attributes.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -197,6 +267,12 @@ def test_optional_true() -> None:
 
 
 def test_optional_false() -> None:
+    """
+    Check that the `optional` remote map entry parameter
+    raises an error when set to `False`, and a value for the attribute
+    was not found in the remote configuration.
+    """
+
     with pytest.raises(KeyError):
         Settings.get_local_attrs(
             remote_map=[("test_str", "testAttr", {"optional": False})],
@@ -205,6 +281,11 @@ def test_optional_false() -> None:
 
 
 def test_optional_default() -> None:
+    """
+    Check that the default behaviour for the `optional` remote map entry parameter
+    is `False`.
+    """
+
     with pytest.raises(KeyError):
         Settings.get_local_attrs(
             remote_map=[("test_str", "testAttr", {})],
@@ -214,6 +295,10 @@ def test_optional_default() -> None:
 
 @pytest.mark.parametrize("test_value", [None, "Hello, world!"])
 def test_field_decode(test_value) -> None:
+    """
+    Check decoding an Arr API field-style remote attribute.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -226,6 +311,11 @@ def test_field_decode(test_value) -> None:
 
 
 def test_field_unused_fields() -> None:
+    """
+    Check that unused fields do not affect parsing field attributes that
+    are used.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -243,6 +333,11 @@ def test_field_unused_fields() -> None:
 
 
 def test_field_optional() -> None:
+    """
+    Check that the `optional` remote map entry parameter works properly
+    with field-style attributes.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -255,6 +350,10 @@ def test_field_optional() -> None:
 
 
 def test_field_default() -> None:
+    """
+    Check that the `field_default` remote map entry parameter works properly.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -273,6 +372,11 @@ def test_field_default() -> None:
 
 
 def test_field_optional_default() -> None:
+    """
+    Check that an error is raised when a field value is not found,
+    and neither `optional` nor `field_default` are defined.
+    """
+
     with pytest.raises(ValueError, match="Remote field 'testAttr' not found"):
         Settings.get_local_attrs(
             remote_map=[("test_str", "testAttr", {"is_field": True})],
@@ -281,6 +385,12 @@ def test_field_optional_default() -> None:
 
 
 def test_field_default_undefined() -> None:
+    """
+    Check that an error is raised when a field is found, but a value
+    was not found in it, and `field_default` is not provided in the
+    remote map entry.
+    """
+
     with pytest.raises(
         ValueError,
         match=(
@@ -292,3 +402,6 @@ def test_field_default_undefined() -> None:
             remote_map=[("test_str", "testAttr", {"is_field": True})],
             remote_attrs={"fields": [{"name": "testAttr"}]},
         )
+
+
+# TODO: Make sure 'optional' also works for test_field_default_undefined's use case.

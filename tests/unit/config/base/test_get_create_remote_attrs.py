@@ -80,7 +80,7 @@ def test_encode_float() -> None:
 
 def test_encode_str() -> None:
     """
-    Check that encoding a `str` attribute works properly
+    Check that encoding an `str` attribute works properly
     using the default encoder.
     """
 
@@ -174,7 +174,7 @@ def test_encode_union_int_str_liststr(test_value) -> None:
 @pytest.mark.parametrize("test_value", [None, "Hello, world!"])
 def test_encode_optional_str(test_value) -> None:
     """
-    Check that encoding a `str | None` attribute works properly
+    Check that encoding an `str | None` attribute works properly
     using the default encoder.
     """
 
