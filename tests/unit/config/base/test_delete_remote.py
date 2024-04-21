@@ -13,33 +13,39 @@
 
 
 """
-Test the `ConfigBase.from_remote` class method's handling of nested configuration attributes.
+Test the `ConfigBase.delete_remote` method.
 """
 
 from __future__ import annotations
-
-from typing import Optional
 
 from buildarr.config import ConfigBase
 
 
 class Settings(ConfigBase):
-    test_value: bool = False
-    secret_value: Optional[str] = None
+    settings_value: bool = False
 
-    @classmethod
-    def from_remote(cls, secrets):
-        return Settings(test_value=True, secret_value=secrets)
+    def delete_remote(self, tree, secrets, remote):
+        assert tree == "general.settings"
+        assert remote.settings_value
+        return secrets
 
 
 class GeneralSettings(ConfigBase):
-    test: Settings = Settings()
+    settings: Settings = Settings()
     general_value: bool = False
 
 
-def test_nested_config() -> None:
-    secrets = "Hello, world!"
-    general_settings = GeneralSettings.from_remote(secrets=secrets)
-    assert general_settings.test.test_value is True
-    assert general_settings.test.secret_value == secrets
-    assert general_settings.general_value is False
+def test_nested_config_unchanged() -> None:
+    assert not GeneralSettings().delete_remote(
+        tree="general",
+        secrets=False,
+        remote=GeneralSettings(settings=Settings(settings_value=True)),
+    )
+
+
+def test_nested_config_changed() -> None:
+    assert GeneralSettings().delete_remote(
+        tree="general",
+        secrets=True,
+        remote=GeneralSettings(settings=Settings(settings_value=True)),
+    )

@@ -13,8 +13,7 @@
 
 
 """
-Test decoding remote attributes using configuration attribute types
-on the `ConfigBase.get_local_attrs` class method.
+Test the `ConfigBase.get_local_attrs` class method.
 """
 
 from __future__ import annotations
@@ -178,3 +177,139 @@ def test_decode_optional_str(test_value) -> None:
         ).test_optional_str
         == test_value
     )
+
+
+def test_decoder() -> None:
+    assert (
+        ConfigBase.get_local_attrs(
+            remote_map=[("test_attr", "testAttr", {"decoder": lambda v: v == "hello"})],
+            remote_attrs={"testAttr": "hello"},
+        )["test_attr"]
+        is True
+    )
+
+
+def test_root_decoder() -> None:
+    assert (
+        ConfigBase.get_local_attrs(
+            remote_map=[
+                (
+                    "test_attr",
+                    "testAttr",
+                    {"root_decoder": lambda vs: vs["testAttr"] == "hello"},
+                ),
+            ],
+            remote_attrs={"testAttr": "hello"},
+        )["test_attr"]
+        is True
+    )
+
+
+def test_optional_true() -> None:
+    assert (
+        Settings(
+            **Settings.get_local_attrs(
+                remote_map=[("test_str", "testAttr", {"optional": True})],
+                remote_attrs={},
+            ),
+        ).test_str
+        == ""
+    )
+
+
+def test_optional_false() -> None:
+    with pytest.raises(KeyError):
+        Settings.get_local_attrs(
+            remote_map=[("test_str", "testAttr", {"optional": False})],
+            remote_attrs={},
+        )
+
+
+def test_optional_default() -> None:
+    with pytest.raises(KeyError):
+        Settings.get_local_attrs(
+            remote_map=[("test_str", "testAttr", {})],
+            remote_attrs={},
+        )
+
+
+@pytest.mark.parametrize("test_value", [None, "Hello, world!"])
+def test_field_decode(test_value) -> None:
+    assert (
+        Settings(
+            **Settings.get_local_attrs(
+                remote_map=[("test_optional_str", "testAttr", {"is_field": True})],
+                remote_attrs={"fields": [{"name": "testAttr", "value": test_value}]},
+            ),
+        ).test_optional_str
+        == test_value
+    )
+
+
+def test_field_unused_fields() -> None:
+    assert (
+        Settings(
+            **Settings.get_local_attrs(
+                remote_map=[("test_str", "testAttr", {"is_field": True})],
+                remote_attrs={
+                    "fields": [
+                        {"name": "testAttr2"},
+                        {"name": "testAttr", "value": "Hello, world!"},
+                    ],
+                },
+            ),
+        ).test_str
+        == "Hello, world!"
+    )
+
+
+def test_field_optional() -> None:
+    assert (
+        Settings(
+            **Settings.get_local_attrs(
+                remote_map=[("test_str", "testAttr", {"is_field": True, "optional": True})],
+                remote_attrs={"fields": []},
+            ),
+        ).test_str
+        == ""
+    )
+
+
+def test_field_default() -> None:
+    assert (
+        Settings(
+            **Settings.get_local_attrs(
+                remote_map=[
+                    (
+                        "test_str",
+                        "testAttr",
+                        {"is_field": True, "field_default": "Goodbye, world!"},
+                    ),
+                ],
+                remote_attrs={"fields": [{"name": "testAttr"}]},
+            ),
+        ).test_str
+        == "Goodbye, world!"
+    )
+
+
+def test_field_optional_default() -> None:
+    with pytest.raises(ValueError, match="Remote field 'testAttr' not found"):
+        Settings.get_local_attrs(
+            remote_map=[("test_str", "testAttr", {"is_field": True})],
+            remote_attrs={"fields": []},
+        )
+
+
+def test_field_default_undefined() -> None:
+    with pytest.raises(
+        ValueError,
+        match=(
+            "'value' attribute not included for remote field 'testAttr' "
+            "and 'field_default' not defined in local attribute"
+        ),
+    ):
+        Settings.get_local_attrs(
+            remote_map=[("test_str", "testAttr", {"is_field": True})],
+            remote_attrs={"fields": [{"name": "testAttr"}]},
+        )
