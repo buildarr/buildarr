@@ -21,8 +21,8 @@ from __future__ import annotations
 
 def test_no_plugins_found(buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned if no plugins that were loaded
+    in the configuration are installed.
     """
 
     buildarr_yml = buildarr_yml_factory({})
@@ -44,8 +44,8 @@ def test_no_plugins_found(buildarr_yml_factory, buildarr_test_config) -> None:
 
 def test_no_plugins_configured(buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned if there are no plugin configurations
+    defined in `buildarr.yml`.
     """
 
     buildarr_yml = buildarr_yml_factory({})

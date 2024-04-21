@@ -29,8 +29,8 @@ from .util import get_source
 
 def test_config_path_undefined(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the command loads `buildarr.yml` from the current directory
+    if a file path is not explicitly provided on the command line.
     """
 
     buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "dummy"}})
@@ -75,8 +75,7 @@ def test_config_path_undefined(buildarr_yml_factory, buildarr_compose) -> None:
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
 def test_plugin(opt, buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--plugin` option works properly.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -122,8 +121,7 @@ def test_plugin(opt, buildarr_yml_factory, buildarr_compose) -> None:
 @pytest.mark.parametrize("opt", ["-V", "--compose-version"])
 def test_compose_version(opt, buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--compose-version` option works properly.
     """
 
     buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "dummy"}})
@@ -173,8 +171,7 @@ def test_compose_version(opt, buildarr_yml_factory, buildarr_compose) -> None:
 )
 def test_restart(opt, value, buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--restart` option works properly.
     """
 
     buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "dummy"}})
@@ -219,8 +216,7 @@ def test_restart(opt, value, buildarr_yml_factory, buildarr_compose) -> None:
 @pytest.mark.parametrize("opt", ["-H", "--ignore-hostnames"])
 def test_ignore_hostnames(opt, buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--ignore-hostnames` option works properly.
     """
 
     buildarr_yml = buildarr_yml_factory({"dummy": {"hostname": "192.0.2.1"}})

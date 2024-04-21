@@ -33,8 +33,7 @@ def test_api_key_fetch(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run, and check that a value that is not up to date
-    on the remote instance is updated, with Buildarr reporting that the instance was updated.
+    Check auto-fetching the instance API key, if implemented by the plugin.
     """
 
     api_root = "/api/v1"
@@ -113,8 +112,8 @@ def test_api_key_in_config(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run, and check that a value that is not up to date
-    on the remote instance is updated, with Buildarr reporting that the instance was updated.
+    Check fetching the API key from the instance configuration, and running the connection test
+    to make sure it works.
     """
 
     api_root = "/api/v1"
@@ -198,8 +197,7 @@ def test_api_key_in_config_incorrect(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run, and check that a value that is not up to date
-    on the remote instance is updated, with Buildarr reporting that the instance was updated.
+    Check error handling when the provided API key is incorrect.
     """
 
     port = urlparse(httpserver.url_for("")).port
@@ -243,8 +241,7 @@ def test_api_key_test_fail(
     buildarr_run,
 ) -> None:
     """
-    Perform a standard Buildarr run, and check that a value that is not up to date
-    on the remote instance is updated, with Buildarr reporting that the instance was updated.
+    Check error handling when the connection test fails.
     """
 
     port = urlparse(httpserver.url_for("")).port

@@ -34,8 +34,8 @@ def test_config_path_undefined(
     buildarr_run,
 ) -> None:
     """
-    Check that if `--plugin` is used to define which plugin to use during the update run,
-    only that plugin is actually used.
+    Check that the command loads `buildarr.yml` from the current directory
+    if a file path is not explicitly provided on the command line.
     """
 
     api_root = "/api/v1"

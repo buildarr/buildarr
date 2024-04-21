@@ -28,6 +28,18 @@ if TYPE_CHECKING:
 
 
 def get_source(path: Path) -> str:
+    """
+    Generate the source path for a Docker volume mount platform-agnostically.
+
+    For the `buildarr volume` functional tests.
+
+    Args:
+        path (Path): Path to process.
+
+    Returns:
+        Docker volume source path
+    """
+
     source_dir = path.parent
 
     return str(

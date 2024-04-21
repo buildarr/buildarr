@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 
 def test_no_plugins_found(buildarr_yml_factory, buildarr_run) -> None:
     """
-    Check that if there are no non-testing Buildarr plugins installed,
-    it is reflected in the logs.
+    Check that an error is returned if no plugins that were loaded
+    in the configuration are installed.
     """
 
     result = buildarr_run(buildarr_yml_factory({}), testing=False)
@@ -43,8 +43,8 @@ def test_no_plugins_found(buildarr_yml_factory, buildarr_run) -> None:
 
 def test_no_plugins_configured(buildarr_yml_factory, buildarr_run) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned if there are no plugin configurations
+    defined in `buildarr.yml`.
     """
 
     result = buildarr_run(buildarr_yml_factory({}))
@@ -213,7 +213,7 @@ def test_multiple_plugins(
     buildarr_run,
 ) -> None:
     """
-    Test that the instance initialisation process works for standard plugins.
+    Test performing a single update run with multiple plugins configured.
     """
 
     api_root = "/api/v1"
@@ -334,7 +334,8 @@ def test_render_unsupported(
     buildarr_run,
 ) -> None:
     """
-    Test that the instance initialisation process works for standard plugins.
+    Test that pre-initialisation configuring rendering is not performed for plugins
+    that do not support it, or do not use it.
     """
 
     api_root = "/api/v1"

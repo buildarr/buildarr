@@ -34,6 +34,20 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def buildarr_dummy_dump_config(buildarr_command) -> Callable[..., subprocess.CompletedProcess[str]]:
+    """
+    Fixture for running `buildarr dummy dump-config`.
+
+    For more information on running non-interactive commands,
+    check the `buildarr_command` fixture.
+
+    Run the command like so:
+
+    ```python
+    def test_sometest(buildarr_dummy_dump_config_interactive):
+        result = buildarr_dummy_dump_config("http://localhost:8989", ...)
+    ```
+    """
+
     def _buildarr_dummy_dump_config(*opts: str, **kwargs) -> subprocess.CompletedProcess[str]:
         return buildarr_command("dummy", "dump-config", *opts, **kwargs)
 
@@ -44,6 +58,20 @@ def buildarr_dummy_dump_config(buildarr_command) -> Callable[..., subprocess.Com
 def buildarr_dummy_dump_config_interactive(
     buildarr_interactive_command,
 ) -> Callable[..., spawn]:
+    """
+    Fixture for running `buildarr dummy dump-config` as an interactive command.
+
+    For more information on running interactive commands,
+    check the `buildarr_interactive_command` fixture.
+
+    Run the command like so:
+
+    ```python
+    def test_sometest(buildarr_dummy_dump_config):
+        child = buildarr_dummy_dump_config_interactive("http://localhost:8989", ...)
+    ```
+    """
+
     def _buildarr_dummy_dump_config_interactive(
         *opts: str,
         **kwargs,
@@ -58,8 +86,7 @@ def test_api_key_no_auth_required(
     buildarr_dummy_dump_config_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check leaving the API key prompt blank when authentication is not required.
     """
 
     api_root = "/api/v1"
@@ -105,8 +132,7 @@ def test_api_key_autofetch(
     buildarr_dummy_dump_config_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check leaving the API key prompt blank for auto-fetching the configuration.
     """
 
     api_root = "/api/v1"
@@ -152,8 +178,7 @@ def test_api_key_interactive(
     buildarr_dummy_dump_config_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check interactively passing the API key using the prompt.
     """
 
     api_root = "/api/v1"
@@ -200,8 +225,7 @@ def test_api_key_interactive(
 @pytest.mark.parametrize("opt", ["-k", "--api-key"])
 def test_api_key_opt(opt, httpserver: HTTPServer, api_key, buildarr_dummy_dump_config) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check using the `--api-key` option for passing the API key.
     """
 
     api_root = "/api/v1"
@@ -242,8 +266,7 @@ def test_api_key_opt(opt, httpserver: HTTPServer, api_key, buildarr_dummy_dump_c
 @pytest.mark.parametrize("suffix", ["", "/"])
 def test_url_base(suffix, httpserver: HTTPServer, api_key, buildarr_dummy_dump_config) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check that URL base handling is working properly.
     """
 
     url_base = "/dummy"

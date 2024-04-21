@@ -32,8 +32,7 @@ if TYPE_CHECKING:
 
 def test_invalid_config_file(tmp_path, buildarr_test_config) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check error handling when the provided configuration file is not a valid YAML file.
     """
 
     buildarr_yml: Path = tmp_path / "buildarr.yml"
@@ -56,8 +55,7 @@ def test_invalid_config_file(tmp_path, buildarr_test_config) -> None:
 
 def test_instance_value(instance_value, buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check parsing a valid instance configuration, with a value defined.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -85,8 +83,8 @@ def test_instance_value(instance_value, buildarr_yml_factory, buildarr_test_conf
 
 def test_instance_dependency_multiple(buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that instance dependency resolution is working properly
+    for multiple instance dependencies.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -121,8 +119,7 @@ def test_instance_dependency_multiple(buildarr_yml_factory, buildarr_test_config
 
 def test_instance_dependency_cycle(buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an instance dependency cycle is found.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -159,8 +156,8 @@ def test_instance_dependency_plugin_not_configured(
     buildarr_test_config,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an instance dependency is defined
+    that references a plugin that is not configured.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -186,8 +183,8 @@ def test_instance_dependency_plugin_not_installed(
     buildarr_test_config,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an instance dependency is defined
+    that references a plugin that is not installed.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -213,8 +210,8 @@ def test_instance_dependency_plugin_not_installed(
 
 def test_trash_id(buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check fetching the TRaSH-Guides metadata, and rendering dynamically
+    defined values, when a TRaSH ID is defined in the instance configuration.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -244,8 +241,7 @@ def test_trash_id(buildarr_yml_factory, buildarr_test_config) -> None:
 
 def test_trash_id_invalid(buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when the provided TRaSH ID is invalid.
     """
 
     trash_id = "387e6278d8e06083d813358762e00000"
@@ -283,8 +279,8 @@ def test_trash_metadata_download_url(
     buildarr_test_config,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `buildarr.trash_metadata_download_url` configuration attribute
+    works properly.
     """
 
     trash_id = "387e6278d8e06083d813358762e00000"
@@ -340,8 +336,8 @@ def test_trash_metadata_dir_prefix_null(
     buildarr_test_config,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `buildarr.trash_metadata_dir_prefix` configuration attribute
+    can be set to `null`.
     """
 
     trash_id = "387e6278d8e06083d813358762e00000"
@@ -395,8 +391,8 @@ def test_trash_metadata_dir_prefix_custom(
     buildarr_test_config,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `buildarr.trash_metadata_dir_prefix` configuration attribute
+    can be set to a custom value.
     """
 
     trash_id = "387e6278d8e06083d813358762e00000"
@@ -451,8 +447,7 @@ def test_trash_metadata_download_fail(
     buildarr_test_config,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when downloading the TRaSH metadata fails.
     """
 
     trash_metadata_download_url = httpserver.url_for("/master.zip")

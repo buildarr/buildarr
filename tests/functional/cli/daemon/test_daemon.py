@@ -51,8 +51,16 @@ def test_signal_terminate(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check handling signals intended to terminate the daemon.
+
+    On Linux, the following signals are checked:
+
+    * `SIGTERM`
+    * `SIGINT`
+
+    On Windows, the following signals are checked:
+
+    * `SIGBREAK`
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
@@ -84,8 +92,9 @@ def test_sighup(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check daemon reloading by sending the daemon the `SIGHUP` signal.
+
+    Not run on Windows because `SIGHUP` is not supported.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
@@ -115,8 +124,7 @@ def test_initial_run_success(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check that no errors occur when a successful initial run is performed.
     """
 
     api_root = "/api/v1"
@@ -193,8 +201,8 @@ def test_initial_run_fail(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check that errors are handled gracefully by the daemon on an unsuccessful initial run,
+    and that the daemon does not terminate, but wait until the next scheduled run time.
     """
 
     api_root = "/api/v1"
@@ -269,8 +277,7 @@ def test_scheduled_run_success(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check that no errors occur during a scheduled update run that completes successfully.
     """
 
     api_root = "/api/v1"
@@ -401,8 +408,8 @@ def test_scheduled_run_fail(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check that errors are handled gracefully by the daemon on an unsuccessful scheduled run,
+    and that the daemon does not terminate, but wait until the next scheduled run time.
     """
 
     api_root = "/api/v1"

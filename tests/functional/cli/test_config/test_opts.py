@@ -23,8 +23,8 @@ import pytest
 
 def test_config_path_undefined(instance_value, buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that the command loads `buildarr.yml` from the current directory
+    if a file path is not explicitly provided on the command line.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -47,8 +47,8 @@ def test_config_path_undefined(instance_value, buildarr_yml_factory, buildarr_te
 @pytest.mark.parametrize("opt", ["-p", "--plugin"])
 def test_plugin(opt, instance_value, buildarr_yml_factory, buildarr_test_config) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that if `--plugin` is used to define which plugin to use during the update run,
+    only that plugin is actually used.
     """
 
     buildarr_yml = buildarr_yml_factory(

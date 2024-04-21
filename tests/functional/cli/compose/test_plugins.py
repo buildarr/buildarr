@@ -21,8 +21,7 @@ from __future__ import annotations
 
 def test_no_plugins_configured(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned if `buildarr.yml` does not have any plugins configured.
     """
 
     result = buildarr_compose(buildarr_yml_factory({}))
@@ -36,8 +35,8 @@ def test_no_plugins_configured(buildarr_yml_factory, buildarr_compose) -> None:
 
 def test_not_supported_by_plugin(buildarr_yml_factory, buildarr_compose) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned if a selected plugin does not support
+    generating service configurations for Docker Compose.
     """
 
     result = buildarr_compose(buildarr_yml_factory({"dummy2": {"hostname": "dummy2"}}))

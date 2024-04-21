@@ -22,4 +22,14 @@ from datetime import datetime, timedelta
 
 
 def next_hour(hours: int = 1) -> str:
+    """
+    Get the timestamp for `hours` hours in the future from the current system time.
+
+    Args:
+        hours (int, optional): The amount of hours in the future. Defaults to 1.
+
+    Returns:
+        Future time, in `HH:MM` format
+    """
+
     return (datetime.now() + timedelta(hours=hours)).strftime("%H:%M")

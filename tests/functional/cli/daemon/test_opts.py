@@ -41,8 +41,8 @@ def test_config_path_undefined(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the command loads `buildarr.yml` from the current directory
+    if a file path is not explicitly provided on the command line.
     """
 
     buildarr_yml = buildarr_yml_factory(
@@ -80,8 +80,7 @@ def test_update_day(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--update-day` option works properly when specified once.
     """
 
     update_time = next_hour()
@@ -116,8 +115,7 @@ def test_update_day_multiple(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--update-day` option works properly when specified multiple times.
     """
 
     update_time = next_hour()
@@ -150,8 +148,8 @@ def test_update_day_multiple(
 @pytest.mark.parametrize("opt", ["-d", "--update-day"])
 def test_update_day_invalid(opt, buildarr_yml_factory, buildarr_daemon) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an invalid value is provided for
+    the `--update-day` option.
     """
 
     result: CompletedProcess = buildarr_daemon(
@@ -175,8 +173,7 @@ def test_update_time(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--update-time` option works properly when specified once.
     """
 
     update_time = next_hour()
@@ -210,8 +207,7 @@ def test_update_time_multiple(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--update-time` option works properly when specified multiple times.
     """
 
     update_time_1 = next_hour()
@@ -244,8 +240,8 @@ def test_update_time_multiple(
 @pytest.mark.parametrize("opt", ["-t", "--update-time"])
 def test_update_time_invalid(opt, buildarr_yml_factory, buildarr_daemon) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an invalid value is provided for
+    the `--update-time` option.
     """
 
     result: CompletedProcess = buildarr_daemon(
@@ -268,8 +264,7 @@ def test_watch(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--watch` option works properly.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
@@ -300,8 +295,7 @@ def test_no_watch(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the `--no-watch` option works properly.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(

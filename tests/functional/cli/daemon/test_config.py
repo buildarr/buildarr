@@ -43,8 +43,8 @@ def test_update_days(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that defining a single value for the `buildarr.update_days` configuration attribute
+    works properly.
     """
 
     update_time = next_hour()
@@ -76,8 +76,8 @@ def test_update_days_multiple(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that defining multiple values for the `buildarr.update_days` configuration attribute
+    works properly.
     """
 
     update_time = next_hour()
@@ -110,8 +110,8 @@ def test_update_days_change_on_config_reload(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that upon changing the `buildarr.update_days` configuration attribute
+    on reload, the update run schedule is updated accordingly.
     """
 
     update_time = next_hour()
@@ -172,8 +172,8 @@ def test_update_days_change_on_config_reload(
 
 def test_update_days_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an invalid value is supplied for
+    `buildarr.update_days`.
     """
 
     result: CompletedProcess = buildarr_daemon(
@@ -194,8 +194,8 @@ def test_update_times(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that defining a single value for the `buildarr.update_times` configuration attribute
+    works properly.
     """
 
     update_time = next_hour()
@@ -226,8 +226,8 @@ def test_update_times_multiple(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that defining multiple values for the `buildarr.update_times` configuration attribute
+    works properly.
     """
 
     next_hour_1 = next_hour()
@@ -260,8 +260,8 @@ def test_update_times_change_on_config_reload(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that upon changing the `buildarr.update_times` configuration attribute
+    on reload, the update run schedule is updated accordingly.
     """
 
     update_time_1 = next_hour()
@@ -319,8 +319,8 @@ def test_update_times_change_on_config_reload(
 
 def test_update_times_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that an error is returned when an invalid value is supplied for
+    `buildarr.update_times`.
     """
 
     result: CompletedProcess = buildarr_daemon(
@@ -341,8 +341,8 @@ def test_watch_config_enabled(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that configuration file watching works when the
+    `buildarr.watch_config` configuration attribute is enabled.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
@@ -371,8 +371,8 @@ def test_watch_config_disabled(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that configuration file watching is not performed when the
+    `buildarr.watch_config` configuration attribute is disabled.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
@@ -402,8 +402,8 @@ def test_watch_config_multiple_files(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that configuration file watching works correctly for all configuratin files
+    when more than one are loaded via `includes`.
     """
 
     buildarr_yml = tmp_path / "buildarr.yml"
@@ -452,8 +452,8 @@ def test_watch_config_parent_dir_modified(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check that the configuration is *not* reloaded when
+    the configuration file's parent directory is modified.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(
@@ -485,8 +485,11 @@ def test_watch_config_disabled_to_enabled(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check enabling configuration file watching in a running daemon,
+    by enabling `buildarr.watch_config` in the configuration file
+    and signalling a reload using `SIGHUP`.
+
+    Not run on Windows because `SIGHUP` is not supported.
     """
 
     buildarr_yml = tmp_path / "buildarr.yml"
@@ -543,8 +546,11 @@ def test_watch_config_enabled_to_disabled(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Test disabling configuration file watching in a running daemon,
+    by disabling `buildarr.watch_config` in the configuration file.
+
+    On Windows, some additional testing that makes sure this is working correctly
+    is not performed, due to the lack of `SIGHUP` support.
     """
 
     buildarr_yml = tmp_path / "buildarr.yml"
@@ -615,8 +621,8 @@ def test_watch_config_error_handler(
     buildarr_daemon_interactive,
 ) -> None:
     """
-    Check that `buildarr test-config` passes on a configuration
-    with a single instance value defined.
+    Check error handling during a configuration reload triggered by
+    the configuration watching thread.
     """
 
     buildarr_yml: Path = buildarr_yml_factory(

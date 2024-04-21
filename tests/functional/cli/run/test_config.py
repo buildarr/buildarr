@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 
 def test_invalid_type(buildarr_yml_factory, buildarr_run) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned when the `buildarr.yml` YAML object
+    is the incorrect type.
     """
 
     buildarr_yml = buildarr_yml_factory([])
@@ -48,8 +48,8 @@ def test_invalid_type(buildarr_yml_factory, buildarr_run) -> None:
 
 def test_null(buildarr_yml_factory, buildarr_run) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that an error is returned when the `buildarr.yml` YAML object
+    is `null`.
     """
 
     result = buildarr_run(buildarr_yml_factory(None))
@@ -63,8 +63,8 @@ def test_null(buildarr_yml_factory, buildarr_run) -> None:
 
 def test_includes_relative_path(tmp_path: Path, httpserver: HTTPServer, buildarr_run) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check that `includes` resolves paths relative to the configuration file
+    the `includes` block was defined in.
     """
 
     buildarr_yml = tmp_path / "buildarr.yml"
@@ -102,8 +102,7 @@ def test_includes_relative_path(tmp_path: Path, httpserver: HTTPServer, buildarr
 
 def test_includes_invalid_type(buildarr_yml_factory, buildarr_run) -> None:
     """
-    Check that if `buildarr.yml` does not have any plugins configured,
-    the appropriate error message is raised.
+    Check `includes` error handling for an invalid type.
     """
 
     buildarr_yml = buildarr_yml_factory({"includes": {}})
@@ -124,8 +123,7 @@ def test_instance_value_changed(
     buildarr_run,
 ) -> None:
     """
-    Check that a value that is not up to date on the remote instance is updated,
-    with Buildarr reporting that the instance was updated.
+    Check updating the remote instance for a value that was changed in the Buildarr configuration.
     """
 
     api_root = "/api/v1"
@@ -194,8 +192,8 @@ def test_instance_value_unchanged(
     buildarr_run,
 ) -> None:
     """
-    Check that a value that already has the correct value is not touched,
-    with Buildarr reporting that the instance was already up to date.
+    Check that the remote instance is not updated when
+    the local and remote configuration are the same.
     """
 
     api_root = "/api/v1"
@@ -258,8 +256,7 @@ def test_trash_value_changed(
     buildarr_run,
 ) -> None:
     """
-    Check that a value was fetched from TRaSH-Guides metadata,
-    and used to set the correct value on a remote instance.
+    Check loading values from TRaSH metadata, and updating the remote instance with loaded values.
     """
 
     api_root = "/api/v1"
@@ -338,8 +335,8 @@ def test_trash_value_unchanged(
     buildarr_run,
 ) -> None:
     """
-    Check that a value was fetched from TRaSH-Guides metadata,
-    and the value on the remote instance does not change if it is the same as this value.
+    Check loading values from TRaSH metadata, and that the remote instance is not updated
+    if the resolved and remote values are that the same.
     """
 
     api_root = "/api/v1"
@@ -408,7 +405,7 @@ def test_url_base(
     buildarr_run,
 ) -> None:
     """
-    Test that the instance initialisation process works for standard plugins.
+    Check that the instance configuration `url_base` attribute works properly.
     """
 
     url_base = "/dummy"
