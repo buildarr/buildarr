@@ -46,6 +46,10 @@ class Settings(ConfigBase):
 
 
 def test_single_value_decode() -> None:
+    """
+    Check decoding a single-value enumeration attribute.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -58,6 +62,11 @@ def test_single_value_decode() -> None:
 
 
 def test_single_value_create_encode() -> None:
+    """
+    Check encoding a single-value enumeration attribute
+    during resource creation.
+    """
+
     assert Settings(test_single_value=SingleValueEnum.one).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_single_value", "testAttr", {})],
@@ -65,6 +74,11 @@ def test_single_value_create_encode() -> None:
 
 
 def test_single_value_create_format(caplog) -> None:
+    """
+    Check logging formatting of a single-value enumeration attribute value
+    during resource creation.
+    """
+
     caplog.set_level(logging.DEBUG)
 
     assert Settings(test_single_value=SingleValueEnum.one).get_create_remote_attrs(
@@ -78,6 +92,11 @@ def test_single_value_create_format(caplog) -> None:
 
 
 def test_single_value_update_encode() -> None:
+    """
+    Check encoding a single-value enumeration attribute
+    during resource updates.
+    """
+
     assert Settings(test_single_value=SingleValueEnum.one).get_update_remote_attrs(
         tree="test.settings",
         remote=Settings(),
@@ -87,6 +106,10 @@ def test_single_value_update_encode() -> None:
 
 @pytest.mark.parametrize("test_value", [1, "one"])
 def test_multi_value_decode(test_value) -> None:
+    """
+    Check decoding a multi-value enumeration attribute.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -99,6 +122,11 @@ def test_multi_value_decode(test_value) -> None:
 
 
 def test_multi_value_create_encode() -> None:
+    """
+    Check encoding a multi-value enumeration attribute
+    during resource creation.
+    """
+
     assert Settings(test_multi_value=MultiValueEnum.ONE).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_multi_value", "testAttr", {})],
@@ -107,7 +135,7 @@ def test_multi_value_create_encode() -> None:
 
 def test_multi_value_create_format(caplog) -> None:
     """
-    Ensure that for multi-value enums, the first str-type value provided
+    Check that for multi-value enums, the first str-type value provided
     in the list of values is used when formatting for logging output,
     **not** the enumeration name on the class.
     """
@@ -125,6 +153,11 @@ def test_multi_value_create_format(caplog) -> None:
 
 
 def test_multi_value_update_encode() -> None:
+    """
+    Check encoding a multi-value enumeration attribute
+    during resource updates.
+    """
+
     assert Settings(test_multi_value=MultiValueEnum.ONE).get_update_remote_attrs(
         tree="test.settings",
         remote=Settings(),

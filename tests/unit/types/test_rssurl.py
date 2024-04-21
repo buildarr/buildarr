@@ -34,6 +34,10 @@ class Settings(ConfigBase):
 
 @pytest.mark.parametrize("test_value", ["rss://rss.example.com", "rss://127.0.0.1"])
 def test_decode(test_value) -> None:
+    """
+    Check decoding a local attribute.
+    """
+
     test_attr = Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_attr", "testAttr", {})],
@@ -46,6 +50,10 @@ def test_decode(test_value) -> None:
 
 
 def test_create_encode() -> None:
+    """
+    Check encoding a remote attribute during resource creation.
+    """
+
     assert Settings(test_attr="rss://rss.example.com").get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_attr", "testAttr", {})],
@@ -53,6 +61,10 @@ def test_create_encode() -> None:
 
 
 def test_create_format(caplog) -> None:
+    """
+    Check logging formatting of an attribute value during resource creation.
+    """
+
     caplog.set_level(logging.DEBUG)
 
     assert Settings(test_attr="rss://rss.example.com").get_create_remote_attrs(
@@ -66,6 +78,10 @@ def test_create_format(caplog) -> None:
 
 
 def test_update_encode() -> None:
+    """
+    Check encoding a remote attribute during resource updates.
+    """
+
     assert Settings(test_attr="rss://rss.example.com").get_update_remote_attrs(
         tree="test.settings",
         remote=Settings(test_attr="rss://127.0.0.1"),
@@ -74,6 +90,10 @@ def test_update_encode() -> None:
 
 
 def test_empty() -> None:
+    """
+    Check that an error is returned when an empty string is supplied.
+    """
+
     with pytest.raises(
         ValidationError,
         match=r"type=value_error\.any_str\.min_length; limit_value=1",
@@ -83,6 +103,10 @@ def test_empty() -> None:
 
 @pytest.mark.parametrize("scheme", ["http", "https", "file"])
 def test_invalid_scheme(scheme) -> None:
+    """
+    Check that an error is returned when the provided URL uses the incorrect scheme.
+    """
+
     with pytest.raises(
         ValidationError,
         match=r"type=value_error\.url\.scheme; allowed_schemes={'rss'}",

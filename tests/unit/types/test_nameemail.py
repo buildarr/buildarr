@@ -32,6 +32,10 @@ class Settings(ConfigBase):
 
 
 def test_decode_email() -> None:
+    """
+    Check decoding a standard email address.
+    """
+
     test_attr = Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_attr", "testAttr", {})],
@@ -44,6 +48,10 @@ def test_decode_email() -> None:
 
 
 def test_decode_name_email() -> None:
+    """
+    Check decoding an RFC-5322 formatted mailbox address.
+    """
+
     test_attr = Settings(
         **Settings.get_local_attrs(
             remote_map=[("test_attr", "testAttr", {})],
@@ -56,6 +64,10 @@ def test_decode_name_email() -> None:
 
 
 def test_create_encode_email() -> None:
+    """
+    Check encoding a standard email address during resource creation.
+    """
+
     assert Settings(test_attr="test@example.com").get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_attr", "testAttr", {})],
@@ -63,6 +75,10 @@ def test_create_encode_email() -> None:
 
 
 def test_create_encode_name_email() -> None:
+    """
+    Check encoding an RFC-5322 formatted mailbox address during resource creation.
+    """
+
     assert Settings(test_attr="Test Example <test@example.com>").get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_attr", "testAttr", {})],
@@ -70,6 +86,10 @@ def test_create_encode_name_email() -> None:
 
 
 def test_create_format_email(caplog) -> None:
+    """
+    Check logging formatting of a standard email address during resource creation.
+    """
+
     caplog.set_level(logging.DEBUG)
 
     assert Settings(test_attr="test@example.com").get_create_remote_attrs(
@@ -83,6 +103,10 @@ def test_create_format_email(caplog) -> None:
 
 
 def test_create_format_name_email(caplog) -> None:
+    """
+    Check logging formatting of an RFC-5322 formatted mailbox address during resource creation.
+    """
+
     caplog.set_level(logging.DEBUG)
 
     assert Settings(test_attr="Test Example <test@example.com>").get_create_remote_attrs(
@@ -98,6 +122,10 @@ def test_create_format_name_email(caplog) -> None:
 
 
 def test_update_encode_email() -> None:
+    """
+    Check encoding a standard email address during resource updates.
+    """
+
     assert Settings(test_attr="test@example.com").get_update_remote_attrs(
         tree="test.settings",
         remote=Settings(test_attr="production@example.com"),
@@ -106,6 +134,10 @@ def test_update_encode_email() -> None:
 
 
 def test_update_encode_name_email() -> None:
+    """
+    Check encoding an RFC-5322 formatted mailbox address during resource updates.
+    """
+
     assert Settings(test_attr="Test Example <test@example.com>").get_update_remote_attrs(
         tree="test.settings",
         remote=Settings(test_attr="Production Example <production@example.com>"),
@@ -115,5 +147,9 @@ def test_update_encode_name_email() -> None:
 
 @pytest.mark.parametrize("test_attr", ["", "test"])
 def test_invalid_email_address(test_attr) -> None:
+    """
+    Check that an error is returned when an invalid email address is provided.
+    """
+
     with pytest.raises(ValidationError, match=r"type=value_error\.email"):
         Settings(test_attr=test_attr)

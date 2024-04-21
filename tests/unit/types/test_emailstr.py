@@ -32,6 +32,10 @@ class Settings(ConfigBase):
 
 
 def test_decode() -> None:
+    """
+    Check decoding a local attribute.
+    """
+
     assert (
         Settings(
             **Settings.get_local_attrs(
@@ -44,6 +48,10 @@ def test_decode() -> None:
 
 
 def test_create_encode() -> None:
+    """
+    Check encoding a remote attribute during resource creation.
+    """
+
     assert Settings(test_attr="test@example.com").get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_attr", "testAttr", {})],
@@ -51,6 +59,10 @@ def test_create_encode() -> None:
 
 
 def test_create_format(caplog) -> None:
+    """
+    Check logging formatting of an attribute value during resource creation.
+    """
+
     caplog.set_level(logging.DEBUG)
 
     assert Settings(test_attr="test@example.com").get_create_remote_attrs(
@@ -64,6 +76,10 @@ def test_create_format(caplog) -> None:
 
 
 def test_update_encode() -> None:
+    """
+    Check encoding a remote attribute during resource updates.
+    """
+
     assert Settings(test_attr="test@example.com").get_update_remote_attrs(
         tree="test.settings",
         remote=Settings(test_attr="production@example.com"),
@@ -73,5 +89,9 @@ def test_update_encode() -> None:
 
 @pytest.mark.parametrize("test_attr", ["", "test"])
 def test_invalid_email_address(test_attr) -> None:
+    """
+    Check that an error is returned when an invalid email address is provided.
+    """
+
     with pytest.raises(ValidationError, match=r"type=value_error\.email"):
         Settings(test_attr=test_attr)
