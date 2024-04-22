@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -18,6 +18,7 @@ Dummy plugin configuration.
 
 from __future__ import annotations
 
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
 from typing_extensions import Self
@@ -27,7 +28,8 @@ from buildarr.config import ConfigPlugin
 from buildarr.state import state
 from buildarr.types import NonEmptyStr, Port
 
-from ..api import api_get
+from ..api import api_get, api_post
+from ..exceptions import DummyAPIError
 from ..secrets import DummySecrets
 from ..types import DummyApiKey, DummyProtocol
 from .settings import DummySettingsConfig
@@ -144,7 +146,12 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     Used in functional tests.
     """
 
-    service_volumes_type: Literal["dict", "list-str", "list-dict"] = "list-dict"
+    service_volumes_type: Literal[
+        "dict",
+        "list-tuple",
+        "list-dict",
+        "list-tuple-invalid",
+    ] = "list-dict"
     """
     The type to use for the service volumes when generating the Docker Compose service definition.
 
@@ -179,6 +186,100 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         """
         self.settings._render()
 
+    def is_initialized(self) -> bool:
+        """
+        Return whether or not this instance needs to be initialised.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Configuration plugins should implement this function if initialisation is required
+        for the application's API to become available.
+
+        Returns:
+            `True` if the instance is initialised, otherwise `False`
+
+        Raises:
+            NotImplementedError: When initialisation is not supported for the application type.
+        """
+        try:
+            initialize_json = api_get(self.host_url, "/initialize.json")
+            if "initialized" in initialize_json:
+                return initialize_json["initialized"]
+            else:
+                raise NotImplementedError()
+        except DummyAPIError as err:
+            if err.status_code == HTTPStatus.UNAUTHORIZED:
+                return True
+            else:
+                raise
+
+    def initialize(self, tree: str) -> None:
+        """
+        Initialise the instance, and make the main application API available for Buildarr
+        to query against.
+
+        This function runs after the instance configuration has been rendered,
+        but before secrets are fetched.
+
+        Configuration plugins should implement this function if initialisation is required
+        for the application's API to become available.
+
+        Args:
+            tree (str): Configuration tree this instance falls under (for logging purposes).
+
+        Raises:
+            NotImplementedError: When initialisation is not supported for the application type.
+        """
+        try:
+            api_post(
+                self.host_url,
+                "/api/v1/init",
+                None,
+                api_key=self.api_key.get_secret_value() if self.api_key else None,
+                expected_status_code=HTTPStatus.OK,
+            )
+        except DummyAPIError as err:
+            if err.status_code == HTTPStatus.NOT_FOUND:
+                raise NotImplementedError() from None
+            else:
+                raise
+
+    def post_init_render(self, secrets: DummySecrets) -> Self:
+        """
+        Render dynamically populated configuration attributes that require the instance
+        to be initialised.
+
+        Typically used for fetching configuration attribute schemas from the remote instance
+        for validation during rendering.
+
+        If the instance configuration returned `True` for `uses_trash_metadata`,
+        the filepath to the downloaded metadata directory will be available as
+        `state.trash_metadata_dir` in the global state.
+
+        Configuration plugins should implement this function if there are any attributes
+        that get dynamically populated, but require some kind of request to be made to the
+        remote instance during the rendering process.
+
+        Args:
+            secrets (Secrets): Remote instance host and secrets information.
+
+        Returns:
+            Rendered configuration object
+
+        Raises:
+            NotImplementedError: When post-initialisation rendering is not supported.
+        """
+        copy = self.copy(deep=True)
+        copy._post_init_render()
+        return copy
+
+    def _post_init_render(self) -> None:
+        """
+        Post-init render dynamic configuration attributes in place.
+        """
+        self.settings._post_init_render()
+
     @classmethod
     def from_remote(cls, secrets: DummySecrets) -> Self:
         """
@@ -191,11 +292,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
             Configuration object for remote instance
         """
         return cls(
-            hostname=secrets.hostname,
-            port=secrets.port,
-            protocol=secrets.protocol,
-            api_key=secrets.api_key,
-            version=api_get(secrets, "/api/v1/status")["version"],
+            **{key: value for key, value in secrets},
             settings=DummySettingsConfig.from_remote(secrets),
         )
 
@@ -234,10 +331,15 @@ class DummyInstanceConfig(_DummyInstanceConfig):
                         "read_only": False,
                     },
                 ]
-            elif self.service_volumes_type == "list-str":
+            elif self.service_volumes_type == "list-tuple":
                 service["volumes"] = [
-                    f"{state.config_files[0].parent}:/config:ro",
-                    f"{service_name}:/data",
+                    (str(state.config_files[0].parent), "/config", ["ro"]),
+                    (service_name, "/data"),
+                ]
+            elif self.service_volumes_type == "list-tuple-invalid":
+                service["volumes"] = [
+                    (str(state.config_files[0].parent), "/config", ["ro"], "invalid"),
+                    (service_name),
                 ]
             else:
                 service["volumes"] = {

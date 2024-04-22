@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -306,4 +306,4 @@ def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
 
     # Update global application state with the fully qualified instance configurations.
     state.instance_configs = configs
-    state.active_plugins = frozenset(active_plugins)
+    state.active_plugins = tuple(sorted(active_plugins))

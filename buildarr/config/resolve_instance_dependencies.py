@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -44,11 +44,8 @@ def resolve_instance_dependencies() -> None:
     added_plugin_instances: Set[PluginInstanceRef] = set()
     execution_order: List[PluginInstanceRef] = []
 
-    for plugin_name, instance_configs in state.instance_configs.items():
-        for instance_name in instance_configs.keys():
-            instance = (plugin_name, instance_name)
-            if instance in added_plugin_instances:
-                continue
+    for plugin_name in state.active_plugins:
+        for instance_name in sorted(state.instance_configs[plugin_name].keys()):
             _resolve_instance_dependencies(
                 added_plugin_instances=added_plugin_instances,
                 execution_order=execution_order,
@@ -87,7 +84,10 @@ def _resolve_instance_dependencies(
 
     plugin_instance: PluginInstanceRef = (plugin_name, instance_name)
 
-    if plugin_name not in state.instance_configs:
+    # NOTE: Due to similar checks being run in the instance configuration loading
+    # stage in the `InstanceName` validator, in practice the checks within this block
+    # will never actually be used. They are still defined here as well, just in case.
+    if plugin_name not in state.instance_configs:  # pragma: no cover
         error_message = 'Unable to resolve instance dependency "'
         try:
             previous_pi = dependency_tree[-1]
@@ -115,7 +115,7 @@ def _resolve_instance_dependencies(
         )
 
     if plugin_instance in state._instance_dependencies:
-        for target_plugin_instance in state._instance_dependencies[plugin_instance]:
+        for target_plugin_instance in sorted(state._instance_dependencies[plugin_instance]):
             if target_plugin_instance not in added_plugin_instances:
                 target_plugin, target_instance = target_plugin_instance
                 _resolve_instance_dependencies(

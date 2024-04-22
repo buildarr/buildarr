@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -18,6 +18,8 @@
 
 from __future__ import annotations
 
+import sys
+
 from ipaddress import ip_address
 from logging import getLogger
 from pathlib import Path
@@ -32,10 +34,11 @@ from ..config import load_config, load_instance_configs, resolve_instance_depend
 from ..logging import get_log_level
 from ..manager import load_managers
 from ..state import state
-from ..util import get_resolved_path
+from ..util import get_resolved_path, windows_to_posix
 from . import cli
 from .exceptions import (
     ComposeInvalidHostnameError,
+    ComposeInvalidVolumeDefinitionError,
     ComposeNoPluginsDefinedError,
     ComposeNotSupportedError,
 )
@@ -243,28 +246,34 @@ def compose(
                         for source, target in service_config["volumes"].items()
                     ]
                 # Otherwise, assume the definition is a list structure.
-                # Convert old-style string volume definitions to long-form syntax.
+                # Convert tuples replicating short-form Docker volume syntax to long-form syntax.
                 else:
                     new_volumes: List[Dict[str, Any]] = []
                     for volume in service_config["volumes"]:
-                        if isinstance(volume, str):
+                        if isinstance(volume, tuple):
                             try:
-                                source, target, options_str = volume.split(":", maxsplit=3)
+                                source, target, options = volume
                             except ValueError:
-                                source, target = volume.split(":", maxsplit=2)
-                                options_str = None
-                            options: Set[str] = (
-                                set(o.strip().lower() for o in options_str.split(","))
-                                if options_str
-                                else set()
-                            )
+                                try:
+                                    source, target = volume
+                                    options = []
+                                except ValueError:
+                                    raise ComposeInvalidVolumeDefinitionError(
+                                        (
+                                            "Invalid tuple volume definition for "
+                                            f"{plugin_name} instance '{instance_name}' "
+                                            "(expecting a 2-tuple, or 3-tuple): "
+                                            f"{volume}"
+                                        ),
+                                    ) from None
+                            options_set = set(opt.strip().lower() for opt in options)
                             new_volume = {
                                 "type": (
                                     "volume" if "/" not in source and "\\" not in source else "bind"
                                 ),
                                 "source": source,
                                 "target": target,
-                                "read_only": "ro" in options and "rw" not in options,
+                                "read_only": "ro" in options_set and "rw" not in options_set,
                             }
                             if new_volume["type"] == "bind":
                                 new_volume["bind"] = {"create_host_path": True}
@@ -272,6 +281,12 @@ def compose(
                         else:
                             new_volumes.append(volume)
                     service_config["volumes"] = new_volumes
+                # If we are running on Windows, convert the source and target
+                # fields to POSIX paths, as required.
+                if sys.platform == "win32":
+                    for volume in service_config["volumes"]:
+                        for key in ("source", "target"):
+                            volume[key] = windows_to_posix(volume[key])
             service: Dict[str, Any] = {
                 **service_config,
                 "hostname": hostname,
@@ -315,7 +330,11 @@ def compose(
         "volumes": [
             {
                 "type": "bind",
-                "source": str(state.config_files[0].parent),
+                "source": (
+                    windows_to_posix(state.config_files[0].parent)
+                    if sys.platform == "win32"
+                    else str(state.config_files[0].parent)
+                ),
                 "target": "/config",
                 "read_only": True,
             },

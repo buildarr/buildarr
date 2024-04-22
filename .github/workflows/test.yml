@@ -15,7 +15,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
       - name: Run pre-commit hooks
         uses: pre-commit/action@v3.0.1
@@ -31,7 +31,8 @@ jobs:
       - name: Setup Python and PDM
         uses: pdm-project/setup-pdm@v4
         with:
-          python-version: "3.11"
+          python-version: "3.12"
+          version: "2.15.0"
       - name: Build source dist and wheels
         run: pdm build --verbose
       - name: Upload source dist and wheels to artifacts
@@ -41,3 +42,73 @@ jobs:
           path: dist/
           retention-days: 5
           if-no-files-found: error
+
+  test:
+    needs: pre-commit
+    permissions:
+      checks: write
+    strategy:
+      fail-fast: false
+      matrix:
+          operating_system:
+            - ubuntu-22.04
+            - windows-2022
+          python_version:
+            - "3.8"
+            - "3.9"
+            - "3.10"
+            - "3.11"
+            - "3.12"
+    runs-on: ${{ matrix.operating_system }}
+    steps:
+      - name: Clone full tree, and checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Python and PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: ${{ matrix.python_version }}
+          version: "2.15.0"
+      - name: Create virtual environment
+        run: pdm install
+      - name: Run tests
+        run: pdm run test
+      - name: Publish test results
+        uses: mikepenz/action-junit-report@v4
+        # Always run, even if the tests fail.
+        if: success() || failure()
+        with:
+          report_paths: rspec.xml
+      - name: Upload coverage report to artifacts
+        uses: actions/upload-artifact@v4
+        # Always run, even if the tests fail.
+        if: success() || failure()
+        with:
+          name: coverage-${{ matrix.operating_system}}-${{ matrix.python_version }}
+          path: coverage.xml
+          retention-days: 5
+          if-no-files-found: warn
+
+  coverage:
+    needs: test
+    # Always run, even if the test job failed.
+    if: success() || failure()
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download coverage reports from artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+      - name: Generate code coverage summary report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: coverage-*/coverage.xml
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: false
+          indicators: false
+          output: both
+      - name: Write to job summary
+        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY

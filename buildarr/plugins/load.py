@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -21,7 +21,7 @@ from __future__ import annotations
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from stevedore.extension import ExtensionManager  # type: ignore[import]
+from stevedore.extension import ExtensionManager
 
 from ..state import state
 
@@ -51,25 +51,24 @@ def load(namespace: str = "buildarr.plugins") -> None:
         invoke_on_load=True,
         on_load_failure_callback=_on_plugin_failure,
     ):
-        # Do not load the built-in `buildarr-dummy` plugin
+        # Do not load the built-in dummy plugins
         # if Buildarr was not started in testing mode.
-        if not state.testing and plugin.name == "dummy":
+        if not state.testing and plugin.name in ("dummy", "dummy2"):
             continue
-        if plugin.name not in plugins:
+        if plugin.name not in plugins:  # pragma: no branch
             plugins[plugin.name] = plugin.entry_point.load()
 
     state.plugins = plugins
 
 
-def _on_plugin_failure(manager: ExtensionManager, entrypoint: EntryPoint, err: Exception) -> None:
+def _on_plugin_failure(manager: ExtensionManager, entry_point: EntryPoint, err: Exception) -> None:
     """
     Plugin load error handler.
 
     Args:
         manager (ExtensionManager): Extension manager used to load the plugin
-        entrypoint (EntryPoint): Entry point metadata of the plugin
+        entry_point (EntryPoint): Entry point metadata of the plugin
         err (Exception): Exception raised during loading
     """
 
-    logger.error("An error occured while loading plugin '%s':", entrypoint.name)
-    logger.exception(err)
+    logger.exception("An error occurred while loading plugin '%s': %s", entry_point.name, err)

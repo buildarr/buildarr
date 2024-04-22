@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -266,7 +266,7 @@ class Daemon:
         Print a log alerting the user to the next scheduled run time.
         """
         now = datetime.now()
-        for job in sorted(self._scheduler.jobs):
+        for job in sorted(self._scheduler.jobs):  # pragma: no branch
             if not job.next_run or (job.next_run - now).total_seconds() < 0:
                 continue
             logger.info(
@@ -329,13 +329,14 @@ class Daemon:
                 logger.info("Reloading config")
                 self._initial_run()
                 logger.info("Finished reloading config")
-                self._log_next_run()
             except Exception as err:
                 logger.exception(
                     "Unexpected exception occurred while handling config file event: %s",
                     err,
                 )
+                logger.warning("Aborted reloading config")
             finally:
+                self._log_next_run()
                 logger.info("Buildarr ready.")
 
     def _setup_signal_handlers(self) -> None:
@@ -349,9 +350,14 @@ class Daemon:
         signal.signal(signal.SIGINT, self._sigterm_handler)
         logger.debug("Setting up SIGTERM signal handler")
         signal.signal(signal.SIGTERM, self._sigterm_handler)
+        if hasattr(signal, "SIGBREAK"):
+            logger.debug("Setting up SIGBREAK signal handler")
+            signal.signal(signal.SIGBREAK, self._sigterm_handler)
+        else:
+            logger.debug("SIGBREAK is not available on this platform")
         if hasattr(signal, "SIGHUP"):
             logger.debug("Setting up SIGHUP signal handler")
-            signal.signal(signal.SIGHUP, self._sighup_handler)  # type: ignore[attr-defined]
+            signal.signal(signal.SIGHUP, self._sighup_handler)
         else:
             logger.debug("SIGHUP is not available on this platform")
         logger.info("Finished setting up signal handlers")
@@ -461,7 +467,7 @@ def parse_time(
         try:
             times.append(datetime.strptime(time_str, "%H:%M").time())
         except ValueError:
-            raise click.BadParameter(f"Invalid 24 hour time '{time_str}'") from None
+            raise click.BadParameter(time_str) from None
     return tuple(times)
 
 
@@ -501,8 +507,8 @@ def parse_time(
     "--update-day",
     "update_days",
     metavar="DAY",
-    type=click.Choice([day.name for day in DayOfWeek], case_sensitive=False),
-    callback=lambda ctx, param, days: tuple(DayOfWeek(day) for day in days),
+    type=click.Choice([day.name.capitalize() for day in DayOfWeek], case_sensitive=False),
+    callback=lambda ctx, param, days: tuple(DayOfWeek.from_name_str(day) for day in days),
     multiple=True,
     help=(
         "Update defined instances on the specified day. "

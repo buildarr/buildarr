@@ -27,6 +27,6 @@ repos:
           - types-pyyaml==6.0.12.12
           - types-requests==2.31.0.10
   - repo: https://github.com/pdm-project/pdm
-    rev: "2.12.4"
+    rev: "2.15.0"
     hooks:
       - id: pdm-lock-check

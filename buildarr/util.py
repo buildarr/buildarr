@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -21,7 +21,7 @@ from __future__ import annotations
 import os
 
 from contextlib import contextmanager
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from shutil import rmtree
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import TYPE_CHECKING, Mapping
@@ -31,6 +31,33 @@ if TYPE_CHECKING:
 
 
 __all__ = ["get_absolute_path", "merge_dicts"]
+
+
+def str_to_bool(val: str) -> bool:
+    """
+    Convert a string representation of truth to `True` or `False`.
+
+    `True` values are `y`, `yes`, `t`, `true`, `on`, and `1`.
+    `False` values are `n`, `no`, `f`, `false`, `off`, and `0`.
+
+    Args:
+        val (str): Value to convert to a boolean.
+
+    Returns:
+        `True` if the value represents a truthy value, otherwise `False`.
+
+    Raises:
+        ValueError: If `val` is anything other than the allowed values.
+    """
+
+    val = val.lower()
+
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError(f"Invalid truth value {val!r}")
 
 
 def get_absolute_path(path: Union[str, os.PathLike]) -> Path:
@@ -159,3 +186,32 @@ def remove_dir(path: os.PathLike, nonexist_ok: bool = True) -> None:
     except FileNotFoundError:
         if not nonexist_ok:
             raise
+
+
+def windows_to_posix(path: os.PathLike) -> str:
+    """
+    Convert a given Windows path to the equivalent POSIX path, suitable for use in
+    e.g. Docker Desktop for Windows, or Windows Subsystem for Linux.
+
+    If the given path is already POSIX compliant, it will be unmodified.
+
+    Accepts both strings and path-like objects, but returns a string.
+
+    Args:
+        path (path-like object): Path to convert to POSIX.
+
+    Returns:
+        POSIX path string
+    """
+
+    windows_path = PureWindowsPath(path)
+
+    return (
+        str(
+            PurePosixPath(
+                f"/{windows_path.drive.rstrip(':').lower()}",
+            ).joinpath(*windows_path.parts[1:]),
+        )
+        if windows_path.drive
+        else windows_path.as_posix()
+    )

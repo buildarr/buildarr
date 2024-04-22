@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -22,12 +22,13 @@ import os
 
 from collections import defaultdict
 from contextlib import contextmanager
-from distutils.util import strtobool
 from pathlib import Path
 from typing import TYPE_CHECKING, Tuple
 
+from buildarr.util import str_to_bool
+
 if TYPE_CHECKING:
-    from typing import DefaultDict, FrozenSet, Generator, Mapping, Optional, Sequence, Set
+    from typing import DefaultDict, Generator, Mapping, Optional, Sequence, Set
 
     from .config import ConfigPlugin, ConfigType
     from .manager import ManagerPlugin
@@ -53,7 +54,7 @@ class State:
     over the life of an update run, generally it goes here.
     """
 
-    testing: bool = bool(strtobool(os.environ.get("BUILDARR_TESTING", "false")))
+    testing: bool = str_to_bool(os.environ.get("BUILDARR_TESTING", "false"))
     """
     Whether Buildarr is in testing mode or not.
     """
@@ -107,9 +108,10 @@ class State:
     Fully qualified configuration objects for each instance, under each plugin.
     """
 
-    active_plugins: FrozenSet[str]
+    active_plugins: Sequence[str]
     """
-    A data structure containing the names of all the currently active plugins.
+    A data structure containing the names of all the currently active plugins,
+    in alphabetical order.
     """
 
     trash_metadata_dir: Path
@@ -221,15 +223,19 @@ class State:
         """
         if plugin_name:
             old_current_plugin = self._current_plugin
-            self._current_plugin = plugin_name
         if instance_name:
             old_current_instance = self._current_instance
-            self._current_instance = instance_name
-        yield
-        if plugin_name:
-            self._current_plugin = old_current_plugin
-        if instance_name:
-            self._current_instance = old_current_instance
+        try:
+            if plugin_name:
+                self._current_plugin = plugin_name
+            if instance_name:
+                self._current_instance = instance_name
+            yield
+        finally:
+            if plugin_name:
+                self._current_plugin = old_current_plugin
+            if instance_name:
+                self._current_instance = old_current_instance
 
 
 state = State()

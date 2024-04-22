@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -21,14 +21,17 @@ from __future__ import annotations
 import functools
 
 from getpass import getpass
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import click
-import click_params  # type: ignore[import]
 
 from .config import DummyInstanceConfig
 from .manager import DummyManager
 from .secrets import DummySecrets
+
+if TYPE_CHECKING:
+    from urllib.parse import ParseResult as Url
 
 HOSTNAME_PORT_TUPLE_LENGTH = 2
 
@@ -48,48 +51,59 @@ def dummy():
         "The configuration is dumped to standard output in Buildarr-compatible YAML format."
     ),
 )
-@click.argument("url", type=click_params.URL)
+@click.argument("url", type=urlparse)
 @click.option(
     "-k",
     "--api-key",
     "api_key",
     metavar="API-KEY",
-    default=functools.partial(getpass, "Dummy instance API key: "),
+    default=functools.partial(
+        getpass,
+        "Dummy instance API key (or leave blank to auto-fetch): ",
+    ),
     help="API key of the Dummy instance. The user will be prompted if undefined.",
 )
-def dump_config(url: str, api_key: str) -> int:
+def dump_config(url: Url, api_key: str) -> int:
     """
     Dump configuration from a remote Dummy instance.
     The configuration is dumped to standard output in Buildarr-compatible YAML format.
     """
 
-    # Parse the specified instance URL to get its constituent components.
-    url_obj = urlparse(url)
-    protocol = url_obj.scheme
-    hostname_port = url_obj.netloc.split(":", 1)
+    protocol = url.scheme
+    hostname_port = url.netloc.split(":", 1)
     hostname = hostname_port[0]
     port = (
         int(hostname_port[1])
         if len(hostname_port) == HOSTNAME_PORT_TUPLE_LENGTH
         else (443 if protocol == "https" else 80)
     )
+    url_base = url.path
 
-    # Create a default configuration object for the Dummy instance,
-    # storing the connection information.
-    dummy_config = DummyInstanceConfig(hostname=hostname, port=port, protocol=protocol)
-
-    # Generate the secrets metadata for the Dummy instance.
-    dummy_secrets = DummySecrets(
-        hostname=hostname,
-        port=port,
-        protocol=protocol,
-        api_key=api_key,
+    instance_config = DummyInstanceConfig(
+        **{  # type: ignore[arg-type]
+            "hostname": hostname,
+            "port": port,
+            "protocol": protocol,
+            "url_base": url_base,
+        },
     )
 
-    # Pull the remote Dummy instance configuration, and create the configuration object.
-    dummy_config = DummyManager().from_remote(instance_config=dummy_config, secrets=dummy_secrets)
-
-    # Serialise the Dummy instance configuration into YAML, and write it to standard output.
-    click.echo(dummy_config.yaml())
+    click.echo(
+        (
+            DummyManager()
+            .from_remote(
+                instance_config=instance_config,
+                secrets=DummySecrets.get_from_url(
+                    hostname=hostname,
+                    port=port,
+                    protocol=protocol,
+                    url_base=url_base,
+                    api_key=api_key if api_key else None,
+                ),
+            )
+            .yaml(exclude_unset=True)
+        ),
+        nl=False,
+    )
 
     return 0

@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -77,9 +77,10 @@ def fetch_trash_metadata() -> None:
         logger.debug("Finished extracting TRaSH metadata")
 
         logger.debug("Moving TRaSH metadata files to target directory")
-        for subfile in (
-            temp_dir / "__trash-metadata__" / state.config.buildarr.trash_metadata_dir_prefix
-        ).iterdir():
+        trash_metadata_dir = temp_dir / "__trash-metadata__"
+        if state.config.buildarr.trash_metadata_dir_prefix:
+            trash_metadata_dir /= state.config.buildarr.trash_metadata_dir_prefix
+        for subfile in trash_metadata_dir.iterdir():
             move(str(subfile), temp_dir)
         rmtree(temp_dir / "__trash-metadata__")
         logger.debug("Finished moving TRaSH metadata files to target directory")
@@ -97,5 +98,6 @@ def cleanup_trash_metadata() -> None:
     and remove it from Buildarr global state.
     """
 
-    remove_dir(state.trash_metadata_dir)
+    if state.trash_metadata_dir:
+        remove_dir(state.trash_metadata_dir)
     state.trash_metadata_dir = None  # type: ignore[assignment]

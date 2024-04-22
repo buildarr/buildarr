@@ -23,10 +23,10 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: Pydantic",
     "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -39,7 +39,6 @@ requires-python = ">=3.8"
 dependencies = [
     "aenum",
     "click>=8.0.4",
-    "click-params>=0.4.1",
     "importlib-metadata>=4.6.0",
     "pyyaml>=6.0",
     "pydantic[email]>=1.10.0,<2.0.0",
@@ -62,7 +61,13 @@ Changelog = "https://buildarr.github.io/release-notes"
 buildarr = "buildarr.cli.main:main"
 
 [project.entry-points."buildarr.plugins"]
+# Used by functional tests. Otherwise, disabled and cannot be used.
+# Also serves as an example of how to register Buildarr plugins in packages.
 dummy = "buildarr.plugins.dummy.plugin:DummyPlugin"
+dummy2 = "buildarr.plugins.dummy2.plugin:Dummy2Plugin"
+
+[tool.setuptools]
+packages = ["buildarr"]
 
 [tool.setuptools_scm]
 
@@ -78,8 +83,43 @@ lint = [
     "types-requests==2.31.0.10",
 ]
 test = [
-    "flask==3.0.0",
-    "werkzeug==3.0.1",
+    "Flask>=3.0.2",
+    "pexpect>=4.9.0",
+    "pytest>=8.0.2",
+    "pytest-cov>=4.1.0",
+    "pytest-httpserver>=1.0.10",
+    "pytest-mock>=3.12.0",
+    "Werkzeug>=3.0.1",
+]
+
+[tool.pdm.scripts]
+lint = {cmd = "ruff check"}
+format = {cmd = "ruff format"}
+test = {cmd = "pytest"}
+dummy-server = {cmd = "flask --app buildarr.plugins.dummy.server:app run --debug"}
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--color=yes --cov=buildarr --cov-config=pyproject.toml --cov-report=html:cover --cov-report=term --cov-report=xml:coverage.xml --junit-xml=rspec.xml -r A --showlocals --verbosity=3"
+filterwarnings = [
+    "error",
+]
+testpaths = [
+    "tests",
+]
+
+[tool.coverage.run]
+branch = true
+disable_warnings = ["no-data-collected"]
+omit = [
+    "*/buildarr/plugins/dummy/server.py",
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    'if __name__ == "__main__":',
+    "raise NotImplementedError",
 ]
 
 [tool.ruff]
@@ -87,7 +127,6 @@ fix = true
 indent-width = 4
 line-length = 100
 output-format = "grouped"
-target-version = "py38"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -121,7 +160,7 @@ select = [
     "YTT",
 ]
 extend-select = [
-    # COM012 is currently disabled due to a conflict with the Ruff formatter.
+    # COM812 is currently disabled due to a conflict with the Ruff formatter.
     # https://github.com/astral-sh/ruff/issues/9216
     # TODO: Decide whether to enable or remove.
     # "COM812",
@@ -147,6 +186,7 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "buildarr/cli/main.py" = ["F401"]
+"tests/*" = ["S101"]
 
 [tool.mypy]
 python_version = "3.8"

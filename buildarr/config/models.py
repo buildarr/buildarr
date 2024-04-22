@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -18,9 +18,9 @@ Buildarr plugin configuration object models.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Type, cast
+from typing import Any, Dict, Optional, Type, cast
 
-from pydantic import root_validator
+from pydantic import root_validator, validator
 from typing_extensions import Self
 
 from ..plugins import Secrets
@@ -118,14 +118,38 @@ class ConfigPlugin(ConfigBase[Secrets]):
     Implementing configuration classes should override this with a default value.
     """
 
+    url_base: Optional[str] = None
+    """
+    The URL path the remote instance API is available under, if behind a reverse proxy.
+
+    API URLs are rendered like this: `<protocol>://<hostname>:<port><url_base>/...`
+
+    When unset, the URL root will be used as the API endpoint
+    (e.g. `<protocol>://<hostname>:<port>/...`).
+    """
+
     # `instances` is not defined here, but it MUST be defined on the implementing class.
+
+    @validator("url_base")
+    def validate_url_base(cls, value: Optional[str]) -> Optional[str]:
+        """
+        Process the defined `url_base` value, and make sure the value in the secrets objects
+        is consistently formatted.
+
+        Args:
+            value (Optional[str]): `url_base` value.
+
+        Returns:
+            Validated value
+        """
+        return f"/{value.strip('/')}" if value and value.strip("/") else None
 
     @property
     def host_url(self) -> str:
         """
         Fully qualified URL for the instance.
         """
-        return f"{self.protocol}://{self.hostname}:{self.port}"
+        return f"{self.protocol}://{self.hostname}:{self.port}{self.url_base or ''}"
 
     def uses_trash_metadata(self) -> bool:
         """

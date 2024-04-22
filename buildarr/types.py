@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -234,7 +234,7 @@ class TrashID(ConstrainedStr):
     ```
     """
 
-    regex = re.compile("[A-Fa-f0-9]+")
+    regex = re.compile("^[A-Fa-f0-9]+$")
     min_length = 32
     max_length = 32
     to_lower = True
@@ -338,7 +338,7 @@ class BaseEnum(MultiValueEnum):
 
     def to_name_str(self) -> str:
         """
-        Return the name for this enumaration object.
+        Return the name for this enumeration object.
 
         Returns:
             First `str`-type value in list of values (if available),
@@ -529,7 +529,7 @@ class InstanceName(str):
             plugin_name: str = field.field_info.extra["plugin"]
             instance_name = value
             if plugin_name not in state.plugins:
-                raise ValueError(f"Target plugin '{plugin_name}' not installed")
+                raise ValueError(f"target plugin '{plugin_name}' not installed")
             if state.config:
                 instances: Mapping[str, ConfigPlugin] = getattr(
                     state.config,
@@ -558,7 +558,7 @@ class InstanceName(str):
         except KeyError as err:
             if err.args[0] == "plugin":
                 raise ValueError(
-                    "Target plugin not defined in instance name metadata, "
+                    "target plugin not defined in instance name metadata, "
                     "make sure the default value is set to `Field(None, plugin='<plugin-name>')`",
                 ) from None
             else:

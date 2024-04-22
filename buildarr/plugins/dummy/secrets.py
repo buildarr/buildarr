@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -19,8 +19,9 @@ Dummy plugin secrets file model.
 from __future__ import annotations
 
 from http import HTTPStatus
-from typing import TYPE_CHECKING
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING, Optional
+
+from pydantic import validator
 
 from buildarr.secrets import SecretsPlugin
 from buildarr.types import NonEmptyStr, Port
@@ -52,38 +53,57 @@ class DummySecrets(_DummySecrets):
     hostname: NonEmptyStr
     port: Port
     protocol: DummyProtocol
-
-    api_key: DummyApiKey
+    url_base: Optional[str]
+    api_key: Optional[DummyApiKey]
+    version: NonEmptyStr
 
     @property
     def host_url(self) -> str:
         """
         Full host URL for the Dummy instance.
         """
-        return f"{self.protocol}://{self.hostname}:{self.port}"
+        return self._get_host_url(
+            protocol=self.protocol,
+            hostname=self.hostname,
+            port=self.port,
+            url_base=self.url_base,
+        )
 
-    @classmethod
-    def from_url(cls, host_url: str, api_key: str) -> Self:
+    @validator("url_base")
+    def validate_url_base(cls, value: Optional[str]) -> Optional[str]:
         """
-        Generate a secrets object from its constituent host URL and API key.
+        Process the defined `url_base` value, and make sure the value in the secrets objects
+        is consistently formatted.
 
         Args:
-            host_url (str): Full host URL of the instance
-            api_key (str): API key used to authenticate with the instance
+            value (Optional[str]): `url_base` value.
 
         Returns:
-            Secrets object
+            Validated value
         """
-        url_obj = urlparse(host_url)
-        hostname_port = url_obj.netloc.rsplit(":", 1)
-        hostname = hostname_port[0]
-        protocol = url_obj.scheme
-        port = (
-            int(hostname_port[1])
-            if len(hostname_port) > 1
-            else (443 if protocol == "https" else 80)
-        )
-        return cls(hostname=hostname, port=port, protocol=protocol, api_key=api_key)
+        return f"/{value.strip('/')}" if value and value.strip("/") else None
+
+    @classmethod
+    def _get_host_url(
+        cls,
+        protocol: str,
+        hostname: str,
+        port: int,
+        url_base: Optional[str],
+    ) -> str:
+        """
+        Helper method to create a fully-qualified host URL.
+
+        Args:
+            hostname (str): Instance hostname.
+            port (int): Instance access port.
+            protocol (str): Instance access protocol.
+            url_base (Optional[str], optional): Instance URL base.
+
+        Returns:
+            Full host URL
+        """
+        return f"{protocol}://{hostname}:{port}{cls.validate_url_base(url_base) or ''}"
 
     @classmethod
     def get(cls, config: DummyConfig) -> Self:
@@ -92,27 +112,70 @@ class DummySecrets(_DummySecrets):
         retrieving any necessary secrets in the process.
 
         Args:
-            config (DummyConfig): Instance configuration
+            config (DummyConfig): Instance configuration.
 
         Returns:
             Secrets object
         """
+        return cls.get_from_url(
+            hostname=config.hostname,
+            port=config.port,
+            protocol=config.protocol,
+            url_base=config.url_base,
+            api_key=config.api_key.get_secret_value() if config.api_key else None,
+        )
+
+    @classmethod
+    def get_from_url(
+        cls,
+        hostname: str,
+        port: int,
+        protocol: str,
+        url_base: Optional[str] = None,
+        api_key: Optional[str] = None,
+    ) -> Self:
+        """
+        Generate a secrets object from the given instance access details,
+        retrieving any necessary secrets in the process.
+
+        Args:
+            hostname (str): Instance hostname.
+            port (int): Instance access port.
+            protocol (str): Instance access protocol.
+            url_base (Optional[str], optional): Instance URL base. Default is `None`.
+            api_key (Optional[str], optional): Optional API key for auth. Default is `None`.
+
+        Returns:
+            Secrets object
+        """
+        url_base = cls.validate_url_base(url_base)
+        host_url = cls._get_host_url(
+            protocol=protocol,
+            hostname=hostname,
+            port=port,
+            url_base=url_base,
+        )
         try:
+            initialize_json = api_get(
+                host_url,
+                "/initialize.json",
+                api_key=api_key,
+            )
             return cls(
-                hostname=config.hostname,
-                port=config.port,
-                protocol=config.protocol,
-                api_key=(
-                    config.api_key
-                    if config.api_key
-                    else api_get(config.host_url, "/initialize.json")["apiKey"]
-                ),
+                hostname=hostname,
+                port=port,
+                protocol=protocol,
+                url_base=url_base,
+                api_key=api_key if api_key else initialize_json.get("apiKey"),
+                version=initialize_json["version"],
             )
         except DummyAPIError as err:
             if err.status_code == HTTPStatus.UNAUTHORIZED:
                 raise DummySecretsUnauthorizedError(
-                    "Unable to retrieve the API key for the Dummy instance "
-                    f"at '{config.host_url}': Authentication is enabled",
+                    (
+                        f"Unable to authenticate with the Dummy instance at '{host_url}': "
+                        f"{'Incorrect API key' if api_key else 'Authentication required'}"
+                    ),
                 ) from None
             else:
                 raise
@@ -125,7 +188,7 @@ class DummySecrets(_DummySecrets):
             `True` if the test was successful, otherwise `False`
         """
         try:
-            api_get(self, "/api/v1/settings")
+            api_get(self, "/api/v1/status")
             return True
         except DummyAPIError as err:
             if err.status_code == HTTPStatus.UNAUTHORIZED:

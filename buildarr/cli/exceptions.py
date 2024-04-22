@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Callum Dickinson
+# Copyright (C) 2024 Callum Dickinson
 #
 # Buildarr is free software: you can redistribute it and/or modify it under the terms of the
 # GNU General Public License as published by the Free Software Foundation,
@@ -67,6 +67,14 @@ class TestConfigError(CLIError):
 class ComposeInvalidHostnameError(ComposeError):
     """
     Exception raised when the hostname configuration for Docker Compose services is invalid.
+    """
+
+    pass
+
+
+class ComposeInvalidVolumeDefinitionError(ComposeError):
+    """
+    Exception raised when an invalid volume definition is returned by a plugin.
     """
 
     pass
