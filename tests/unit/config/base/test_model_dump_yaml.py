@@ -47,8 +47,16 @@ def test_exclude_unset() -> None:
 
 def test_yaml() -> None:
     """
-    Check that the `ConfigBase.yaml` alias method works,
-    and that arguments are passed to the `ConfigBase.model_dump_yaml` method.
+    Check that the `ConfigBase.yaml` alias method works.
+    """
+
+    assert Settings(test_attr=8989).yaml() == "test_attr: 8989\noptional_attr: null\n"
+
+
+def test_yaml_args() -> None:
+    """
+    Check that arguments are passed from the  `ConfigBase.yaml` alias
+    to the `ConfigBase.model_dump_yaml` method.
     """
 
     assert Settings(test_attr=8989).yaml(exclude_unset=True) == "test_attr: 8989\n"
