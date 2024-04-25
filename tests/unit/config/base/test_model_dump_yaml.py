@@ -55,7 +55,7 @@ def test_yaml() -> None:
 
 def test_yaml_args() -> None:
     """
-    Check that arguments are passed from the  `ConfigBase.yaml` alias
+    Check that arguments are passed from the `ConfigBase.yaml` alias
     to the `ConfigBase.model_dump_yaml` method.
     """
 
