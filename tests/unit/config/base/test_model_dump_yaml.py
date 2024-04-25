@@ -28,6 +28,14 @@ class Settings(ConfigBase):
     optional_attr: Optional[int] = None
 
 
+def test_default() -> None:
+    """
+    Check that the output using the default options is correct.
+    """
+
+    assert Settings(test_attr=8989).model_dump_yaml() == "test_attr: 8989\noptional_attr: null\n"
+
+
 def test_exclude_unset() -> None:
     """
     Check that when the `exclude_unset` option is enabled,
