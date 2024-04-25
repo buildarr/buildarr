@@ -319,7 +319,8 @@ class ConfigPlugin(ConfigBase[Secrets]):
             ).items():
                 if instance_name == "default":
                     raise ValueError(
-                        "instance name 'default' is reserved within Buildarr, "
+                        "there is an instance named 'default' defined for this plugin, "
+                        "the instance name 'default' is reserved within Buildarr, "
                         "please choose a different name for this instance",
                     )
                 if "hostname" not in instance.model_fields_set:

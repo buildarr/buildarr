@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 from typing_extensions import Self
 
 from buildarr.config import ConfigPlugin
-from buildarr.types import NonEmptyStr, Port
+from buildarr.types import LocalPath, NonEmptyStr, Port
 
 from ..secrets import Dummy2Secrets
 from ..types import Dummy2Protocol
@@ -123,6 +123,16 @@ class Dummy2InstanceConfig(_Dummy2InstanceConfig):
     """
     Dummy2 settings.
     Configuration options for Dummy2 itself are set within this structure.
+    """
+
+    local_path: LocalPath = "test.yml"  # type: ignore[assignment]
+    """
+    Local path. Used for testing the type in functional testing.
+    """
+
+    optional_local_path: Optional[LocalPath] = None
+    """
+    Optional local path. Used for testing the type in functional testing.
     """
 
     @classmethod

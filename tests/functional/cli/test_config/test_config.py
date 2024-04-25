@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 
 from io import BytesIO
+from pathlib import Path
 from typing import TYPE_CHECKING
 from zipfile import ZipFile
 
@@ -77,6 +78,7 @@ def test_instance_value(instance_value, buildarr_yml_factory, buildarr_test_conf
     assert "[INFO] Loading instance configurations: PASSED" in result.stdout
     assert "[INFO] Checking configured plugins: PASSED" in result.stdout
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
@@ -113,6 +115,7 @@ def test_instance_dependency_multiple(buildarr_yml_factory, buildarr_test_config
     assert "[DEBUG]   2. dummy.instances['dummy2']" in result.stderr
     assert "[DEBUG]   3. dummy.instances['dummy3']" in result.stderr
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
@@ -240,6 +243,7 @@ def test_trash_id(buildarr_yml_factory, buildarr_test_config) -> None:
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
     assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: PASSED" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
@@ -331,6 +335,7 @@ def test_trash_metadata_download_url(
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
     assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: PASSED" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
@@ -386,6 +391,7 @@ def test_trash_metadata_dir_prefix_null(
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
     assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: PASSED" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
@@ -442,6 +448,7 @@ def test_trash_metadata_dir_prefix_custom(
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: PASSED" in result.stdout
     assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: PASSED" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
@@ -478,3 +485,171 @@ def test_trash_metadata_download_fail(
     assert result.stderr.splitlines()[-1] == (
         "urllib.error.HTTPError: HTTP Error 500: INTERNAL SERVER ERROR"
     )
+
+
+def test_local_path(buildarr_yml_factory, buildarr_test_config) -> None:
+    """
+    Check that a relative path on a `LocalPath` type attribute defined in the
+    main `buildarr.yml` file is resolved relative to the `buildarr.yml` file.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "dummy2": {
+                "hostname": "localhost",
+                "port": 9999,
+                "local_path": "test.yml",
+            },
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert f"local_path: {buildarr_yml.parent / 'test.yml'}" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
+def test_local_path_includes(tmp_path, buildarr_test_config) -> None:
+    """
+    Check that a relative path on a `LocalPath` type attribute defined in an
+    included configuration file is resolved relative that file, *not* the main
+    `buildarr.yml` file.
+    """
+
+    child_dir = tmp_path / "child-dir"
+    buildarr_yml = tmp_path / "buildarr.yml"
+    dummy2_yml = child_dir / "dummy2.yml"
+
+    child_dir.mkdir()
+    with buildarr_yml.open("w") as f:
+        f.write(f"---\nincludes:\n  - {Path('child-dir') / 'dummy2.yml'}")
+    with dummy2_yml.open("w") as g:
+        g.write("---\ndummy2:\n  hostname: localhost\n  port: 9999\n  local_path: test.yml")
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert f"local_path: {child_dir / 'test.yml'}" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
+def test_optional_local_path_null(buildarr_yml_factory, buildarr_test_config) -> None:
+    """
+    Check that a `LocalPath` type attribute that can be set to `null`
+    is handled correctly when it is set to `null`.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "dummy2": {
+                "hostname": "localhost",
+                "port": 9999,
+                "optional_local_path": None,
+            },
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert "optional_local_path: null" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
+def test_optional_local_path_defined(tmp_path, buildarr_test_config) -> None:
+    """
+    Check that a `LocalPath` type attribute that can be set to `null`
+    is parsed and resolved correctly when it is set to a path.
+    """
+
+    child_dir = tmp_path / "child-dir"
+    buildarr_yml = tmp_path / "buildarr.yml"
+    dummy2_yml = child_dir / "dummy2.yml"
+
+    child_dir.mkdir()
+    with buildarr_yml.open("w") as f:
+        f.write(f"---\nincludes:\n  - {Path('child-dir') / 'dummy2.yml'}")
+    with dummy2_yml.open("w") as g:
+        g.write(
+            "---\ndummy2:\n  hostname: localhost\n  port: 9999\n  optional_local_path: test.yml",
+        )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 0
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[INFO] Loading configuration: PASSED" in result.stdout
+    assert "[INFO] Loading plugin managers: PASSED" in result.stdout
+    assert "[INFO] Loading instance configurations: PASSED" in result.stdout
+    assert f"optional_local_path: {child_dir / 'test.yml'}" in result.stderr
+    assert "[INFO] Checking configured plugins: PASSED" in result.stdout
+    assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
+    assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
+
+
+def test_instance_named_default(
+    buildarr_yml_factory,
+    buildarr_test_config,
+) -> None:
+    """
+    Check that an error is returned when a defined instance is named 'default'.
+    """
+
+    buildarr_yml = buildarr_yml_factory(
+        {
+            "dummy": {
+                "instances": {
+                    "default": {"hostname": "localhost", "settings": {"instance_name": "dummy"}},
+                },
+            },
+        },
+    )
+
+    result = buildarr_test_config(buildarr_yml)
+
+    assert result.returncode == 1
+    assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
+    assert "[ERROR] Loading configuration: FAILED" in result.stderr
+    assert result.stderr.splitlines()[-3:-1] == [
+        "dummy",
+        (
+            "  Value error, "
+            "there is an instance named 'default' defined for this plugin, "
+            "the instance name 'default' is reserved within Buildarr, "
+            "please choose a different name for this instance "
+            "[type=value_error"
+            ", input_value={'instances': {'default':...tance_name': 'dummy'}}}}"
+            ", input_type=dict]"
+        ),
+    ]

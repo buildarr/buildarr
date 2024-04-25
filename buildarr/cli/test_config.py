@@ -161,9 +161,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
         logger.info("Resolving instance dependencies: PASSED")
 
-    # Check if any instances are configured to get metadata from TRaSH-Guides.
-    if trash_metadata_used():
-        # Test fetching TRaSH-Guides metadata.
+    # Test fetching TRaSH-Guides metadata, if the configuration uses it.
+    downloaded_trash_metadata = trash_metadata_used()
+    if downloaded_trash_metadata:
         try:
             logger.debug("Fetching TRaSH metadata")
             fetch_trash_metadata()
@@ -173,20 +173,33 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             raise
         else:
             logger.info("Fetching TRaSH-Guides metadata: PASSED")
-        # Test pre-initialisation rendering of the instance configuration.
-        try:
-            logger.debug("Performing pre-initialisation configuration render")
-            render_instance_configs()
-            logger.debug("Finished performing pre-initialisation configuration render")
-        except Exception:
-            logger.error("Pre-initialisation configuration render: FAILED")
-            raise
-        else:
-            logger.info("Pre-initialisation configuration render: PASSED")
-        # Clean up the TRaSH-Guides metadata, now that rendering has completed.
-        cleanup_trash_metadata()
     else:
         logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
+
+    # Test pre-initialisation rendering of the instance configuration.
+    try:
+        logger.debug("Performing pre-initialisation configuration render")
+        render_instance_configs()
+        logger.debug("Finished performing pre-initialisation configuration render")
+    except Exception:
+        logger.error("Pre-initialisation configuration render: FAILED")
+        raise
+    else:
+        logger.info("Pre-initialisation configuration render: PASSED")
+
+    # Clean up the TRaSH-Guides metadata, now that rendering has completed.
+    if downloaded_trash_metadata:
+        try:
+            logger.debug("Cleaning up TRaSH metadata")
+            cleanup_trash_metadata()
+            logger.debug("Finished cleaning up TRaSH metadata")
+        except Exception:
+            logger.error("Cleaning up TRaSH-Guides metadata: FAILED")
+            raise
+        else:
+            logger.info("Cleaning up TRaSH-Guides metadata: PASSED")
+    else:
+        logger.info("Cleaning up TRaSH-Guides metadata: SKIPPED (not required)")
 
     # Log the pre-initialisation rendered configuration to debug output.
     for plugin_name, instance_configs in state.instance_configs.items():

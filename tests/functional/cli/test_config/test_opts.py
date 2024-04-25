@@ -41,6 +41,8 @@ def test_config_path_undefined(instance_value, buildarr_yml_factory, buildarr_te
     assert "[INFO] Checking configured plugins: PASSED" in result.stdout
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")
 
 
@@ -68,4 +70,6 @@ def test_plugin(opt, instance_value, buildarr_yml_factory, buildarr_test_config)
     assert "[INFO] Checking configured plugins: PASSED" in result.stdout
     assert "[INFO] Resolving instance dependencies: PASSED" in result.stdout
     assert "[INFO] Fetching TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
+    assert "[INFO] Pre-initialisation configuration render: PASSED" in result.stdout
+    assert "[INFO] Cleaning up TRaSH-Guides metadata: SKIPPED (not required)" in result.stdout
     assert result.stdout.splitlines()[-1].endswith("[INFO] Configuration test successful.")

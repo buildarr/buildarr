@@ -552,33 +552,50 @@ def _instance_reference(plugin_name: str, instance_name: Optional[str]) -> Optio
     return instance_name
 
 
-LocalPath = Annotated[
-    Path,
-    AfterValidator(
-        lambda v: get_absolute_path(state._current_dir / v) if not v.is_absolute() else v,
-    ),
-]
-"""
-Model type for a local path.
+class LocalPath(type(Path()), Path):  # type: ignore[misc]
+    """
+    Model type for a local path.
 
-If the supplied path is relative, it is parsed as an absolute path
-relative to the configuration file it was defined in.
+    If the supplied path is relative, it is parsed as an absolute path
+    relative to the configuration file it was defined in.
 
-For example, suppose a configuration file located at `/path/to/buildarr.yml`
-was created with the following attributes:
+    For example, suppose a configuration file located at `/path/to/buildarr.yml`
+    was created with the following attributes:
 
-```yaml
----
+    ```yaml
+    ---
 
-buildarr:
-    # Removed in v0.7.0, but still useful as an example in developer docs.
-    secrets_file_path: "../secrets/buildarr.json"
-```
+    buildarr:
+      # Removed in v0.7.0, but still useful as an example in developer docs.
+      secrets_file_path: "../secrets/buildarr.json"
+    ```
 
-Even when executing Buildarr from a different folder e.g. `/opt/buildarr`,
-the `buildarr.secrets_file_path` attribute would be evaluated as
-`/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
-"""
+    Even when executing Buildarr from a different folder e.g. `/opt/buildarr`,
+    the `buildarr.secrets_file_path` attribute would be evaluated as
+    `/path/secrets/buildarr.json`, *not* `/opt/buildarr/buildarr.json`.
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source: Type[Any],
+        handler: GetCoreSchemaHandler,
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any) -> Self:
+        """
+        Validate the local path value, and return an absolute path.
+        Args:
+            value (Any): Object to validate and coerce
+        Returns:
+            Absolute local path
+        """
+        path = cls(value)
+        if not path.is_absolute():
+            return cls(get_absolute_path(state._current_dir / path))
+        return path
 
 
 model_config_base: ConfigDict = {
