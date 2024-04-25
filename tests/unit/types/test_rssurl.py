@@ -120,3 +120,14 @@ def test_invalid_scheme(scheme) -> None:
         ),
     ):
         Settings(test_attr=f"{scheme}://www.example.com")
+
+
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="rss://rss.example.com").model_dump_yaml()
+        == "test_attr: rss://rss.example.com\n"
+    )

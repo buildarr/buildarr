@@ -155,6 +155,17 @@ def test_too_long() -> None:
         Settings(test_attr="387e6278d8e06083d813358762e0ac630")
 
 
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="387e6278d8e06083d813358762e0ac63").model_dump_yaml()
+        == "test_attr: 387e6278d8e06083d813358762e0ac63\n"
+    )
+
+
 def test_invalid_characters() -> None:
     """
     Check that an error is returned when the provided string is not a valid TRaSH ID.

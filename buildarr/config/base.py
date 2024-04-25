@@ -18,10 +18,8 @@ Buildarr configuration base class.
 
 from __future__ import annotations
 
-import json
-
 from logging import getLogger
-from pathlib import Path
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import (
     Any,
     Callable,
@@ -716,7 +714,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, PydanticSecretStr):
             return str(value)
-        elif isinstance(value, Path):
+        elif isinstance(value, (PureWindowsPath, PurePosixPath)):
             return str(value)
         elif isinstance(value, UUID):
             return str(value)
@@ -786,15 +784,26 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, PydanticSecretStr):
             return value.get_secret_value()
+        elif isinstance(value, (PurePosixPath, PureWindowsPath)):
+            return str(value)
         elif isinstance(value, UUID):
             return str(value)
         elif isinstance(value, (list, set)):
             return [cls._encode_attr(v) for v in value]
         return value
 
-    def yaml(
+    def yaml(self, **kwargs) -> str:
+        """
+        Alias to `ConfigBase.model_dump_yaml`.
+
+        Returns:
+            str: YAML representation of the model
+        """
+        return self.model_dump_yaml(**kwargs)
+
+    def model_dump_yaml(
         self,
-        *args,
+        *,
         sort_keys: bool = False,
         yaml_kwargs: Optional[Mapping[str, Any]] = None,
         **kwargs,
@@ -802,9 +811,9 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         """
         Generate a YAML representation of the model.
 
-        Internally this uses the Pydantic JSON generation function,
-        with all arguments forwarded to `BaseModel.model_dump_json`.
-        The JSON output is then re-processed using PyYAML.
+        Internally this uses the Pydantic `BaseModel.model_dump` function.
+        With the exception of the two additional options below,
+        all keyword arguments are forwarded to that function call.
 
         Args:
             sort_keys (bool, optional): Sort keys in the output YAML file. Defaults to `False`.
@@ -814,7 +823,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             YAML representation of the model
         """
         return yaml.safe_dump(  # type: ignore[call-overload]
-            json.loads(self.model_dump_json(*args, **kwargs)),
+            self.model_dump(mode="json", **kwargs),
             **{**(yaml_kwargs or {}), "sort_keys": sort_keys},
         )
 

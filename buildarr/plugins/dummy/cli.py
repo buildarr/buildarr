@@ -101,7 +101,7 @@ def dump_config(url: Url, api_key: str) -> int:
                     api_key=api_key if api_key else None,
                 ),
             )
-            .yaml(exclude_unset=True)
+            .model_dump_yaml(exclude_unset=True)
         ),
         nl=False,
     )

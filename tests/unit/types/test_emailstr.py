@@ -87,6 +87,16 @@ def test_update_encode() -> None:
     ) == (True, {"testAttr": "test@example.com"})
 
 
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="test@example.com").model_dump_yaml() == "test_attr: test@example.com\n"
+    )
+
+
 @pytest.mark.parametrize("test_attr", ["", "test"])
 def test_invalid_email_address(test_attr) -> None:
     """

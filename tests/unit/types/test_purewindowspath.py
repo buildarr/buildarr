@@ -13,19 +13,20 @@
 
 
 """
-Test the `LowerCaseStr` configuration attribute type.
+Test the `PurePosixPath` configuration attribute type.
 """
 
 from __future__ import annotations
 
 import logging
 
+from pathlib import PureWindowsPath
+
 from buildarr.config import ConfigBase
-from buildarr.types import LowerCaseStr
 
 
 class Settings(ConfigBase):
-    test_attr: LowerCaseStr
+    test_attr: PureWindowsPath
 
 
 def test_decode() -> None:
@@ -33,15 +34,12 @@ def test_decode() -> None:
     Check decoding a local attribute.
     """
 
-    assert (
-        Settings(
-            **Settings.get_local_attrs(
-                remote_map=[("test_attr", "testAttr", {})],
-                remote_attrs={"testAttr": "Hello, world!"},
-            ),
-        ).test_attr
-        == "hello, world!"
-    )
+    assert Settings(
+        **Settings.get_local_attrs(
+            remote_map=[("test_attr", "testAttr", {})],
+            remote_attrs={"testAttr": "C:\\Users\\buildarr\\buildarr.yml"},
+        ),
+    ).test_attr == PureWindowsPath("C:\\Users\\buildarr\\buildarr.yml")
 
 
 def test_create_encode() -> None:
@@ -49,10 +47,10 @@ def test_create_encode() -> None:
     Check encoding a remote attribute during resource creation.
     """
 
-    assert Settings(test_attr="Hello, world!").get_create_remote_attrs(
+    assert Settings(test_attr="C:\\Users\\buildarr\\buildarr.yml").get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_attr", "testAttr", {})],
-    ) == {"testAttr": "hello, world!"}
+    ) == {"testAttr": "C:\\Users\\buildarr\\buildarr.yml"}
 
 
 def test_create_format(caplog) -> None:
@@ -62,14 +60,16 @@ def test_create_format(caplog) -> None:
 
     caplog.set_level(logging.DEBUG)
 
-    assert Settings(test_attr="Hello, world!").get_create_remote_attrs(
+    test_attr = "C:\\Users\\buildarr\\buildarr.yml"
+
+    assert Settings(test_attr=test_attr).get_create_remote_attrs(
         tree="test.settings",
         remote_map=[("test_attr", "testAttr", {})],
-    ) == {"testAttr": "hello, world!"}
+    ) == {"testAttr": test_attr}
 
     record = caplog.records[0]
     assert record.levelname == "INFO"
-    assert record.message == "test.settings.test_attr: 'hello, world!' -> (created)"
+    assert record.message == f"test.settings.test_attr: {test_attr!r} -> (created)"
 
 
 def test_update_encode() -> None:
@@ -77,11 +77,11 @@ def test_update_encode() -> None:
     Check encoding a remote attribute during resource updates.
     """
 
-    assert Settings(test_attr="Hello, world!").get_update_remote_attrs(
+    assert Settings(test_attr="C:\\Users\\buildarr\\buildarr.yml").get_update_remote_attrs(
         tree="test.settings",
-        remote=Settings(test_attr="Goodbye, world!"),
+        remote=Settings(test_attr="C:\\Users\\buildarr\\sonarr.yml"),
         remote_map=[("test_attr", "testAttr", {})],
-    ) == (True, {"testAttr": "hello, world!"})
+    ) == (True, {"testAttr": "C:\\Users\\buildarr\\buildarr.yml"})
 
 
 def test_serialization() -> None:
@@ -89,12 +89,7 @@ def test_serialization() -> None:
     Check serialising a local attribute value to YAML.
     """
 
-    assert Settings(test_attr="Hello, world!").model_dump_yaml() == "test_attr: hello, world!\n"
-
-
-def test_empty() -> None:
-    """
-    Check that an empty string is allowed.
-    """
-
-    assert Settings(test_attr="").test_attr == ""
+    assert (
+        Settings(test_attr="C:\\Users\\buildarr\\buildarr.yml").model_dump_yaml()
+        == "test_attr: C:\\Users\\buildarr\\buildarr.yml\n"
+    )

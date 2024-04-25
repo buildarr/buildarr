@@ -19,8 +19,8 @@ Buildarr general purpose type hints, used in plugin models.
 from __future__ import annotations
 
 from functools import total_ordering
-from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Sequence, Type
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Type
 
 from pydantic import (
     AfterValidator,
@@ -354,7 +354,14 @@ class BaseEnum(MultiValueEnum):
     ) -> core_schema.CoreSchema:
         return core_schema.no_info_before_validator_function(
             function=cls.validate,
-            schema=core_schema.enum_schema(cls, list(cls.__members__.values())),
+            schema=core_schema.enum_schema(
+                cls,
+                list(cls.__members__.values()),
+                serialization=core_schema.plain_serializer_function_ser_schema(
+                    lambda v: v.to_name_str(),
+                    return_schema=core_schema.str_schema(),
+                ),
+            ),
         )
 
     @classmethod
@@ -574,39 +581,10 @@ the `buildarr.secrets_file_path` attribute would be evaluated as
 """
 
 
-config_encoders: Dict[Type[Any], Callable[[Any], Any]] = {
-    BaseEnum: lambda v: v.to_name_str(),
-    PurePosixPath: str,
-    PureWindowsPath: str,
-    SecretStr: lambda v: v.get_secret_value(),
-}
-"""
-The canonical data structure Buildarr uses to serialise custom Python types
-to a type serialisable into JSON and YAML.
-
-When using a custom type that Buildarr does not automatically support
-in plugins, add the required type to this structure, as shown in this example:
-
-```python
-from buildarr.types import config_encoders
-
-class CustomType:
-    ...
-    def __str__(self) -> str:
-        ...
-
-config_encoders[CustomType] = lambda v: str(v)
-```
-"""
-
-
 model_config_base: ConfigDict = {
     # When aliases are defined, allow attributes to be referenced by their
     # internal name, as well as the alias.
     "populate_by_name": True,
-    # In error messages, refer to fields by their field name on the model,
-    # instead of their alias (if one is defined).
-    "loc_by_alias": False,
     # Validate model default values.
     # This is necessary because the default attributes sometimes need to
     # be validated for correctness in non-default contexts.

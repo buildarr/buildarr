@@ -121,3 +121,11 @@ def test_greater_than_valid() -> None:
         ),
     ):
         Settings(test_attr=65536)
+
+
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert Settings(test_attr=8989).model_dump_yaml() == "test_attr: 8989\n"

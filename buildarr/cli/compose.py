@@ -149,7 +149,7 @@ def compose(
     load_config(path=config_path, use_plugins=use_plugins)
     logger.debug("Finished loading configuration file")
     logger.debug("Buildarr configuration:")
-    for config_line in state.config.yaml(exclude_unset=True).splitlines():
+    for config_line in state.config.model_dump_yaml(exclude_unset=True).splitlines():
         logger.debug(indent(config_line, "  "))
 
     logger.debug("Loading plugin managers")
@@ -166,7 +166,7 @@ def compose(
         for instance_name, instance_config in instance_configs.items():
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 logger.debug("Instance configuration:")
-                for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                for config_line in instance_config.model_dump_yaml(exclude_unset=True).splitlines():
                     logger.debug(indent(config_line, "  "))
 
     if not state.active_plugins:

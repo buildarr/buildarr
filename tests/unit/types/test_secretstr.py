@@ -89,4 +89,4 @@ def test_serialization() -> None:
     Check serialising a local attribute value to YAML.
     """
 
-    assert Settings(test_attr="Hello, world!").yaml() == "test_attr: Hello, world!\n"
+    assert Settings(test_attr="Hello, world!").model_dump_yaml() == "test_attr: Hello, world!\n"

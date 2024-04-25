@@ -116,7 +116,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
 
     # Dump the currently active Buildarr configuration file to the debug log.
     logger.debug("Buildarr configuration:")
-    for config_line in state.config.yaml(exclude_unset=True).splitlines():
+    for config_line in state.config.model_dump_yaml(exclude_unset=True).splitlines():
         logger.debug(indent(config_line, "  "))
 
     # Output the currently loaded plugins to the logs.
@@ -238,7 +238,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
                 ("Remote", remote_instance_config),
             ):
                 logger.debug("%s configuration:", config_type)
-                for config_line in config.yaml(exclude_unset=True).splitlines():
+                for config_line in config.model_dump_yaml(exclude_unset=True).splitlines():
                     logger.debug(indent(config_line, "  "))
             logger.info("Updating remote configuration")
             logger.info(
@@ -276,7 +276,7 @@ def _run(use_plugins: Optional[Set[str]] = None) -> None:
                 ("Remote", remote_instance_config),
             ):
                 logger.debug("%s configuration:", config_type)
-                for config_line in config.yaml(exclude_unset=True).splitlines():
+                for config_line in config.model_dump_yaml(exclude_unset=True).splitlines():
                     logger.debug(indent(config_line, "  "))
             logger.info("Deleting unmanaged/unused resources on the remote instance")
             logger.info(

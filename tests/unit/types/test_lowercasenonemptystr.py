@@ -88,6 +88,14 @@ def test_update_encode() -> None:
     ) == (True, {"testAttr": "hello, world!"})
 
 
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert Settings(test_attr="Hello, world!").model_dump_yaml() == "test_attr: hello, world!\n"
+
+
 def test_empty() -> None:
     """
     Check that an error is returned when an empty string is supplied.

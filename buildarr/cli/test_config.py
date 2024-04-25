@@ -108,7 +108,7 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         raise
     else:
         logger.debug("Buildarr configuration:")
-        for config_line in state.config.yaml(exclude_unset=True).splitlines():
+        for config_line in state.config.model_dump_yaml(exclude_unset=True).splitlines():
             logger.debug(indent(config_line, "  "))
         logger.info("Loading configuration: PASSED")
 
@@ -135,7 +135,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             for instance_name, instance_config in instance_configs.items():
                 with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                     logger.debug("Instance configuration:")
-                    for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                    for config_line in instance_config.model_dump_yaml(
+                        exclude_unset=True,
+                    ).splitlines():
                         logger.debug(indent(config_line, "  "))
         logger.info("Loading instance configurations: PASSED")
 
@@ -192,7 +194,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 if state.managers[plugin_name].uses_trash_metadata(instance_config):
                     logger.debug("Rendered instance configuration:")
-                    for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                    for config_line in instance_config.model_dump_yaml(
+                        exclude_unset=True,
+                    ).splitlines():
                         logger.debug(indent(config_line, "  "))
 
     # If we get to this point, this configuration is pretty much guaranteed to be valid.
