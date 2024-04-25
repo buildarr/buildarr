@@ -176,7 +176,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         """
         if not self.settings.uses_trash_metadata():
             return self
-        copy = self.copy(deep=True)
+        copy = self.model_copy(deep=True)
         copy._render()
         return copy
 
@@ -270,7 +270,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         Raises:
             NotImplementedError: When post-initialisation rendering is not supported.
         """
-        copy = self.copy(deep=True)
+        copy = self.model_copy(deep=True)
         copy._post_init_render()
         return copy
 

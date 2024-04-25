@@ -18,15 +18,15 @@ Dummy2 plugin settings configuration.
 
 from __future__ import annotations
 
-from typing import List, Optional, cast
+from typing import ClassVar, List, Optional, cast
 from uuid import UUID, uuid4
 
 from pydantic import Field
-from typing_extensions import Self
+from typing_extensions import Annotated, Self
 
 from buildarr.config import RemoteMapEntry
 from buildarr.state import state
-from buildarr.types import InstanceName
+from buildarr.types import InstanceReference
 
 from ..api import api_get, api_post
 from ..secrets import Dummy2Secrets
@@ -55,7 +55,7 @@ class Dummy2SettingsConfig(Dummy2ConfigBase):
     ```
     """
 
-    instance_name: Optional[InstanceName] = Field(None, plugin="dummy")
+    instance_name: Annotated[Optional[str], InstanceReference(plugin_name="dummy")] = None
     """
     The name of the Dummy instance within Buildarr, if linking this Dummy2 instance
     with a Buildarr-defined Dummy instance.
@@ -69,14 +69,17 @@ class Dummy2SettingsConfig(Dummy2ConfigBase):
     If `instance_name` is defined, this value will instead be read from the target instance.
     """
 
-    nonexistent_plugin_instance: Optional[InstanceName] = Field(None, plugin="dummy3")
+    nonexistent_plugin_instance: Annotated[
+        Optional[str],
+        InstanceReference(plugin_name="dummy3"),
+    ] = None
     """
     The name of an instance that belongs to a non-existent plugin.
 
     Used for validating instance dependency error checking within the functional tests.
     """
 
-    _remote_map: List[RemoteMapEntry] = [
+    _remote_map: ClassVar[List[RemoteMapEntry]] = [
         (
             "instance_value",  # Buildarr config attribute name.
             "instanceValue",  # Dummy2 instance API attribute name.
@@ -106,7 +109,7 @@ class Dummy2SettingsConfig(Dummy2ConfigBase):
         if not self.instance_name:
             return self
         secrets = cast(Dummy2Secrets, state.instance_secrets["dummy2"][self.instance_name])
-        return self.copy(
+        return self.model_copy(
             update={
                 "instance_name": self.instance_name,
                 "instance_value": api_get(secrets, "/api/v1/settings")["instanceValue"],

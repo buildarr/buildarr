@@ -20,9 +20,8 @@ from __future__ import annotations
 
 import logging
 
-from pydantic import SecretStr
-
 from buildarr.config import ConfigBase
+from buildarr.types import SecretStr
 
 
 class Settings(ConfigBase):
@@ -83,3 +82,11 @@ def test_update_encode() -> None:
         remote=Settings(test_attr="Goodbye, world!"),
         remote_map=[("test_attr", "testAttr", {})],
     ) == (True, {"testAttr": "Hello, world!"})
+
+
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert Settings(test_attr="Hello, world!").yaml() == "test_attr: Hello, world!\n"

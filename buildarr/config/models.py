@@ -18,9 +18,9 @@ Buildarr plugin configuration object models.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Type, cast
+from typing import Any, Dict, Optional, Type, cast, get_args as get_type_args
 
-from pydantic import root_validator, validator
+from pydantic import field_validator, model_validator
 from typing_extensions import Self
 
 from ..plugins import Secrets
@@ -130,7 +130,7 @@ class ConfigPlugin(ConfigBase[Secrets]):
 
     # `instances` is not defined here, but it MUST be defined on the implementing class.
 
-    @validator("url_base")
+    @field_validator("url_base")
     def validate_url_base(cls, value: Optional[str]) -> Optional[str]:
         """
         Process the defined `url_base` value, and make sure the value in the secrets objects
@@ -170,7 +170,7 @@ class ConfigPlugin(ConfigBase[Secrets]):
         This property should not need to be overloaded in most cases.
         """
         return bool(
-            "instances" in self.__fields_set__ and self.instances,  # type: ignore[attr-defined]
+            "instances" in self.model_fields_set and self.instances,  # type: ignore[attr-defined]
         )
 
     def get_instance_config(self, instance_name: str) -> Self:
@@ -186,9 +186,13 @@ class ConfigPlugin(ConfigBase[Secrets]):
         Returns:
             Fully qualified instance-specific configuration object
         """
-        instance_config_class: Type[Self] = self.__fields__["instances"].type_
+        instance_config_class: Type[Self] = get_type_args(
+            self.model_fields["instances"].annotation,
+        )[1]
         if instance_name == "default":
-            return instance_config_class(**self.dict(exclude={"instances"}, exclude_unset=True))
+            return instance_config_class(
+                **self.model_dump(exclude={"instances"}, exclude_unset=True),
+            )
         return instance_config_class(
             **merge_dicts(
                 # Merge attribute values in order of priority (lowest to highest).
@@ -199,9 +203,9 @@ class ConfigPlugin(ConfigBase[Secrets]):
                 # Next are instance-specific configuration attribute defaults.
                 {"hostname": instance_name},
                 # Explicitly defined global configuration attributes.
-                self.dict(exclude=set(["instances"]), exclude_unset=True),
+                self.model_dump(exclude=set(["instances"]), exclude_unset=True),
                 # Explicitly defined instance-specific attributes.
-                self.instances[instance_name].dict(  # type: ignore[attr-defined]
+                self.instances[instance_name].model_dump(  # type: ignore[attr-defined]
                     exclude=set(["instances"]),
                     exclude_unset=True,
                 ),
@@ -303,32 +307,24 @@ class ConfigPlugin(ConfigBase[Secrets]):
         """
         raise NotImplementedError()
 
-    @root_validator
-    def _set_default_hostname(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _set_default_hostname(self) -> Self:
         """
         Set the default value for `hostname` on instance-specific configurations.
-
-        The `instances` value on the global (default instance) configuration is left alone.
-
-        Args:
-            values (Dict[str, Any]): Input values for all local fields
-
-        Returns:
-            Dict[str, Any]: Changed field structure
         """
-        if "instances" in values:
+        if hasattr(self, "instances"):
             for instance_name, instance in cast(
                 Dict[str, ConfigPlugin],
-                values["instances"],
+                self.instances,
             ).items():
                 if instance_name == "default":
                     raise ValueError(
                         "instance name 'default' is reserved within Buildarr, "
                         "please choose a different name for this instance",
                     )
-                if "hostname" not in instance.__fields_set__:
-                    instance.hostname = instance_name  # type: ignore[assignment]
-        return values
+                if "hostname" not in instance.model_fields_set:
+                    instance.hostname = instance_name
+        return self
 
 
 class ConfigPluginType(ConfigPlugin):

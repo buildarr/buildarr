@@ -171,10 +171,12 @@ def test_instance_dependency_plugin_not_configured(
     assert "[INFO] Loading configuration: PASSED" in result.stdout
     assert "[INFO] Loading plugin managers: PASSED" in result.stdout
     assert "[ERROR] Loading instance configurations: FAILED" in result.stderr
-    assert result.stderr.splitlines()[-3:] == [
-        "pydantic.error_wrappers.ValidationError: 1 validation error for Dummy2InstanceConfig",
-        "settings -> instance_name",
-        "  target instance 'dummy' not defined in plugin 'dummy' configuration (type=value_error)",
+    assert result.stderr.splitlines()[-3:-1] == [
+        "settings.instance_name",
+        (
+            "  Value error, target instance 'dummy' not defined in plugin 'dummy' configuration "
+            "[type=value_error, input_value='dummy', input_type=str]"
+        ),
     ]
 
 
@@ -201,10 +203,12 @@ def test_instance_dependency_plugin_not_installed(
     assert result.returncode == 1
     assert f"[INFO] Testing configuration file: {buildarr_yml}" in result.stdout
     assert "[ERROR] Loading configuration: FAILED" in result.stderr
-    assert result.stderr.splitlines()[-3:] == [
-        "pydantic.error_wrappers.ValidationError: 1 validation error for Config",
-        "dummy2 -> settings -> nonexistent_plugin_instance",
-        "  target plugin 'dummy3' not installed (type=value_error)",
+    assert result.stderr.splitlines()[-3:-1] == [
+        "dummy2.settings.nonexistent_plugin_instance",
+        (
+            "  Value error, target plugin 'dummy3' not installed "
+            "[type=value_error, input_value='dummy3', input_type=str]"
+        ),
     ]
 
 

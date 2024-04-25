@@ -18,15 +18,23 @@ Buildarr general purpose type hints, used in plugin models.
 
 from __future__ import annotations
 
-import re
-
 from functools import total_ordering
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, Mapping, Sequence, Type
+from typing import TYPE_CHECKING, Any, Callable, Dict, Mapping, Optional, Sequence, Type
 
-from pydantic import AnyUrl, ConstrainedInt, ConstrainedStr, SecretStr
-from pydantic.fields import ModelField
-from typing_extensions import Self
+from pydantic import (
+    AfterValidator,
+    AnyUrl,
+    ConfigDict,
+    Field,
+    GetCoreSchemaHandler,
+    PlainSerializer,
+    SecretStr as PydanticSecretStr,
+    StringConstraints,
+    UrlConstraints,
+)
+from pydantic_core import core_schema
+from typing_extensions import Annotated, Self
 
 from .state import state
 from .util import get_absolute_path
@@ -45,199 +53,187 @@ else:
     from aenum import MultiValueEnum  # type: ignore[import-untyped]
 
 
-class Password(SecretStr):
-    """
-    Constrained secrets string type for password fields. Required to be non-empty.
-    """
+SecretStr = Annotated[
+    PydanticSecretStr,
+    PlainSerializer(lambda v: v.get_secret_value(), return_type=str),
+]
+"""
+A type for storing string values that contain sensitive information,
+and must be obfuscated when output in logging.
 
-    min_length = 1
+This type is **not** the same as the `pydantic.SecretStr` type,
+as this one has a custom serialiser defined on it to allow
+Buildarr configuration objects to be serialised and dumped.
 
+When defining secret string attributes in Buildarr,
+**this `SecretStr` class must be used.**
+"""
 
-class RssUrl(AnyUrl):
-    """
-    Constrained URL type for RSS URLs.
 
-    ```python
-    from typing import TYPE_CHECKING
-    from buildarr.config import ConfigBase, RssUrl
+Password = Annotated[SecretStr, StringConstraints(min_length=1)]
+"""
+Constrained secret string type for password fields. Required to be non-empty.
+"""
 
-    if TYPE_CHECKING:
-        from .secrets import ExampleSecrets
 
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-    else:
+RssUrl = Annotated[AnyUrl, UrlConstraints(allowed_schemes=["rss"])]
+"""
+Constrained URL type for RSS URLs.
 
-        class ExampleConfigBase(ConfigBase): ...
+```python
+from typing import TYPE_CHECKING
+from buildarr.config import ConfigBase, RssUrl
 
+if TYPE_CHECKING:
+    from .secrets import ExampleSecrets
 
-    class ExampleConfig(ExampleConfigBase):
-        rss_url: RssUrl
-    ```
-    """
+    class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
+else:
 
-    allowed_schemes = ["rss"]
+    class ExampleConfigBase(ConfigBase): ...
 
 
-class Port(ConstrainedInt):
-    """
-    Constrained integer type for TCP/UDP port numbers.
+class ExampleConfig(ExampleConfigBase):
+    rss_url: RssUrl
+```
+"""
 
-    Valid ports range from 1 to 65535 (a 16-bit integer).
 
-    ```python
-    from typing import TYPE_CHECKING
-    from buildarr.config import ConfigBase, NonEmptyStr, Port
+Port = Annotated[int, Field(ge=1, le=65535)]
+"""
+Constrained integer type for TCP/UDP port numbers.
 
-    if TYPE_CHECKING:
-        from .secrets import ExampleSecrets
+Valid ports range from 1 to 65535 (a 16-bit integer).
 
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-    else:
+```python
+from typing import TYPE_CHECKING
+from buildarr.config import ConfigBase, NonEmptyStr, Port
 
-        class ExampleConfigBase(ConfigBase): ...
+if TYPE_CHECKING:
+    from .secrets import ExampleSecrets
 
+    class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
+else:
 
-    class ExampleConfig(ExampleConfigBase):
-        host: NonEmptyStr
-        port: Port
-    ```
-    """
+    class ExampleConfigBase(ConfigBase): ...
 
-    ge = 1
-    le = 65535
 
+class ExampleConfig(ExampleConfigBase):
+    host: NonEmptyStr
+    port: Port
+```
+"""
 
-class NonEmptyStr(ConstrainedStr):
-    """
-    Constrained string type for non-empty strings.
 
-    When validated in a Buildarr configuration, empty strings
-    or strings composed only of whitespace will fail validation.
+NonEmptyStr = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
+"""
+Constrained string type for non-empty strings.
 
-    Values are also stripped of whitespace at the start and the end
-    of the strings.
+When validated in a Buildarr configuration, empty strings
+or strings composed only of whitespace will fail validation.
 
-    ```python
-    from buildarr.config import ConfigBase, NonEmptyStr, Port
+Values are also stripped of whitespace at the start and the end
+of the strings.
 
+```python
+from buildarr.config import ConfigBase, NonEmptyStr, Port
 
-    class ExampleConfig(ConfigBase):
-        host: NonEmptyStr
-        port: Port
-    ```
-    """
 
-    min_length = 1
-    strip_whitespace = True
+class ExampleConfig(ConfigBase):
+    host: NonEmptyStr
+    port: Port
+```
+"""
 
 
-class LowerCaseStr(ConstrainedStr):
-    """
-    Constrained string type for lower-case strings.
+LowerCaseStr = Annotated[str, StringConstraints(to_lower=True)]
+"""
+Constrained string type for lower-case strings.
 
-    When validated in a Buildarr configuration,
-    all upper-case characters in the value will be converted to lower-case.
+When validated in a Buildarr configuration,
+all upper-case characters in the value will be converted to lower-case.
 
-    ```python
-    from buildarr.config import LowerCaseStr
+```python
+from buildarr.config import LowerCaseStr
 
 
-    class ExampleConfig(ConfigBase):
-        lowercase_name: LowerCaseStr
-    ```
-    """
+class ExampleConfig(ConfigBase):
+    lowercase_name: LowerCaseStr
+```
+"""
 
-    to_lower = True
 
+LowerCaseNonEmptyStr = Annotated[
+    LowerCaseStr,
+    StringConstraints(min_length=1, strip_whitespace=True),
+]
+"""
+Constrained string type for non-empty lower-case strings.
 
-class LowerCaseNonEmptyStr(LowerCaseStr):
-    """
-    Constrained string type for non-empty lower-case strings.
+This is a combination of `LowerCaseStr` and `NonEmptyStr`,
+with the validations of both types applying to the value.
 
-    This is a combination of `LowerCaseStr` and `NonEmptyStr`,
-    with the validations of both types applying to the value.
+```python
+from buildarr.config import LowerCaseNonEmptyStr
 
-    ```python
-    from buildarr.config import LowerCaseNonEmptyStr
 
+class ExampleConfig(ConfigBase):
+    lowercase_name: LowerCaseNonEmptyStr
+```
+"""
 
-    class ExampleConfig(ConfigBase):
-        lowercase_name: LowerCaseNonEmptyStr
-    ```
-    """
 
-    min_length = 1
-    strip_whitespace = True
+UpperCaseStr = Annotated[str, StringConstraints(to_upper=True)]
+"""
+Constrained string type for upper-case strings.
 
+When validated in a Buildarr configuration,
+all lower-case characters in the value will be converted to upper-case.
 
-class UpperCaseStr(ConstrainedStr):
-    """
-    Constrained string type for upper-case strings.
+```python
+from buildarr.config import ConfigBase
+from buildarr.types import UpperCaseStr
 
-    When validated in a Buildarr configuration,
-    all lower-case characters in the value will be converted to upper-case.
 
-    ```python
-    from buildarr.config import UpperCaseStr
+class ExampleConfig(ConfigBase):
+    uppercase_name: UpperCaseStr
+```
+"""
 
 
-    class ExampleConfig(ConfigBase):
-        uppercase_name: UpperCaseStr
-    ```
-    """
+UpperCaseNonEmptyStr = Annotated[
+    UpperCaseStr,
+    StringConstraints(min_length=1, strip_whitespace=True),
+]
 
-    to_upper = True
 
+TrashID = Annotated[
+    LowerCaseStr,
+    StringConstraints(min_length=32, max_length=32, pattern="^[A-Fa-f0-9]+$"),
+]
+"""
+Constrained string type for TRaSH-Guides resource IDs.
 
-class UpperCaseNonEmptyStr(UpperCaseStr):
-    """
-    Constrained string type for non-empty lower-case strings.
+Accepts any valid TRaSH-Guides ID, and is case-insensitive,
+converting to lower case internally.
 
-    This is a combination of `UpperCaseStr` and `NonEmptyStr`,
-    with the validations of both types applying to the value.
+```python
+from typing import TYPE_CHECKING
+from buildarr.config import ConfigBase, TrashID
 
-    ```python
-    from buildarr.config import UpperCaseNonEmptyStr
+if TYPE_CHECKING:
+    from .secrets import ExampleSecrets
 
+    class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
+else:
 
-    class ExampleConfig(ConfigBase):
-        uppercase_name: UpperCaseNonEmptyStr
-    ```
-    """
+    class ExampleConfigBase(ConfigBase): ...
 
-    min_length = 1
-    strip_whitespace = True
 
-
-class TrashID(ConstrainedStr):
-    """
-    Constrained string type for TRaSH-Guides resource IDs.
-
-    Accepts any valid TRaSH-Guides ID, and is case-insensitive,
-    converting to lower case internally.
-
-    ```python
-    from typing import TYPE_CHECKING
-    from buildarr.config import ConfigBase, TrashID
-
-    if TYPE_CHECKING:
-        from .secrets import ExampleSecrets
-
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-    else:
-
-        class ExampleConfigBase(ConfigBase): ...
-
-
-    class ExampleConfig(ExampleConfigBase):
-        trash_id: TrashID
-    ```
-    """
-
-    regex = re.compile("^[A-Fa-f0-9]+$")
-    min_length = 32
-    max_length = 32
-    to_lower = True
+class ExampleConfig(ExampleConfigBase):
+    trash_id: TrashID
+```
+"""
 
 
 class BaseEnum(MultiValueEnum):
@@ -351,14 +347,15 @@ class BaseEnum(MultiValueEnum):
         return self.name.replace("_", "-")
 
     @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
-        """
-        Pass class validation functions to Pydantic.
-
-        Yields:
-            Validation class functions
-        """
-        yield cls.validate
+    def __get_pydantic_core_schema__(
+        cls,
+        source: Type[Any],
+        handler: GetCoreSchemaHandler,
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_before_validator_function(
+            function=cls.validate,
+            schema=core_schema.enum_schema(cls, list(cls.__members__.values())),
+        )
 
     @classmethod
     def validate(cls, value: Any) -> Self:
@@ -454,9 +451,9 @@ class DayOfWeek(BaseEnum):
         return self.value < other_obj.value
 
 
-class InstanceName(str):
+def InstanceReference(plugin_name: str) -> AfterValidator:  # noqa: N802
     """
-    A type for creating references to an instance in another plugin.
+    A validator generator for creating references to an instance in another plugin.
 
     When loading the instance-specific configurations, Buildarr will dereference
     defined instance references, and order the execution of updates so that
@@ -465,26 +462,20 @@ class InstanceName(str):
     This ensures that all instances are in the state expected by the user
     when the instance gets processed.
 
-    When defining `InstanceName`, a Pydantic `Field` needs to be defined
-    with the special `plugin` argument passed to tell Buildarr what plugin
-    to search for the linked instance under.
+    Instances references are defined by using `Annotated`, as shown below:
 
     ```python
     from typing import TYPE_CHECKING, Optional
+
+    from buildarr.config import ConfigBase
+    from buildarr.types import InstanceReference
     from pydantic import Field
-    from buildarr.config import ConfigBase, RssUrl
+    from typing_extensions import
 
-    if TYPE_CHECKING:
-        from .secrets import ExampleSecrets
-
-        class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-    else:
-
-        class ExampleConfigBase(ConfigBase): ...
-
+    from .config import ExampleConfigBase
 
     class ExampleConfig(ExampleConfigBase):
-        instance_name: Optional[InstanceName] = Field(None, plugin="example")
+        instance_name: Annotated[Optional[str], InstanceReference(plugin_name="example")] = None
     ```
 
     The user will then be able to specify the name of the target instance in
@@ -499,118 +490,88 @@ class InstanceName(str):
           instance_name: "instance-1"
           ...
     ```
+
+    Args:
+        plugin_name (str): Name of the plugin to create an instance reference for.
+
+    Returns:
+        AfterValidator: Validator annotation for the instance reference processing.
     """
 
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[str, ModelField], str], None, None]:
-        """
-        Pass the defined validation functions to Pydantic.
-        """
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, value: str, field: ModelField) -> Self:
-        """
-        Validate the type of the instance name reference,
-        evaluate the reference and add the link to the dependency tree structure.
-
-        Args:
-            value (str): Instance name reference.
-            field (ModelField): Field metadata. Used to get the linked plugin name.
-
-        Raises:
-            ValueError: If the target plugin is not defined as field metadata
-
-        Returns:
-            Instance name object (string-compatible)
-        """
-        NonEmptyStr.validate(value)
-        try:
-            plugin_name: str = field.field_info.extra["plugin"]
-            instance_name = value
-            if plugin_name not in state.plugins:
-                raise ValueError(f"target plugin '{plugin_name}' not installed")
-            if state.config:
-                instances: Mapping[str, ConfigPlugin] = getattr(
-                    state.config,
-                    plugin_name,
-                ).instances
-                if instance_name == "default":
-                    if instances:
-                        raise ValueError(
-                            "unable to use default instance as the target instance, "
-                            "instance-specific configurations are defined "
-                            f"in plugin '{plugin_name}' configuration ("
-                            f"available instances: {', '.join(repr(i) for i in instances.keys())}"
-                            ")",
-                        )
-                elif instance_name not in instances:
-                    raise ValueError(
-                        f"target instance '{instance_name}' "
-                        f"not defined in plugin '{plugin_name}' configuration",
-                    )
-                if state._current_plugin and state._current_instance:
-                    state._instance_dependencies[
-                        (state._current_plugin, state._current_instance)
-                    ].add(
-                        (plugin_name, instance_name),
-                    )
-        except KeyError as err:
-            if err.args[0] == "plugin":
-                raise ValueError(
-                    "target plugin not defined in instance name metadata, "
-                    "make sure the default value is set to `Field(None, plugin='<plugin-name>')`",
-                ) from None
-            else:
-                raise
-        return cls(value)
+    return AfterValidator(
+        lambda instance_name: _instance_reference(
+            plugin_name=plugin_name,
+            instance_name=instance_name,
+        ),
+    )
 
 
-class LocalPath(type(Path()), Path):  # type: ignore[misc]
-    """
-    Model type for a local path.
+def _instance_reference(plugin_name: str, instance_name: Optional[str]) -> Optional[str]:
+    if not instance_name:
+        return None
 
-    If the supplied path is relative, it is parsed as an absolute path
-    relative to the configuration file it was defined in.
+    if plugin_name not in state.plugins:
+        raise ValueError(f"target plugin '{plugin_name}' not installed")
 
-    For example, suppose a configuration file located at `/path/to/buildarr.yml`
-    was created with the following attributes:
+    if not state.config:
+        return instance_name
 
-    ```yaml
-    ---
+    instances: Mapping[str, ConfigPlugin] = getattr(state.config, plugin_name).instances
 
-    buildarr:
-      # Removed in v0.7.0, but still useful as an example in developer docs.
-      secrets_file_path: "../secrets/buildarr.json"
-    ```
+    if instance_name == "default":
+        if instances:
+            raise ValueError(
+                (
+                    "unable to use default instance as the target instance, "
+                    "instance-specific configurations are defined "
+                    f"in plugin '{plugin_name}' configuration ("
+                    f"available instances: {', '.join(repr(i) for i in instances.keys())}"
+                    ")"
+                ),
+            )
+    elif instance_name not in instances:
+        raise ValueError(
+            (
+                f"target instance '{instance_name}' "
+                f"not defined in plugin '{plugin_name}' configuration"
+            ),
+        )
 
-    Even when executing Buildarr from a different folder e.g. `/opt/buildarr`,
-    the `buildarr.secrets_file_path` attribute would be evaluated as
-    `/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
-    """
+    if state._current_plugin and state._current_instance:
+        state._instance_dependencies[(state._current_plugin, state._current_instance)].add(
+            (plugin_name, instance_name),
+        )
 
-    @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], Self], None, None]:
-        """
-        Pass class validation functions to Pydantic.
-        Yields:
-            Validation class functions
-        """
-        yield cls.validate
+    return instance_name
 
-    @classmethod
-    def validate(cls, value: Any) -> Self:
-        """
-        Validate the local path value, and return an absolute path.
-        Args:
-            value (Any): Object to validate and coerce
-        Returns:
-            Absolute local path
-        """
-        path = cls(value)
-        if not path.is_absolute():
-            return cls(get_absolute_path(state._current_dir / path))
-        return path
+
+LocalPath = Annotated[
+    Path,
+    AfterValidator(
+        lambda v: get_absolute_path(state._current_dir / v) if not v.is_absolute() else v,
+    ),
+]
+"""
+Model type for a local path.
+
+If the supplied path is relative, it is parsed as an absolute path
+relative to the configuration file it was defined in.
+
+For example, suppose a configuration file located at `/path/to/buildarr.yml`
+was created with the following attributes:
+
+```yaml
+---
+
+buildarr:
+    # Removed in v0.7.0, but still useful as an example in developer docs.
+    secrets_file_path: "../secrets/buildarr.json"
+```
+
+Even when executing Buildarr from a different folder e.g. `/opt/buildarr`,
+the `buildarr.secrets_file_path` attribute would be evaluated as
+`/path/secrets/buildarr.json`, *not* `/opt/secrets/buildarr.json`.
+"""
 
 
 config_encoders: Dict[Type[Any], Callable[[Any], Any]] = {
@@ -639,35 +600,27 @@ config_encoders[CustomType] = lambda v: str(v)
 """
 
 
-class ModelConfigBase:
-    """
-    Buildarr model configuration base class.
-
-    Sets some required configuration parameters for
-    serialisation, parsing and validation to work correctly.
-    """
-
-    # Mapping between custom type and encoding function to pass to `json.dumps`.
-    # When adding custom types to encode, **do not override this attribute**,
-    # as it will have no effect.
-    # Instead, add the custom type to `buildarr.types:config_encoders`.
-    json_encoders = config_encoders
-
-    # Required to avoid coersion with same-name but different-typed fields
-    # in objects for which there are multiple types that can be defined.
-    smart_union = True
-
+model_config_base: ConfigDict = {
     # When aliases are defined, allow attributes to be referenced by their
     # internal name, as well as the alias.
-    allow_population_by_field_name = True
-
-    # Validate all configuration attributes, even the default ones.
+    "populate_by_name": True,
+    # In error messages, refer to fields by their field name on the model,
+    # instead of their alias (if one is defined).
+    "loc_by_alias": False,
+    # Validate model default values.
     # This is necessary because the default attributes sometimes need to
     # be validated for correctness in non-default contexts.
     # (For example, a normally optional attribute becoming required due to
     # another attribute being enabled.)
-    validate_all = True
-
+    "validate_default": True,
     # Validate any values that have been modified in-place, to ensure the model
     # still fits the constraints.
-    validate_assignment = True
+    "validate_assignment": True,
+    # Expose model attribute docstrings as field descriptions.
+    "use_attribute_docstrings": True,
+}
+"""
+Buildarr model configuration base class.
+
+Sets some required configuration parameters for parsing and validation to work correctly.
+"""

@@ -68,9 +68,9 @@ def load_config(path: Path, use_plugins: Optional[Set[str]] = None) -> None:
         create_model(  # type: ignore[call-overload]
             "Config",
             __base__=ConfigBase,
-            buildarr=BuildarrConfig(),
+            buildarr=(BuildarrConfig, BuildarrConfig()),
             **{
-                plugin_name: plugin.config()
+                plugin_name: (plugin.config, plugin.config())
                 for plugin_name, plugin in state.plugins.items()
                 if not use_plugins or plugin_name in use_plugins
             },
@@ -238,10 +238,10 @@ def _expand_relative_paths(
         return {
             key: _expand_relative_paths(
                 config_dir=config_dir,
-                value_type=field.outer_type_,
+                value_type=field.annotation,
                 value=value[key],
             )
-            for key, field in type_tree[-1].__fields__.items()
+            for key, field in type_tree[-1].model_fields.items()
             if key in value
         }
     return value
@@ -271,7 +271,7 @@ def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
     Parse fully-qualified configuration for each instance under each selected plugin.
 
     This will also cause the `state._instance_dependencies` dependency tree structure
-    to be populated through validation of any `InstanceName` attributes present
+    to be populated through any `InstanceReference` annotations present
     in each instance-specific configuration.
 
     Args:
@@ -284,7 +284,7 @@ def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
     for plugin_name in state.plugins.keys():
         if use_plugins and plugin_name not in use_plugins:
             continue
-        if plugin_name not in state.config.__fields_set__:
+        if plugin_name not in state.config.model_fields_set:
             continue
         plugin_manager = state.managers[plugin_name]
         plugin_config: ConfigPluginType = getattr(state.config, plugin_name)
@@ -295,8 +295,8 @@ def load_instance_configs(use_plugins: Optional[Set[str]] = None) -> None:
         ):
             # Load the instance-specific configuration under aninstance-specific context,
             # so that when the configuration gets evaluated by the parser,
-            # `InstanceName` references are properly validated and dependencies get added
-            # to `state._instance_dependencies`.
+            # `InstanceReference` annotations are properly validated, and
+            # dependencies get added to `state._instance_dependencies`.
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 instance_config = plugin_manager.get_instance_config(
                     plugin_config,

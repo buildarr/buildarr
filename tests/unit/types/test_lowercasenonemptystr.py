@@ -95,6 +95,9 @@ def test_empty() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.any_str\.min_length; limit_value=1",
+        match=(
+            "String should have at least 1 character "
+            r"\[type=string_too_short, input_value='', input_type=str\]"
+        ),
     ):
         Settings(test_attr="")

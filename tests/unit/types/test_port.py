@@ -97,7 +97,12 @@ def test_less_than_valid(test_value) -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.number\.not_ge; limit_value=1",
+        match=(
+            "Input should be greater than or equal to 1 "
+            r"\[type=greater_than_equal"
+            f", input_value={test_value!r}"
+            r", input_type=int\]"
+        ),
     ):
         Settings(test_attr=test_value)
 
@@ -110,6 +115,9 @@ def test_greater_than_valid() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.number\.not_le; limit_value=65535",
+        match=(
+            "Input should be less than or equal to 65535 "
+            r"\[type=less_than_equal, input_value=65536, input_type=int\]"
+        ),
     ):
         Settings(test_attr=65536)

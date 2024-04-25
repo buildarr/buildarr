@@ -51,7 +51,7 @@ class ExampleConfig(ExampleConfigBase):
     local_attr_1: bool
     local_attr_2: Optional[str] = None
 
-    _remote_map: List[RemoteMapEntry] = [
+    _remote_map: ClassVar[List[RemoteMapEntry]] = [
         ("local_attr_1", "remoteAttr1", {}),
         (
             "local_attr_2",

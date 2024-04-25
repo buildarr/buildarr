@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 
 from logging import getLogger
-from pathlib import Path, PurePath, PurePosixPath, PureWindowsPath
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -42,12 +42,11 @@ from uuid import UUID
 
 import yaml
 
-from pydantic import AnyUrl, BaseModel, NameEmail, SecretStr
-from pydantic.validators import _VALIDATORS
+from pydantic import AnyUrl, BaseModel, NameEmail, SecretStr as PydanticSecretStr
 from typing_extensions import Self
 
 from ..plugins import Secrets
-from ..types import BaseEnum, ModelConfigBase
+from ..types import BaseEnum, model_config_base
 from .types import RemoteMapEntry
 
 logger = getLogger(__name__)
@@ -79,9 +78,9 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             Remote instance configuration object
         """
         fields: Dict[str, ConfigBase] = {}
-        for field_name, field in cls.__fields__.items():
-            if issubclass(field.type_, ConfigBase):
-                fields[field_name] = field.type_.from_remote(secrets)
+        for field_name, field in cls.model_fields.items():
+            if issubclass(field.annotation, ConfigBase):
+                fields[field_name] = field.annotation.from_remote(secrets)
         return cls(**fields)
 
     @classmethod
@@ -106,7 +105,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         ```python
         from __future__ import annotations
 
-        from typing import TYPE_CHECKING, Any, Dict, List, Optional
+        from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
         from typing_extensions import Self
         from buildarr.config import ConfigBase, RemoteMapEntry
 
@@ -123,7 +122,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             local_attr_1: bool
             local_attr_2: Optional[str] = None
 
-            _remote_map: List[RemoteMapEntry] = [
+            _remote_map: ClassVar[List[RemoteMapEntry]] = [
                 ("local_attr_1", "remoteAttr1", {}),
                 (
                     "local_attr_2",
@@ -219,7 +218,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                             break
                     else:
                         if attr_metadata.get("optional", False):
-                            local_attrs[attr_name] = cls.__fields__[attr_name].default
+                            local_attrs[attr_name] = cls.model_fields[attr_name].default
                             continue
                         else:
                             raise ValueError(f"Remote field '{remote_attr_name}' not found")
@@ -233,7 +232,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                         remote_attr = remote_attrs[remote_attr_name]
                     except KeyError:
                         if attr_metadata.get("optional", False):
-                            local_attrs[attr_name] = cls.__fields__[attr_name].default
+                            local_attrs[attr_name] = cls.model_fields[attr_name].default
                             continue
                         else:
                             raise
@@ -297,7 +296,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         JSON objects to be sent in `POST` requests to the remote server.
 
         ```python
-        from typing import TYPE_CHECKING, Any, List, Mapping, Optional
+        from typing import TYPE_CHECKING, Any, ClassVar, List, Mapping, Optional
         from buildarr.config import ConfigBase, RemoteMapEntry
         from buildarr.secrets import Secrets
 
@@ -314,7 +313,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             obj_attr1: int
             obj_attr2: Optional[str] = None
 
-            _remote_map: List[RemoteMapEntry] = [
+            _remote_map: ClassVar[List[RemoteMapEntry]] = [
                 ("obj_attr_1", "objAttr1", {}),
                 (
                     "obj_attr_2",
@@ -396,7 +395,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             # the remote attribute dictonary.
             if (
                 attr_metadata.get("set_unmanaged", set_unmanaged)
-                or attr_name in self.__fields_set__
+                or attr_name in self.model_fields_set
             ):
                 set_value = True
                 value = getattr(self, attr_name)
@@ -459,7 +458,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         ```python
         from __future__ import annotations
 
-        from typing import TYPE_CHECKING, Any, List, Mapping, Optional
+        from typing import TYPE_CHECKING, ClassVar, Any, List, Mapping, Optional
         from buildarr.config import ConfigBase, RemoteMapEntry
         from buildarr.secrets import Secrets
 
@@ -476,7 +475,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             local_attr_1: bool
             local_attr_2: Optional[str] = None
 
-            _remote_map: List[RemoteMapEntry] = [
+            _remote_map: ClassVar[List[RemoteMapEntry]] = [
                 ("local_attr_1", "remoteAttr1", {}),
                 (
                     "local_attr_2",
@@ -568,7 +567,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             # or check_unmanaged is set to True.
             if (
                 attr_metadata.get("check_unmanaged", check_unmanaged)
-                or attr_name in self.__fields_set__
+                or attr_name in self.model_fields_set
             ):
                 local_value = getattr(self, attr_name)
                 # If the local and remote attributes are set to the same
@@ -715,7 +714,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, NameEmail):
             return str(value)
-        elif isinstance(value, SecretStr):
+        elif isinstance(value, PydanticSecretStr):
             return str(value)
         elif isinstance(value, Path):
             return str(value)
@@ -739,7 +738,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         Returns:
             Local attribute value
         """
-        return cls._decode_attr_(cls.__fields__[attr_name].outer_type_, value)
+        return cls._decode_attr_(cls.model_fields[attr_name].annotation, value)
 
     @classmethod
     def _decode_attr_(cls, attr_type: Type[Any], value: Any) -> Any:
@@ -760,7 +759,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                 and type(None) in attr_union_types
                 and value is not None
             ):
-                return cls._decode_attr(
+                return cls._decode_attr_(
                     next(t for t in attr_union_types if t is not type(None)),
                     value,
                 )
@@ -785,7 +784,7 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, NameEmail):
             return str(value)
-        elif isinstance(value, SecretStr):
+        elif isinstance(value, PydanticSecretStr):
             return value.get_secret_value()
         elif isinstance(value, UUID):
             return str(value)
@@ -803,8 +802,9 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         """
         Generate a YAML representation of the model.
 
-        Internally this uses the Pydantic JSON generation function, with all arguments
-        forwarded to `BaseModel.json()`. The JSON output is then re-processed using PyYAML.
+        Internally this uses the Pydantic JSON generation function,
+        with all arguments forwarded to `BaseModel.model_dump_json`.
+        The JSON output is then re-processed using PyYAML.
 
         Args:
             sort_keys (bool, optional): Sort keys in the output YAML file. Defaults to `False`.
@@ -814,49 +814,39 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             YAML representation of the model
         """
         return yaml.safe_dump(  # type: ignore[call-overload]
-            json.loads(self.json(*args, **kwargs)),
+            json.loads(self.model_dump_json(*args, **kwargs)),
             **{**(yaml_kwargs or {}), "sort_keys": sort_keys},
         )
 
-    class Config(ModelConfigBase):
-        """
-        Buildarr configuration model class settings.
+    model_config = model_config_base
+    """
+    Buildarr configuration model configuration.
 
-        Sets some required parameters for serialisation,
-        parsing and validation to work correctly.
+    Sets some required parameters for parsing and validation to work correctly.
 
-        To set additional parameters in your implementing class, subclass this class:
+    To set additional parameters in your implementing class, override this attribute:
 
-        ```python
-        from __future__ import annotations
+    ```python
+    from __future__ import annotations
 
-        from typing import TYPE_CHECKING
-        from buildarr.config import ConfigBase
+    from typing import TYPE_CHECKING
+    from buildarr.config import ConfigBase
 
-        if TYPE_CHECKING:
-            from .secrets import ExampleSecrets
+    if TYPE_CHECKING:
+        from .secrets import ExampleSecrets
 
-            class _ExampleConfig(ConfigBase[ExampleSecrets]): ...
-        else:
+        class _ExampleConfig(ConfigBase[ExampleSecrets]): ...
+    else:
 
-            class _ExampleConfig(ConfigBase): ...
-
-
-        class ExampleConfig(_ExampleConfig):
-            ...
-
-            class Config(_ExampleConfig.Config): ...  # Add model configuration attributes here.
-        ```
-        """
-
-        pass
+        class _ExampleConfig(ConfigBase): ...
 
 
-# Add custom validators which are not provided by Pydantic.
-_VALIDATORS.extend(
-    [
-        (PurePath, [lambda v: PurePath(v)]),
-        (PurePosixPath, [lambda v: PurePosixPath(v)]),
-        (PureWindowsPath, [lambda v: PureWindowsPath(v)]),
-    ],
-)
+    class ExampleConfig(_ExampleConfig):
+        ...
+
+        model_config = {
+            **ConfigBase.model_config,
+            ...  # Add model configuration attributes here.
+        }
+    ```
+    """

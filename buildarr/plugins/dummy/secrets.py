@@ -21,7 +21,7 @@ from __future__ import annotations
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Optional
 
-from pydantic import validator
+from pydantic import field_validator
 
 from buildarr.secrets import SecretsPlugin
 from buildarr.types import NonEmptyStr, Port
@@ -69,7 +69,7 @@ class DummySecrets(_DummySecrets):
             url_base=self.url_base,
         )
 
-    @validator("url_base")
+    @field_validator("url_base")
     def validate_url_base(cls, value: Optional[str]) -> Optional[str]:
         """
         Process the defined `url_base` value, and make sure the value in the secrets objects
