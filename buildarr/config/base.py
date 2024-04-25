@@ -749,6 +749,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return [cls._decode_attr_(get_type_args(type_tree[-2])[0], v) for v in value]
         elif type_tree[-1] is set:
             return set(cls._decode_attr_(get_type_args(type_tree[-2])[0], v) for v in value)
+        elif type_tree[-1] is dict:
+            key_type, value_type = get_type_args(type_tree[-2])
+            return {
+                cls._decode_attr_(key_type, k): cls._decode_attr_(value_type, v)
+                for k, v in value.items()
+            }
         elif type_tree[-1] is Union:
             attr_union_types = get_type_args(type_tree[-2])
             #
@@ -761,8 +767,6 @@ class ConfigBase(BaseModel, Generic[Secrets]):
                     next(t for t in attr_union_types if t is not type(None)),
                     value,
                 )
-        elif issubclass(type_tree[-1], BaseEnum):
-            return type_tree[-1](value)
         return value
 
     @classmethod
@@ -790,6 +794,8 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             return str(value)
         elif isinstance(value, (list, set)):
             return [cls._encode_attr(v) for v in value]
+        elif isinstance(value, dict):
+            return {cls._encode_attr(k): cls._encode_attr(v) for k, v in value.items()}
         return value
 
     def yaml(self, **kwargs) -> str:
