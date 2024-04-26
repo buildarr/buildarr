@@ -48,7 +48,10 @@ class ManagerPlugin(Generic[Config, Secrets]):
     the appropriate type parameters.
 
     ```python
+    from __future__ import annotations
+
     from buildarr.manager import ManagerPlugin
+
     from .config import ExampleConfig
     from .secrets import ExampleSecrets
 
@@ -257,7 +260,7 @@ def load_managers(use_plugins: Optional[Set[str]] = None) -> None:
     for plugin_name, plugin in state.plugins.items():
         if use_plugins and plugin_name not in use_plugins:
             continue
-        if plugin_name not in state.config.__fields_set__:
+        if plugin_name not in state.config.model_fields_set:
             continue
         with state._with_context(plugin_name=plugin_name):
             logger.debug("Loading plugin manager")

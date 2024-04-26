@@ -145,11 +145,42 @@ def test_update_encode_name_email() -> None:
     ) == (True, {"testAttr": "Test Example <test@example.com>"})
 
 
+def test_serialization_email() -> None:
+    """
+    Check serialising a standard address value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="test@example.com").model_dump_yaml()
+        == "test_attr: test <test@example.com>\n"
+    )
+
+
+def test_serialization_name_email() -> None:
+    """
+    Check serialising an RFC-5322 formatted mailbox address value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="Test Example <test@example.com>").model_dump_yaml()
+        == "test_attr: Test Example <test@example.com>\n"
+    )
+
+
 @pytest.mark.parametrize("test_attr", ["", "test"])
 def test_invalid_email_address(test_attr) -> None:
     """
     Check that an error is returned when an invalid email address is provided.
     """
 
-    with pytest.raises(ValidationError, match=r"type=value_error\.email"):
+    with pytest.raises(
+        ValidationError,
+        match=(
+            r"value is not a valid email address: The email address is not valid\. "
+            r"It must have exactly one @-sign\. "
+            r"\[type=value_error"
+            f", input_value={test_attr!r}"
+            r", input_type=str\]"
+        ),
+    ):
         Settings(test_attr=test_attr)

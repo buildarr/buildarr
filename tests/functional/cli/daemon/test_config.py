@@ -181,10 +181,12 @@ def test_update_days_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
     )
 
     assert result.returncode == 1
-    assert result.stderr.splitlines()[-3:] == [
-        "pydantic.error_wrappers.ValidationError: 1 validation error for Config",
-        "buildarr -> update_days -> 0",
-        "  Invalid DayOfWeek name or value: invalid (type=value_error)",
+    assert result.stderr.splitlines()[-3:-1] == [
+        "buildarr.update_days.0",
+        (
+            "  Value error, Invalid DayOfWeek name or value: invalid "
+            "[type=value_error, input_value='invalid', input_type=str]"
+        ),
     ]
 
 
@@ -328,10 +330,12 @@ def test_update_times_invalid(buildarr_yml_factory, buildarr_daemon) -> None:
     )
 
     assert result.returncode == 1
-    assert result.stderr.splitlines()[-3:] == [
-        "pydantic.error_wrappers.ValidationError: 1 validation error for Config",
-        "buildarr -> update_times -> 0",
-        "  invalid time format (type=value_error.time)",
+    assert result.stderr.splitlines()[-3:-1] == [
+        "buildarr.update_times.0",
+        (
+            "  Input should be in a valid time format, invalid character in hour "
+            "[type=time_parsing, input_value='invalid', input_type=str]"
+        ),
     ]
 
 

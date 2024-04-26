@@ -30,21 +30,14 @@ from buildarr.types import NonEmptyStr, Port
 
 from ..api import api_get, api_post
 from ..exceptions import DummyAPIError
-from ..secrets import DummySecrets
 from ..types import DummyApiKey, DummyProtocol
 from .settings import DummySettingsConfig
 
-# Allow Mypy to properly resolve secrets type declarations in configuration classes.
 if TYPE_CHECKING:
-
-    class _DummyInstanceConfig(ConfigPlugin[DummySecrets]): ...
-
-else:
-
-    class _DummyInstanceConfig(ConfigPlugin): ...
+    from ..secrets import DummySecrets
 
 
-class DummyInstanceConfig(_DummyInstanceConfig):
+class DummyInstanceConfig(ConfigPlugin["DummySecrets"]):
     """
     By default, Buildarr will look for a single instance at `http://dummy:5000`.
     Most configurations are different, and to accommodate those, you can configure
@@ -85,7 +78,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     ```
     """
 
-    hostname: NonEmptyStr = "dummy"  # type: ignore[assignment]
+    hostname: NonEmptyStr = "dummy"
     """
     Hostname of the Dummy instance to connect to.
 
@@ -103,12 +96,12 @@ class DummyInstanceConfig(_DummyInstanceConfig):
     ```
     """
 
-    port: Port = 5000  # type: ignore[assignment]
+    port: Port = 5000
     """
     Port number of the Dummy instance to connect to.
     """
 
-    protocol: DummyProtocol = "http"  # type: ignore[assignment]
+    protocol: DummyProtocol = "http"
     """
     Communication protocol to use to connect to Dummy.
 
@@ -176,7 +169,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         """
         if not self.settings.uses_trash_metadata():
             return self
-        copy = self.copy(deep=True)
+        copy = self.model_copy(deep=True)
         copy._render()
         return copy
 
@@ -270,7 +263,7 @@ class DummyInstanceConfig(_DummyInstanceConfig):
         Raises:
             NotImplementedError: When post-initialisation rendering is not supported.
         """
-        copy = self.copy(deep=True)
+        copy = self.model_copy(deep=True)
         copy._post_init_render()
         return copy
 

@@ -22,7 +22,7 @@ import logging
 
 import pytest
 
-from pydantic import ValidationError
+from pydantic import AnyUrl, ValidationError
 
 from buildarr.config import ConfigBase
 from buildarr.types import RssUrl
@@ -44,7 +44,7 @@ def test_decode(test_value) -> None:
             remote_attrs={"testAttr": test_value},
         ),
     ).test_attr
-    assert isinstance(test_attr, RssUrl)
+    assert isinstance(test_attr, AnyUrl)
     assert test_attr.scheme == "rss"
     assert str(test_attr) == test_value
 
@@ -96,7 +96,10 @@ def test_empty() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.any_str\.min_length; limit_value=1",
+        match=(
+            "Input should be a valid URL, input is empty "
+            r"\[type=url_parsing, input_value='', input_type=str\]"
+        ),
     ):
         Settings(test_attr="")
 
@@ -109,6 +112,22 @@ def test_invalid_scheme(scheme) -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.url\.scheme; allowed_schemes={'rss'}",
+        match=(
+            "URL scheme should be 'rss' "
+            r"\[type=url_scheme"
+            f", input_value='{scheme}://www.example.com'"
+            r", input_type=str\]"
+        ),
     ):
         Settings(test_attr=f"{scheme}://www.example.com")
+
+
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="rss://rss.example.com").model_dump_yaml()
+        == "test_attr: rss://rss.example.com\n"
+    )

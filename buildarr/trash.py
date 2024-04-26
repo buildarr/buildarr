@@ -64,8 +64,8 @@ def fetch_trash_metadata() -> None:
         trash_metadata_filename = temp_dir / "trash-metadata.zip"
 
         logger.debug("Downloading TRaSH metadata")
-        urlretrieve(  # noqa: S310  # `trash_metadata_download_url` is constrained to HTTP URLs.
-            state.config.buildarr.trash_metadata_download_url,
+        urlretrieve(  # noqa: S310
+            str(state.config.buildarr.trash_metadata_download_url),
             trash_metadata_filename,
         )
         logger.debug("Finished downloading TRaSH metadata")

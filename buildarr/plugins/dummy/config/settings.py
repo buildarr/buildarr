@@ -20,15 +20,15 @@ from __future__ import annotations
 
 import json
 
-from typing import Any, List, Mapping, Optional, Union, cast
+from typing import Any, ClassVar, List, Mapping, Optional, Union, cast
 from uuid import UUID, uuid4
 
 from pydantic import Field
-from typing_extensions import Self
+from typing_extensions import Annotated, Self
 
 from buildarr.config import ConfigTrashIDNotFoundError, RemoteMapEntry
 from buildarr.state import state
-from buildarr.types import InstanceName, TrashID
+from buildarr.types import InstanceReference, TrashID
 
 from ..api import api_get, api_post
 from ..secrets import DummySecrets
@@ -57,13 +57,13 @@ class DummySettingsConfig(DummyConfigBase):
     ```
     """
 
-    instance_name: Optional[InstanceName] = Field(None, plugin="dummy")
+    instance_name: Annotated[Optional[str], InstanceReference(plugin_name="dummy")] = None
     """
     The name of the Dummy instance within Buildarr, if linking this Dummy instance
     with another Buildarr-defined Dummy instance.
     """
 
-    trash_id: Optional[TrashID] = None  # type: ignore[assignment]
+    trash_id: Optional[TrashID] = None
     """
     TRaSH-Guides Sonarr quality definition profile ID to use when filling out `trash_value`.
     """
@@ -90,7 +90,7 @@ class DummySettingsConfig(DummyConfigBase):
     If `instance_name` is defined, this value will instead be read from the target instance.
     """
 
-    _remote_map: List[RemoteMapEntry] = [
+    _remote_map: ClassVar[List[RemoteMapEntry]] = [
         (
             "trash_value",  # Buildarr config attribute name.
             "trashValue",  # Dummy instance API attribute name.
@@ -207,7 +207,7 @@ class DummySettingsConfig(DummyConfigBase):
         if not self.instance_name:
             return self
         secrets = cast(DummySecrets, state.instance_secrets["dummy"][self.instance_name])
-        return self.copy(
+        return self.model_copy(
             update={
                 "instance_name": self.instance_name,
                 "instance_value": api_get(secrets, "/api/v1/settings")["instanceValue"],

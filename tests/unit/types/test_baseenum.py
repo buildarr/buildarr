@@ -104,6 +104,17 @@ def test_single_value_update_encode() -> None:
     ) == (True, {"testAttr": 1})
 
 
+def test_single_value_serialization() -> None:
+    """
+    Check serialising a single-value enumeration attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_single_value=SingleValueEnum.one).model_dump_yaml(exclude_unset=True)
+        == "test_single_value: one\n"
+    )
+
+
 @pytest.mark.parametrize("test_value", [1, "one"])
 def test_multi_value_decode(test_value) -> None:
     """
@@ -163,3 +174,14 @@ def test_multi_value_update_encode() -> None:
         remote=Settings(),
         remote_map=[("test_multi_value", "testAttr", {})],
     ) == (True, {"testAttr": 1})
+
+
+def test_multi_value_serialization() -> None:
+    """
+    Check serialising a multi-value enumeration attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_multi_value=MultiValueEnum.ONE).model_dump_yaml(exclude_unset=True)
+        == "test_multi_value: one\n"
+    )

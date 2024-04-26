@@ -108,7 +108,7 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
         raise
     else:
         logger.debug("Buildarr configuration:")
-        for config_line in state.config.yaml(exclude_unset=True).splitlines():
+        for config_line in state.config.model_dump_yaml(exclude_unset=True).splitlines():
             logger.debug(indent(config_line, "  "))
         logger.info("Loading configuration: PASSED")
 
@@ -135,7 +135,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             for instance_name, instance_config in instance_configs.items():
                 with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                     logger.debug("Instance configuration:")
-                    for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                    for config_line in instance_config.model_dump_yaml(
+                        exclude_unset=True,
+                    ).splitlines():
                         logger.debug(indent(config_line, "  "))
         logger.info("Loading instance configurations: PASSED")
 
@@ -159,9 +161,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             logger.debug("  %i. %s.instances[%s]", i, plugin_name, repr(instance_name))
         logger.info("Resolving instance dependencies: PASSED")
 
-    # Check if any instances are configured to get metadata from TRaSH-Guides.
-    if trash_metadata_used():
-        # Test fetching TRaSH-Guides metadata.
+    # Test fetching TRaSH-Guides metadata, if the configuration uses it.
+    downloaded_trash_metadata = trash_metadata_used()
+    if downloaded_trash_metadata:
         try:
             logger.debug("Fetching TRaSH metadata")
             fetch_trash_metadata()
@@ -171,20 +173,33 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             raise
         else:
             logger.info("Fetching TRaSH-Guides metadata: PASSED")
-        # Test pre-initialisation rendering of the instance configuration.
-        try:
-            logger.debug("Performing pre-initialisation configuration render")
-            render_instance_configs()
-            logger.debug("Finished performing pre-initialisation configuration render")
-        except Exception:
-            logger.error("Pre-initialisation configuration render: FAILED")
-            raise
-        else:
-            logger.info("Pre-initialisation configuration render: PASSED")
-        # Clean up the TRaSH-Guides metadata, now that rendering has completed.
-        cleanup_trash_metadata()
     else:
         logger.info("Fetching TRaSH-Guides metadata: SKIPPED (not required)")
+
+    # Test pre-initialisation rendering of the instance configuration.
+    try:
+        logger.debug("Performing pre-initialisation configuration render")
+        render_instance_configs()
+        logger.debug("Finished performing pre-initialisation configuration render")
+    except Exception:
+        logger.error("Pre-initialisation configuration render: FAILED")
+        raise
+    else:
+        logger.info("Pre-initialisation configuration render: PASSED")
+
+    # Clean up the TRaSH-Guides metadata, now that rendering has completed.
+    if downloaded_trash_metadata:
+        try:
+            logger.debug("Cleaning up TRaSH metadata")
+            cleanup_trash_metadata()
+            logger.debug("Finished cleaning up TRaSH metadata")
+        except Exception:
+            logger.error("Cleaning up TRaSH-Guides metadata: FAILED")
+            raise
+        else:
+            logger.info("Cleaning up TRaSH-Guides metadata: PASSED")
+    else:
+        logger.info("Cleaning up TRaSH-Guides metadata: SKIPPED (not required)")
 
     # Log the pre-initialisation rendered configuration to debug output.
     for plugin_name, instance_configs in state.instance_configs.items():
@@ -192,7 +207,9 @@ def test_config(config_path: Path, use_plugins: Set[str]) -> None:
             with state._with_context(plugin_name=plugin_name, instance_name=instance_name):
                 if state.managers[plugin_name].uses_trash_metadata(instance_config):
                     logger.debug("Rendered instance configuration:")
-                    for config_line in instance_config.yaml(exclude_unset=True).splitlines():
+                    for config_line in instance_config.model_dump_yaml(
+                        exclude_unset=True,
+                    ).splitlines():
                         logger.debug(indent(config_line, "  "))
 
     # If we get to this point, this configuration is pretty much guaranteed to be valid.

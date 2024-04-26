@@ -88,6 +88,14 @@ def test_update_encode() -> None:
     ) == (True, {"testAttr": "Hello, world!"})
 
 
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert Settings(test_attr="Hello, world!").model_dump_yaml() == "test_attr: Hello, world!\n"
+
+
 def test_empty() -> None:
     """
     Check that an error is returned when an empty string is supplied.
@@ -95,6 +103,9 @@ def test_empty() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.any_str\.min_length; limit_value=1",
+        match=(
+            "String should have at least 1 character "
+            r"\[type=string_too_short, input_value='', input_type=str\]"
+        ),
     ):
         Settings(test_attr="")

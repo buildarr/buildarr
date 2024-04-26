@@ -27,15 +27,16 @@ DummyApiKey = Password
 Constrained string type for a Dummy instance API key.
 
 The type `Password` allows anything as long as it is not an empty string, but is a subclass
-of type `pydantic.SecretStr`, allowing Buildarr to hide the value in any logging.
+of the Buildarr type `SecretStr`, allowing Buildarr to hide the value in any logging.
 
 A more complex type for API key might look something like this:
 
 ```python
-from pydantic import Field, SecretStr
+from buildarr.types import SecretStr
+from pydantic import StringConstraints
 from typing_extensions import Annotated
 
-DummyApiKey = Annotated[SecretStr, Field(min_length=32, max_length=32)]
+DummyApiKey = Annotated[SecretStr, StringConstraints(min_length=32, max_length=32)]
 ```
 """
 

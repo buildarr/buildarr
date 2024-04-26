@@ -113,7 +113,10 @@ def test_empty() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.any_str\.min_length; limit_value=32",
+        match=(
+            "String should have at least 32 characters "
+            r"\[type=string_too_short, input_value='', input_type=str\]"
+        ),
     ):
         Settings(test_attr="")
 
@@ -125,7 +128,12 @@ def test_too_short() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.any_str\.min_length; limit_value=32",
+        match=(
+            "String should have at least 32 characters "
+            r"\[type=string_too_short"
+            ", input_value='387e6278d8e06083d813358762e0ac6'"
+            r", input_type=str\]"
+        ),
     ):
         Settings(test_attr="387e6278d8e06083d813358762e0ac6")
 
@@ -137,9 +145,25 @@ def test_too_long() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.any_str\.max_length; limit_value=32",
+        match=(
+            "String should have at most 32 characters "
+            r"\[type=string_too_long"
+            ", input_value='387e6278d8e06083d813358762e0ac630'"
+            r", input_type=str\]"
+        ),
     ):
         Settings(test_attr="387e6278d8e06083d813358762e0ac630")
+
+
+def test_serialization() -> None:
+    """
+    Check serialising a local attribute value to YAML.
+    """
+
+    assert (
+        Settings(test_attr="387e6278d8e06083d813358762e0ac63").model_dump_yaml()
+        == "test_attr: 387e6278d8e06083d813358762e0ac63\n"
+    )
 
 
 def test_invalid_characters() -> None:
@@ -149,6 +173,11 @@ def test_invalid_characters() -> None:
 
     with pytest.raises(
         ValidationError,
-        match=r"type=value_error\.str\.regex",
+        match=(
+            r"String should match pattern '\^\[A-Fa-f0-9\]\+\$' "
+            r"\[type=string_pattern_mismatch"
+            ", input_value='387e6278d8e06083d813358762e0ac6z'"
+            r", input_type=str\]"
+        ),
     ):
         Settings(test_attr="387e6278d8e06083d813358762e0ac6z")

@@ -22,16 +22,9 @@ from typing import TYPE_CHECKING
 
 from buildarr.config import ConfigBase
 
-# Define the base class for Dummy configuration classes.
-# Subclassing this conditionally-created class allows Mypy to
-# properly resolve secrets type declarations.
 if TYPE_CHECKING:
-    from ..secrets import DummySecrets
+    from ..secrets import DummySecrets  # noqa: F401
 
-    class DummyConfigBase(ConfigBase[DummySecrets]):
-        pass
 
-else:
-
-    class DummyConfigBase(ConfigBase):
-        pass
+class DummyConfigBase(ConfigBase["DummySecrets"]):
+    pass

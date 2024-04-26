@@ -23,23 +23,16 @@ from typing import TYPE_CHECKING, Dict, Optional
 from typing_extensions import Self
 
 from buildarr.config import ConfigPlugin
-from buildarr.types import NonEmptyStr, Port
+from buildarr.types import LocalPath, NonEmptyStr, Port
 
-from ..secrets import Dummy2Secrets
 from ..types import Dummy2Protocol
 from .settings import Dummy2SettingsConfig
 
-# Allow Mypy to properly resolve secrets type declarations in configuration classes.
 if TYPE_CHECKING:
-
-    class _Dummy2InstanceConfig(ConfigPlugin[Dummy2Secrets]): ...
-
-else:
-
-    class _Dummy2InstanceConfig(ConfigPlugin): ...
+    from ..secrets import Dummy2Secrets
 
 
-class Dummy2InstanceConfig(_Dummy2InstanceConfig):
+class Dummy2InstanceConfig(ConfigPlugin["Dummy2Secrets"]):
     """
     By default, Buildarr will look for a single instance at `http://dummy2:5000`.
     Most configurations are different, and to accommodate those, you can configure
@@ -79,7 +72,7 @@ class Dummy2InstanceConfig(_Dummy2InstanceConfig):
     ```
     """
 
-    hostname: NonEmptyStr = "dummy2"  # type: ignore[assignment]
+    hostname: NonEmptyStr = "dummy2"
     """
     Hostname of the Dummy2 instance to connect to.
 
@@ -97,12 +90,12 @@ class Dummy2InstanceConfig(_Dummy2InstanceConfig):
     ```
     """
 
-    port: Port = 5000  # type: ignore[assignment]
+    port: Port = 5000
     """
     Port number of the Dummy2 instance to connect to.
     """
 
-    protocol: Dummy2Protocol = "http"  # type: ignore[assignment]
+    protocol: Dummy2Protocol = "http"
     """
     Communication protocol to use to connect to Dummy2.
 
@@ -123,6 +116,16 @@ class Dummy2InstanceConfig(_Dummy2InstanceConfig):
     """
     Dummy2 settings.
     Configuration options for Dummy2 itself are set within this structure.
+    """
+
+    local_path: LocalPath = LocalPath("test.yml")
+    """
+    Local path. Used for testing the type in functional testing.
+    """
+
+    optional_local_path: Optional[LocalPath] = None
+    """
+    Optional local path. Used for testing the type in functional testing.
     """
 
     @classmethod
