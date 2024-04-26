@@ -104,16 +104,14 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         from __future__ import annotations
 
         from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+
+        from buildarr.config import RemoteMapEntry
         from typing_extensions import Self
-        from buildarr.config import ConfigBase, RemoteMapEntry
+
+        from .types import ExampleConfigBase
 
         if TYPE_CHECKING:
-            from .secrets import ExampleSecrets
-
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-        else:
-
-            class ExampleConfigBase(ConfigBase): ...
+            from ..secrets import ExampleSecrets
 
 
         class ExampleConfig(ExampleConfigBase):
@@ -294,20 +292,20 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         JSON objects to be sent in `POST` requests to the remote server.
 
         ```python
-        from typing import TYPE_CHECKING, Any, ClassVar, List, Mapping, Optional
-        from buildarr.config import ConfigBase, RemoteMapEntry
-        from buildarr.secrets import Secrets
+        from __future__ import annotations
+
+        from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Mapping, Optional
+
+        from buildarr.config import RemoteMapEntry
+
+        from .types import ExampleConfigBase
 
         if TYPE_CHECKING:
-            from .secrets import ExampleSecrets
-
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-        else:
-
-            class ExampleConfigBase(ConfigBase): ...
+            from ..secrets import ExampleSecrets
 
 
         class ExampleObj(ExampleConfigBase):
+            local_attr_1: bool
             obj_attr1: int
             obj_attr2: Optional[str] = None
 
@@ -457,16 +455,13 @@ class ConfigBase(BaseModel, Generic[Secrets]):
         from __future__ import annotations
 
         from typing import TYPE_CHECKING, ClassVar, Any, List, Mapping, Optional
-        from buildarr.config import ConfigBase, RemoteMapEntry
-        from buildarr.secrets import Secrets
+
+        from buildarr.config import RemoteMapEntry
+
+        from .types import ExampleConfigBase
 
         if TYPE_CHECKING:
-            from .secrets import ExampleSecrets
-
-            class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-        else:
-
-            class ExampleConfigBase(ConfigBase): ...
+            from ..secrets import ExampleSecrets
 
 
         class ExampleConfig(ExampleConfigBase):
@@ -487,12 +482,12 @@ class ConfigBase(BaseModel, Generic[Secrets]):
             ]
 
             @classmethod
-            def _api_put(cls, secrets: Secrets, obj: Mapping[str, Any]) -> None: ...
+            def _api_put(cls, secrets: ExampleSecrets, obj: Mapping[str, Any]) -> None: ...
 
             def update_remote(
                 self,
                 tree: str,
-                secrets: Secrets,
+                secrets: ExampleSecrets,
                 remote: Self,
                 check_unmanaged: bool = False,
             ) -> bool:
@@ -845,18 +840,14 @@ class ConfigBase(BaseModel, Generic[Secrets]):
     from __future__ import annotations
 
     from typing import TYPE_CHECKING
+
     from buildarr.config import ConfigBase
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
 
-        class _ExampleConfig(ConfigBase[ExampleSecrets]): ...
-    else:
 
-        class _ExampleConfig(ConfigBase): ...
-
-
-    class ExampleConfig(_ExampleConfig):
+    class ExampleConfigBase(ConfigBase["ExampleSecrets"]):
         ...
 
         model_config = {

@@ -45,18 +45,15 @@ class ConfigPlugin(ConfigBase[Secrets]):
     from __future__ import annotations
 
     from typing import TYPE_CHECKING, Literal
-    from buildarr.config import ConfigPlugin, NonEmptyStr, Port
+
+    from buildarr.config import ConfigPlugin
+    from buildarr.types import NonEmptyStr, Port
 
     if TYPE_CHECKING:
         from .secrets import ExampleSecrets
 
-        class _ExampleInstanceConfig(ConfigPlugin[ExampleSecrets]): ...
-    else:
 
-        class _ExampleInstanceConfig(ConfigPlugin): ...
-
-
-    class ExampleInstanceConfig(_ExampleInstanceConfig):
+    class ExampleInstanceConfig(ConfigPlugin["ExampleSecrets"]):
         # Required configuration overrides from `ConfigPlugin`
         hostname: NonEmptyStr = "example"
         port: Port = 1234

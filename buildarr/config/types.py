@@ -36,16 +36,12 @@ It is a 3-tuple composed of the following elements:
    between local and remote attributes (for more details, check the handling function)
 
 ```python
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
-from buildarr.config import ConfigBase, RemoteMapEntry
+from typing import ClassVar, List, Optional
 
-if TYPE_CHECKING:
-    from .secrets import ExampleSecrets
-    class ExampleConfigBase(ConfigBase[ExampleSecrets]):
-        ...
-else:
-    class ExampleConfigBase(ConfigBase):
-        ...
+from buildarr.config import RemoteMapEntry
+
+from .types import ExampleConfigBase
+
 
 class ExampleConfig(ExampleConfigBase):
     local_attr_1: bool

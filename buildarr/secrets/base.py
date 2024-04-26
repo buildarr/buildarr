@@ -45,18 +45,14 @@ class SecretsBase(BaseModel, Generic[Config]):
     from __future__ import annotations
 
     from typing import TYPE_CHECKING
+
     from buildarr.secrets import SecretsBase
 
     if TYPE_CHECKING:
         from .config import ExampleConfig
 
-        class _ExampleSecrets(SecretsBase[ExampleSecrets]): ...
-    else:
 
-        class _ExampleSecrets(SecretsBase): ...
-
-
-    class ExampleSecrets(_ExampleSecrets):
+    class ExampleSecrets(SecretsBase["ExampleConfig"]):
         ...
 
         model_config = {

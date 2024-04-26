@@ -48,7 +48,10 @@ class ManagerPlugin(Generic[Config, Secrets]):
     the appropriate type parameters.
 
     ```python
+    from __future__ import annotations
+
     from buildarr.manager import ManagerPlugin
+
     from .config import ExampleConfig
     from .secrets import ExampleSecrets
 

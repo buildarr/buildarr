@@ -45,21 +45,16 @@ class SecretsPlugin(SecretsBase[Config]):
     configuration field names and how they should be parsed.
 
     ```python
-    from typing import TYPE_CHECKING, Literal
+    from typing import TYPE_CHECKING, Literal, Self
+
     from buildarr.secrets import SecretsPlugin
     from buildarr.types import NonEmptyStr, Port, Password
 
     if TYPE_CHECKING:
-        from typing import Self
         from .config import ExampleConfig
 
-        class _ExampleSecrets(SecretsPlugin[ExampleConfig]): ...
-    else:
 
-        class _ExampleSecrets(SecretsPlugin): ...
-
-
-    class ExampleSecrets(_ExampleSecrets):
+    class ExampleSecrets(SecretsPlugin["ExampleConfig"]):
         hostname: NonEmptyStr
         port: Port
         protocol: Literal["http", "https"]

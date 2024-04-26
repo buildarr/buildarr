@@ -81,16 +81,11 @@ RssUrl = Annotated[AnyUrl, UrlConstraints(allowed_schemes=["rss"])]
 Constrained URL type for RSS URLs.
 
 ```python
-from typing import TYPE_CHECKING
-from buildarr.config import ConfigBase, RssUrl
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from .secrets import ExampleSecrets
+from buildarr.types import RssUrl
 
-    class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-else:
-
-    class ExampleConfigBase(ConfigBase): ...
+from .types import ExampleConfigBase
 
 
 class ExampleConfig(ExampleConfigBase):
@@ -106,20 +101,15 @@ Constrained integer type for TCP/UDP port numbers.
 Valid ports range from 1 to 65535 (a 16-bit integer).
 
 ```python
-from typing import TYPE_CHECKING
-from buildarr.config import ConfigBase, NonEmptyStr, Port
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from .secrets import ExampleSecrets
+from buildarr.types import NonEmptyStr, Port
 
-    class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-else:
-
-    class ExampleConfigBase(ConfigBase): ...
+from .types import ExampleConfigBase
 
 
 class ExampleConfig(ExampleConfigBase):
-    host: NonEmptyStr
+    hostname: NonEmptyStr
     port: Port
 ```
 """
@@ -136,11 +126,15 @@ Values are also stripped of whitespace at the start and the end
 of the strings.
 
 ```python
-from buildarr.config import ConfigBase, NonEmptyStr, Port
+from __future__ import annotations
+
+from buildarr.types import NonEmptyStr, Port
+
+from .types import ExampleConfigBase
 
 
-class ExampleConfig(ConfigBase):
-    host: NonEmptyStr
+class ExampleConfig(ExampleConfigBase):
+    hostname: NonEmptyStr
     port: Port
 ```
 """
@@ -154,10 +148,14 @@ When validated in a Buildarr configuration,
 all upper-case characters in the value will be converted to lower-case.
 
 ```python
-from buildarr.config import LowerCaseStr
+from __future__ import annotations
+
+from buildarr.types import LowerCaseStr
+
+from .types import ExampleConfigBase
 
 
-class ExampleConfig(ConfigBase):
+class ExampleConfig(ExampleConfigBase):
     lowercase_name: LowerCaseStr
 ```
 """
@@ -174,10 +172,14 @@ This is a combination of `LowerCaseStr` and `NonEmptyStr`,
 with the validations of both types applying to the value.
 
 ```python
-from buildarr.config import LowerCaseNonEmptyStr
+from __future__ import annotations
+
+from buildarr.types import LowerCaseNonEmptyStr
+
+from .types import ExampleConfigBase
 
 
-class ExampleConfig(ConfigBase):
+class ExampleConfig(ExampleConfigBase):
     lowercase_name: LowerCaseNonEmptyStr
 ```
 """
@@ -191,11 +193,14 @@ When validated in a Buildarr configuration,
 all lower-case characters in the value will be converted to upper-case.
 
 ```python
-from buildarr.config import ConfigBase
+from __future__ import annotations
+
 from buildarr.types import UpperCaseStr
 
+from .types import ExampleConfigBase
 
-class ExampleConfig(ConfigBase):
+
+class ExampleConfig(ExampleConfigBase):
     uppercase_name: UpperCaseStr
 ```
 """
@@ -218,16 +223,11 @@ Accepts any valid TRaSH-Guides ID, and is case-insensitive,
 converting to lower case internally.
 
 ```python
-from typing import TYPE_CHECKING
-from buildarr.config import ConfigBase, TrashID
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from .secrets import ExampleSecrets
+from buildarr.types import TrashID
 
-    class ExampleConfigBase(ConfigBase[ExampleSecrets]): ...
-else:
-
-    class ExampleConfigBase(ConfigBase): ...
+from .types import ExampleConfigBase
 
 
 class ExampleConfig(ExampleConfigBase):
@@ -247,8 +247,11 @@ class BaseEnum(MultiValueEnum):
     For example, given the following example:
 
     ```python
-    from buildarr.config import ConfigBase
+    from __future__ import annotations
+
     from buildarr.types import BaseEnum
+
+    from .types import ExampleConfigBase
 
 
     class Animal(BaseEnum):
@@ -256,7 +259,7 @@ class BaseEnum(MultiValueEnum):
         value_2 = 1
 
 
-    class ExampleConfig(ConfigBase):
+    class ExampleConfig(ExampleConfigBase):
         animal: Animal
     ```
 
@@ -273,8 +276,6 @@ class BaseEnum(MultiValueEnum):
     by passing a `tuple` containing all the possible values.
 
     ```python
-    from buildarr.types import BaseEnum
-
     class Animal(BaseEnum):
         value_1 = (0, "dog")
         value_2 = (1, "cat")
@@ -472,14 +473,15 @@ def InstanceReference(plugin_name: str) -> AfterValidator:  # noqa: N802
     Instances references are defined by using `Annotated`, as shown below:
 
     ```python
-    from typing import TYPE_CHECKING, Optional
+    from __future__ import annotations
 
-    from buildarr.config import ConfigBase
+    from typing import Optional
+
     from buildarr.types import InstanceReference
-    from pydantic import Field
-    from typing_extensions import
+    from typing_extensions import Annotated
 
-    from .config import ExampleConfigBase
+    from .types import ExampleConfigBase
+
 
     class ExampleConfig(ExampleConfigBase):
         instance_name: Annotated[Optional[str], InstanceReference(plugin_name="example")] = None

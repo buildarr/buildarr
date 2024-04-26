@@ -30,22 +30,13 @@ from .api import api_get
 from .exceptions import DummyAPIError, DummySecretsUnauthorizedError
 from .types import DummyApiKey, DummyProtocol
 
-# Allow Mypy to properly resolve configuration type declarations in secrets classes.
 if TYPE_CHECKING:
     from typing_extensions import Self
 
     from .config import DummyConfig
 
-    class _DummySecrets(SecretsPlugin[DummyConfig]):
-        pass
 
-else:
-
-    class _DummySecrets(SecretsPlugin):
-        pass
-
-
-class DummySecrets(_DummySecrets):
+class DummySecrets(SecretsPlugin["DummyConfig"]):
     """
     Dummy API secrets.
     """

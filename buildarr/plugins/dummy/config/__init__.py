@@ -30,21 +30,14 @@ from buildarr.types import NonEmptyStr, Port
 
 from ..api import api_get, api_post
 from ..exceptions import DummyAPIError
-from ..secrets import DummySecrets
 from ..types import DummyApiKey, DummyProtocol
 from .settings import DummySettingsConfig
 
-# Allow Mypy to properly resolve secrets type declarations in configuration classes.
 if TYPE_CHECKING:
-
-    class _DummyInstanceConfig(ConfigPlugin[DummySecrets]): ...
-
-else:
-
-    class _DummyInstanceConfig(ConfigPlugin): ...
+    from ..secrets import DummySecrets
 
 
-class DummyInstanceConfig(_DummyInstanceConfig):
+class DummyInstanceConfig(ConfigPlugin["DummySecrets"]):
     """
     By default, Buildarr will look for a single instance at `http://dummy:5000`.
     Most configurations are different, and to accommodate those, you can configure

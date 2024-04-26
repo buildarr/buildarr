@@ -38,10 +38,13 @@ class Plugin:
     plugin classes as class attributes to an implementation of this class.
 
     ```python
+    from __future__ import annotations
+
     from buildarr.plugins import Plugin
-    from buildarr_example.cli import example
-    from buildarr_example.config import ExampleConfig
-    from buildarr_example.secrets import ExampleSecrets
+
+    from .cli import example
+    from .config import ExampleConfig
+    from .secrets import ExampleSecrets
 
 
     class ExamplePlugin(Plugin):
@@ -53,37 +56,11 @@ class Plugin:
     Then, set this class as the entry point for the plugin in your
     Python package configuration.
 
-    Setuptools `setup.py` entry point definition example:
-    ```python
-    from setuptools import setup
-
-    setup(
-        # ...,
-        entry_points={
-            "buildarr.plugins": [
-                "example = buildarr_example.plugin:ExamplePlugin",
-            ],
-        },
-    )
-    ```
-
-    Setuptools `setup.cfg` entry point definition example:
-    ```ini
-    [options.entry_points]
-    buildarr.plugins =
-        example = buildarr_example.plugin:ExamplePlugin
-    ```
-
     Setuptools `pyproject.toml` entry point definition example:
+
     ```toml
     [project.entry-points."buildarr.plugins"]
-    "example" = "buildarr_example.plugin:ExamplePlugin"
-    ```
-
-    Poetry plugin definition example:
-    ```toml
-    [tool.poetry.plugins."buildarr.plugins"]
-    "example" = "buildarr_example.plugin:ExamplePlugin"
+    example = "buildarr_example.plugin:ExamplePlugin"
     ```
     """
 
