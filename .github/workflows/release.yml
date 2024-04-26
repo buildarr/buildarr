@@ -43,6 +43,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist
+          path: dist/
       - name: Setup Python and PDM
         uses: pdm-project/setup-pdm@v4
         with:
@@ -63,6 +64,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist
+          path: dist/
       - name: Publish source dist and wheels to GitHub Release
         uses: xresloader/upload-to-github-release@v1
         env:
