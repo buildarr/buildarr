@@ -72,7 +72,7 @@ class Dummy2InstanceConfig(ConfigPlugin["Dummy2Secrets"]):
     ```
     """
 
-    hostname: NonEmptyStr = "dummy2"  # type: ignore[assignment]
+    hostname: NonEmptyStr = "dummy2"
     """
     Hostname of the Dummy2 instance to connect to.
 
@@ -90,12 +90,12 @@ class Dummy2InstanceConfig(ConfigPlugin["Dummy2Secrets"]):
     ```
     """
 
-    port: Port = 5000  # type: ignore[assignment]
+    port: Port = 5000
     """
     Port number of the Dummy2 instance to connect to.
     """
 
-    protocol: Dummy2Protocol = "http"  # type: ignore[assignment]
+    protocol: Dummy2Protocol = "http"
     """
     Communication protocol to use to connect to Dummy2.
 
@@ -118,7 +118,7 @@ class Dummy2InstanceConfig(ConfigPlugin["Dummy2Secrets"]):
     Configuration options for Dummy2 itself are set within this structure.
     """
 
-    local_path: LocalPath = "test.yml"  # type: ignore[assignment]
+    local_path: LocalPath = LocalPath("test.yml")
     """
     Local path. Used for testing the type in functional testing.
     """

@@ -63,7 +63,7 @@ class DummySettingsConfig(DummyConfigBase):
     with another Buildarr-defined Dummy instance.
     """
 
-    trash_id: Optional[TrashID] = None  # type: ignore[assignment]
+    trash_id: Optional[TrashID] = None
     """
     TRaSH-Guides Sonarr quality definition profile ID to use when filling out `trash_value`.
     """

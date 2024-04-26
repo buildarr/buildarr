@@ -78,7 +78,7 @@ class DummyInstanceConfig(ConfigPlugin["DummySecrets"]):
     ```
     """
 
-    hostname: NonEmptyStr = "dummy"  # type: ignore[assignment]
+    hostname: NonEmptyStr = "dummy"
     """
     Hostname of the Dummy instance to connect to.
 
@@ -96,12 +96,12 @@ class DummyInstanceConfig(ConfigPlugin["DummySecrets"]):
     ```
     """
 
-    port: Port = 5000  # type: ignore[assignment]
+    port: Port = 5000
     """
     Port number of the Dummy instance to connect to.
     """
 
-    protocol: DummyProtocol = "http"  # type: ignore[assignment]
+    protocol: DummyProtocol = "http"
     """
     Communication protocol to use to connect to Dummy.
 

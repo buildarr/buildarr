@@ -120,14 +120,14 @@ class BuildarrConfig(ConfigBase):
     *New in version 0.3.0.*
     """
 
-    trash_metadata_download_url: AnyHttpUrl = (
-        "https://github.com/TRaSH-/Guides/archive/refs/heads/master.zip"  # type: ignore[assignment]
+    trash_metadata_download_url: AnyHttpUrl = AnyHttpUrl(
+        "https://github.com/TRaSH-/Guides/archive/refs/heads/master.zip"
     )
     """
     URL to download the latest TRaSH-Guides metadata from.
     """
 
-    trash_metadata_dir_prefix: Optional[Path] = "Guides-master"  # type: ignore[assignment]
+    trash_metadata_dir_prefix: Optional[Path] = Path("Guides-master")
     """
     Metadata directory name within the downloaded ZIP file.
 
@@ -135,7 +135,7 @@ class BuildarrConfig(ConfigBase):
     are located in the root of the ZIP file.
     """
 
-    docker_image_uri: NonEmptyStr = os.environ.get(  # type: ignore[assignment]
+    docker_image_uri: NonEmptyStr = os.environ.get(
         "BUILDARR_DOCKER_IMAGE_URI",
         "callum027/buildarr",
     )
