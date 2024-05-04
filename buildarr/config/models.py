@@ -128,6 +128,7 @@ class ConfigPlugin(ConfigBase[Secrets]):
     # `instances` is not defined here, but it MUST be defined on the implementing class.
 
     @field_validator("url_base")
+    @classmethod
     def validate_url_base(cls, value: Optional[str]) -> Optional[str]:
         """
         Process the defined `url_base` value, and make sure the value in the secrets objects
