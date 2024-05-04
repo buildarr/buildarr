@@ -69,6 +69,7 @@ class Dummy2Secrets(_Dummy2Secrets):
         )
 
     @field_validator("url_base")
+    @classmethod
     def validate_url_base(cls, value: Optional[str]) -> Optional[str]:
         """
         Process the defined `url_base` value, and make sure the value in the secrets objects
